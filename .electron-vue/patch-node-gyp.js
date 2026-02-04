@@ -105,6 +105,14 @@ function patchNodeGyp() {
     patched = true;
   }
 
+  // 4. 添加 2026 到 supportedYears 数组
+  if (!content.includes("[2019, 2022, 2026]")) {
+    console.log("[patch-node-gyp] 正在添加 VS 2026 到支持列表...");
+    // 替换所有 [2019, 2022] 为 [2019, 2022, 2026]
+    content = content.replace(/\[2019, 2022\]/g, "[2019, 2022, 2026]");
+    patched = true;
+  }
+
   if (patched) {
     fs.writeFileSync(nodeGypPath, content, "utf8");
     console.log("[patch-node-gyp] 修补完成");

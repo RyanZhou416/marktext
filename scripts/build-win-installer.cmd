@@ -88,7 +88,7 @@ echo [步骤 4/4] 打包安装程序...
 call npx electron-builder --win -c.buildDependenciesFromSource=false
 if errorlevel 1 (
     echo [警告] 打包遇到问题，尝试重新编译原生模块...
-    call npx electron-rebuild -f
+    call node node_modules/@electron/rebuild/lib/cli.js -f
     call npx electron-builder --win
     if errorlevel 1 (
         echo [错误] 打包失败

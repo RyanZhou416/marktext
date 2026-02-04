@@ -76,7 +76,7 @@ echo [OK] 修补完成
 
 echo.
 echo [步骤 4/5] 编译原生模块...
-call node node_modules/electron-rebuild/lib/src/cli.js -f
+call node node_modules/@electron/rebuild/lib/cli.js -f
 if errorlevel 1 (
     echo [错误] 原生模块编译失败
     pause
