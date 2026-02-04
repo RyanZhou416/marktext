@@ -15,3 +15,9 @@ thumbs.db
 .idea
 .env
 .eslintcache
+
+# Temporary/debug files
+*.log
+vs-*.json
+*.ps1.bak
+*.tmp
