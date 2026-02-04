@@ -10,6 +10,7 @@
 ─────────                                            ─────────
 Electron 18        ──────────────────────────────►   Tauri 2.0
 Vue 2 + Vuex       ──────────────────────────────►   Vue 3 + Pinia
+webpack            ──────────────────────────────►   Vite (解决 ESM 兼容性)
 Muya (自研)        ──────────────────────────────►   Milkdown/现代化Muya
 JavaScript         ──────────────────────────────►   TypeScript
 原生模块 x3        ──────────────────────────────►   原生模块 x0
@@ -64,7 +65,25 @@ npx browserslist@latest --update-db
 
 - [x] `yarn install` 成功
 - [x] `scripts/build-win-portable.cmd` 构建成功
-- [ ] 生成的应用可以正常运行（待测试）
+- [x] 生成的应用可以正常运行
+
+### 遇到的问题与修复
+
+**问题**: 打包后的应用卡在加载页面，渲染进程崩溃
+
+**错误信息**:
+
+```
+Uncaught Error: require() of ES Module snabbdom/build/index.js not supported.
+```
+
+**原因**: `snabbdom` 3.x 是纯 ESM 模块，但 webpack 将其设为 external，导致运行时用 `require()` 加载失败
+
+**修复**: 在 `.electron-vue/webpack.renderer.config.js` 中将 `snabbdom` 加入白名单：
+
+```javascript
+const whiteListedModules = ["vue", "snabbdom", "snabbdom-to-html"];
+```
 
 ---
 
@@ -202,17 +221,49 @@ export default {
 
 ---
 
-## 阶段 6: Vue 3 迁移
+## 阶段 6: Vue 3 迁移 + 构建工具现代化
 
-**目标**: 完成 Vue 2 → Vue 3 迁移
+**目标**: 完成 Vue 2 → Vue 3 迁移，同时迁移到 Vite 构建工具
 
-| 任务                           | 状态 | 说明           |
-| ------------------------------ | ---- | -------------- |
-| 升级 Vue 3                     | ⬜   | vue@3.x        |
-| 迁移 Vuex → Pinia              | ⬜   | 状态管理       |
-| 迁移 Element UI → Element Plus | ⬜   | 组件库         |
-| 迁移 Vue Router                | ⬜   | vue-router@4.x |
-| 修复所有组件                   | ⬜   | 语法适配       |
+| 任务                           | 状态 | 说明                |
+| ------------------------------ | ---- | ------------------- |
+| 迁移 webpack → Vite            | ⬜   | 解决 ESM 兼容性问题 |
+| 升级 Vue 3                     | ⬜   | vue@3.x             |
+| 迁移 Vuex → Pinia              | ⬜   | 状态管理            |
+| 迁移 Element UI → Element Plus | ⬜   | 组件库              |
+| 迁移 Vue Router                | ⬜   | vue-router@4.x      |
+| 修复所有组件                   | ⬜   | 语法适配            |
+
+### 为什么迁移到 Vite
+
+当前 webpack 配置的问题：
+
+- 使用 externals 将依赖排除在打包之外
+- 运行时用 `require()` 加载，但 ESM 模块不支持
+- 需要手动维护白名单，容易遗漏
+
+Vite 的优势：
+
+- ✅ **原生 ESM 支持**：彻底解决 ESM/CJS 兼容性问题
+- ✅ **更快的开发体验**：即时 HMR，无需等待打包
+- ✅ **更快的构建速度**：基于 Rollup，tree-shaking 更好
+- ✅ **Vue 3 官方推荐**：更好的生态支持
+- ✅ **配置更简单**：比 webpack 配置少很多
+
+### Vite + Electron 方案
+
+推荐使用 [electron-vite](https://electron-vite.org/)：
+
+```bash
+# 项目结构
+src/
+├── main/           # 主进程 (Node.js)
+├── preload/        # 预加载脚本
+└── renderer/       # 渲染进程 (Vue 3)
+
+# 配置文件
+electron.vite.config.ts
+```
 
 ### 主要变化
 
@@ -369,9 +420,34 @@ marktext-tauri-poc/
 | v0.18.0 | 0-1      | 构建优化，Windows 支持改进      |
 | v0.19.0 | 2-3      | 减少原生模块，Electron 补丁更新 |
 | v0.20.0 | 4        | Electron 大版本升级             |
-| v0.21.0 | 5-6      | Vue 3 迁移                      |
+| v0.21.0 | 5-6      | Vue 3 + Vite 迁移               |
 | v0.22.0 | 7        | TypeScript 迁移                 |
 | v1.0.0  | 8-10     | Tauri 版本发布                  |
+
+---
+
+## ESM 兼容性检查
+
+升级依赖时，需要检查是否有 ESM-only 的包。这些包必须加入 webpack 白名单，否则打包后会崩溃。
+
+```bash
+# 检测 ESM-only 模块
+node tools/checkEsmModules.js
+```
+
+**原理**：webpack externals 会让这些包在运行时通过 `require()` 加载，但 ESM 模块不支持 `require()`。
+
+**当前白名单**：
+
+```javascript
+const whiteListedModules = ["vue", "snabbdom", "snabbdom-to-html", "mermaid"];
+```
+
+**升级依赖后的检查步骤**：
+
+1. 运行 `node tools/checkEsmModules.js`
+2. 如果发现新的 ESM-only 包，加入白名单
+3. 重新构建并测试打包后的应用
 
 ---
 

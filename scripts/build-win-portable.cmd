@@ -9,6 +9,9 @@ echo ═════════════════════════
 echo            MarkText Windows 便携版 一键构建
 echo ══════════════════════════════════════════════════════════
 echo.
+echo   用法: build-win-portable.cmd [--rebuild]
+echo   --rebuild  强制重新编译原生模块
+echo.
 
 :: 切换到项目根目录
 cd /d "%~dp0.."
@@ -18,44 +21,25 @@ echo.
 :: 设置 PATH (使用环境变量，自动适配不同电脑)
 set "PATH=%APPDATA%\npm;%ProgramFiles%\nodejs;%PATH%"
 
-:: 初始化 Visual Studio 环境
-if not defined VCINSTALLDIR (
-    echo [步骤 1/5] 初始化 Visual Studio 环境...
-    
-    :: 使用 vswhere 动态查找 Visual Studio
-    set "VSWHERE=%ProgramFiles(x86)%\Microsoft Visual Studio\Installer\vswhere.exe"
-    if not exist "!VSWHERE!" (
-        echo [错误] 找不到 vswhere.exe，请安装 Visual Studio
-        pause
-        exit /b 1
-    )
-    
-    :: 查找最新版本的 Visual Studio
-    for /f "usebackq tokens=*" %%i in (`"!VSWHERE!" -latest -property installationPath`) do set "VSINSTALL=%%i"
-    
-    if not defined VSINSTALL (
-        echo [错误] 找不到 Visual Studio 安装
-        pause
-        exit /b 1
-    )
-    
-    set "VCVARSALL=!VSINSTALL!\VC\Auxiliary\Build\vcvarsall.bat"
-    if exist "!VCVARSALL!" (
-        call "!VCVARSALL!" x64 >nul 2>&1
-        if errorlevel 1 (
-            echo [错误] VS 环境初始化失败
-            pause
-            exit /b 1
-        )
-        echo [OK] Visual Studio 环境已初始化: !VSINSTALL!
-    ) else (
-        echo [错误] 找不到 vcvarsall.bat
-        pause
-        exit /b 1
-    )
-) else (
-    echo [步骤 1/5] Visual Studio 环境已就绪
+:: 指定 Visual Studio 版本 (用于 node-gyp)
+set "npm_config_msvs_version=2022"
+set "GYP_MSVS_VERSION=2022"
+
+:: 检查 Visual Studio 是否安装
+echo [步骤 1/5] 检查 Visual Studio...
+set "VSWHERE=%ProgramFiles(x86)%\Microsoft Visual Studio\Installer\vswhere.exe"
+if not exist "%VSWHERE%" (
+    echo [错误] 找不到 vswhere.exe，请安装 Visual Studio
+    pause
+    exit /b 1
 )
+for /f "usebackq tokens=*" %%i in (`"%VSWHERE%" -latest -property installationPath`) do set "VSINSTALL=%%i"
+if not defined VSINSTALL (
+    echo [错误] 找不到 Visual Studio 安装
+    pause
+    exit /b 1
+)
+echo [OK] 找到 Visual Studio: %VSINSTALL%
 
 echo.
 echo [步骤 2/5] 安装依赖...
@@ -70,19 +54,43 @@ if not exist "node_modules" (
 echo [OK] 依赖已就绪
 
 echo.
-echo [步骤 3/5] 修补 node-gyp (VS 2026 支持)...
-call node .electron-vue/patch-node-gyp.js
-echo [OK] 修补完成
+echo [步骤 3/5] 安装 Electron...
+if not exist "node_modules\electron\dist" (
+    call node node_modules/electron/install.js
+    if errorlevel 1 (
+        echo [错误] Electron 安装失败
+        pause
+        exit /b 1
+    )
+)
+echo [OK] Electron 已就绪
 
 echo.
-echo [步骤 4/5] 编译原生模块...
-call node node_modules/@electron/rebuild/lib/cli.js -f
-if errorlevel 1 (
-    echo [错误] 原生模块编译失败
-    pause
-    exit /b 1
+echo [步骤 4/5] 检查原生模块...
+set "NEED_REBUILD=0"
+if "%1"=="--rebuild" set "NEED_REBUILD=1"
+if not exist "node_modules\keytar\build\Release\keytar.node" set "NEED_REBUILD=1"
+if not exist "node_modules\fontmanager-redux\build\Release\fontmanager.node" set "NEED_REBUILD=1"
+if not exist "node_modules\native-keymap\build\Release\keymapping.node" set "NEED_REBUILD=1"
+
+if "%NEED_REBUILD%"=="1" (
+    if "%1"=="--rebuild" (
+        echo   - 强制重新编译原生模块...
+        if exist "node_modules\keytar\build" rd /s /q "node_modules\keytar\build" 2>nul
+        if exist "node_modules\fontmanager-redux\build" rd /s /q "node_modules\fontmanager-redux\build" 2>nul
+        if exist "node_modules\native-keymap\build" rd /s /q "node_modules\native-keymap\build" 2>nul
+        del /s /q "node_modules\*.forge-meta" 2>nul
+    )
+    call node node_modules/@electron/rebuild/lib/cli.js -f --msvs-version=2022
+    if errorlevel 1 (
+        echo [错误] 原生模块编译失败
+        pause
+        exit /b 1
+    )
+    echo [OK] 原生模块编译完成
+) else (
+    echo [OK] 原生模块已就绪 (跳过编译)
 )
-echo [OK] 原生模块编译完成
 
 echo.
 echo [步骤 5/5] 构建便携版...

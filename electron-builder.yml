@@ -4,6 +4,9 @@ appId: "com.github.marktext.marktext"
 asar: true
 asarUnpack:
   - "**/*.node"
+  - "**/node_modules/keytar/**"
+  - "**/node_modules/fontmanager-redux/**"
+  - "**/node_modules/native-keymap/**"
 directories:
   output: "build"
 # Use prebuilt native modules from electron-rebuild (no need to rebuild from source)

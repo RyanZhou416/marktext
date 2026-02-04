@@ -20,33 +20,25 @@ echo.
 :: 设置 PATH (使用环境变量，自动适配不同电脑)
 set "PATH=%APPDATA%\npm;%ProgramFiles%\nodejs;%PATH%"
 
-:: 使用 vswhere 动态查找 Visual Studio
-echo [步骤 1/5] 初始化 Visual Studio 环境...
+:: 指定 Visual Studio 版本 (用于 node-gyp)
+set "npm_config_msvs_version=2022"
+set "GYP_MSVS_VERSION=2022"
+
+:: 检查 Visual Studio 是否安装
+echo [步骤 1/5] 检查 Visual Studio...
 set "VSWHERE=%ProgramFiles(x86)%\Microsoft Visual Studio\Installer\vswhere.exe"
 if not exist "%VSWHERE%" (
     echo [错误] 找不到 vswhere.exe，请安装 Visual Studio
     pause
     exit /b 1
 )
-
-:: 查找最新版本的 Visual Studio
 for /f "usebackq tokens=*" %%i in (`"%VSWHERE%" -latest -property installationPath`) do set "VSINSTALL=%%i"
-
 if not defined VSINSTALL (
     echo [错误] 找不到 Visual Studio 安装
     pause
     exit /b 1
 )
-
-set "VCVARSALL=%VSINSTALL%\VC\Auxiliary\Build\vcvarsall.bat"
-if exist "%VCVARSALL%" (
-    call "%VCVARSALL%" x64 >nul 2>&1
-    echo [OK] Visual Studio 环境已初始化: %VSINSTALL%
-) else (
-    echo [错误] 找不到 vcvarsall.bat
-    pause
-    exit /b 1
-)
+echo [OK] 找到 Visual Studio: %VSINSTALL%
 
 echo.
 echo [步骤 2/5] 安装依赖 (跳过脚本)...
@@ -59,13 +51,24 @@ if errorlevel 1 (
 echo [OK] 依赖安装完成
 
 echo.
-echo [步骤 3/5] 修补 node-gyp (VS 2026 支持)...
-call node .electron-vue/patch-node-gyp.js
-echo [OK] 修补完成
+echo [步骤 3/5] 安装 Electron 二进制文件...
+call node node_modules/electron/install.js
+if errorlevel 1 (
+    echo [错误] Electron 安装失败
+    pause
+    exit /b 1
+)
+echo [OK] Electron 安装完成
 
 echo.
 echo [步骤 4/5] 编译原生模块...
-call node node_modules/@electron/rebuild/lib/cli.js -f
+echo   - 清除编译缓存...
+if exist "node_modules\keytar\build" rd /s /q "node_modules\keytar\build" 2>nul
+if exist "node_modules\fontmanager-redux\build" rd /s /q "node_modules\fontmanager-redux\build" 2>nul
+if exist "node_modules\native-keymap\build" rd /s /q "node_modules\native-keymap\build" 2>nul
+del /s /q "node_modules\*.forge-meta" 2>nul
+echo   - 编译中 (使用 VS 2022)...
+call node node_modules/@electron/rebuild/lib/cli.js -f --msvs-version=2022
 if errorlevel 1 (
     echo [错误] 原生模块编译失败
     pause

@@ -18,6 +18,9 @@ echo.
 :: 设置 PATH (使用环境变量，自动适配不同电脑)
 set "PATH=%APPDATA%\npm;%ProgramFiles%\nodejs;%PATH%"
 
+:: 指定 Visual Studio 版本 (用于 node-gyp)
+set "npm_config_msvs_version=2022"
+
 :: 检查是否在 VS 开发者命令提示符中
 if not defined VCINSTALLDIR (
     echo [警告] 未检测到 Visual Studio 环境
@@ -88,7 +91,12 @@ echo [步骤 4/4] 打包安装程序...
 call npx electron-builder --win -c.buildDependenciesFromSource=false
 if errorlevel 1 (
     echo [警告] 打包遇到问题，尝试重新编译原生模块...
-    call node node_modules/@electron/rebuild/lib/cli.js -f
+    echo   - 清除编译缓存...
+    if exist "node_modules\keytar\build" rd /s /q "node_modules\keytar\build" 2>nul
+    if exist "node_modules\fontmanager-redux\build" rd /s /q "node_modules\fontmanager-redux\build" 2>nul
+    if exist "node_modules\native-keymap\build" rd /s /q "node_modules\native-keymap\build" 2>nul
+    del /s /q "node_modules\*.forge-meta" 2>nul
+    call node node_modules/@electron/rebuild/lib/cli.js -f --msvs-version=2022
     call npx electron-builder --win
     if errorlevel 1 (
         echo [错误] 打包失败
