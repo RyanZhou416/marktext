@@ -63,7 +63,6 @@ echo [OK] Electron 安装完成
 echo.
 echo [步骤 4/5] 编译原生模块...
 echo   - 清除编译缓存...
-if exist "node_modules\keytar\build" rd /s /q "node_modules\keytar\build" 2>nul
 if exist "node_modules\fontmanager-redux\build" rd /s /q "node_modules\fontmanager-redux\build" 2>nul
 if exist "node_modules\native-keymap\build" rd /s /q "node_modules\native-keymap\build" 2>nul
 del /s /q "node_modules\*.forge-meta" 2>nul

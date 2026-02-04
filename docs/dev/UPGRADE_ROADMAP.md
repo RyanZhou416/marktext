@@ -3,6 +3,21 @@
 > 本文档记录 MarkText 从当前状态逐步升级到现代化技术栈的完整路线。
 > 每个阶段完成后请更新状态。
 
+## 验证与脚本维护原则
+
+1. **验证一律用脚本，不手动敲命令**
+
+   - 环境与依赖：用 `scripts\setup-dev-env.cmd`（Windows）完成安装、Electron、原生模块编译与格式化。
+   - 开发运行：用 `scripts\dev.cmd` 验证能正常启动和操作。
+   - 构建验证：用 `scripts\build-win-portable.cmd` 或 `scripts\build-win-installer.cmd` 验证打包通过。
+   - 各阶段的「验证清单」以「运行上述脚本是否通过」为准，不写 `yarn install` / `yarn run rebuild` 等手写步骤。
+
+2. **升级后必须同步更新脚本**
+   - 依赖或原生模块有变更（如增删 keytar、换 Node/Electron 版本、换 VS 版本）时，必须检查并更新：
+     - **环境设置脚本**：`scripts\setup-dev-env.cmd`（清理/编译的原生模块目录、VS 版本等）。
+     - **构建脚本**：`scripts\build-win-portable.cmd`、`scripts\build-win-installer.cmd`、`scripts\build-windows.ps1`（同上，以及是否需要 rebuild 的判断）。
+   - 避免脚本里仍引用已删除的依赖（如 keytar）或错误的 VS 版本，导致每次误判需重建或清理失败。
+
 ## 概览
 
 ```
@@ -29,7 +44,7 @@ JavaScript         ────────────────────�
 | 创建一键构建脚本           | ✅   | `scripts/build-win-portable.cmd` 等   |
 | 修复 electron-builder 配置 | ✅   | 禁用重复编译原生模块                  |
 
-**当前原生模块**: `keytar`, `fontmanager-redux`, `native-keymap` (3 个)
+**当前原生模块**: `fontmanager-redux`, `native-keymap` (2 个；keytar 已在阶段 2 移除)
 
 ---
 
@@ -61,10 +76,10 @@ yarn add -D @electron/rebuild
 npx browserslist@latest --update-db
 ```
 
-### 验证清单
+### 验证清单（均通过脚本执行）
 
-- [x] `yarn install` 成功
-- [x] `scripts/build-win-portable.cmd` 构建成功
+- [x] 运行 `scripts\setup-dev-env.cmd` 成功（或等价的环境初始化脚本）
+- [x] 运行 `scripts\build-win-portable.cmd` 构建成功
 - [x] 生成的应用可以正常运行
 
 ### 遇到的问题与修复
@@ -129,17 +144,32 @@ const whiteListedModules = ["vue", "snabbdom", "snabbdom-to-html"];
 - 简化构建流程（无需编译 keytar）
 - 减小安装包体积
 
+### 脚本同步（升级后必做）
+
+- 已从 `scripts\setup-dev-env.cmd`、`scripts\build-win-portable.cmd`、`scripts\build-win-installer.cmd` 中移除对 keytar 的清理与检查，仅保留 fontmanager-redux、native-keymap。
+
 ---
 
-## 阶段 3: Electron 小版本升级
+## 阶段 3: Electron 小版本升级 ✅
 
 **目标**: 升级到 Electron 18 的最新补丁版本，确保稳定性
 
 | 任务                  | 状态 | 当前版本 | 目标版本          |
 | --------------------- | ---- | -------- | ----------------- |
-| 升级 Electron 18.x    | ⬜   | 18.0.4   | 18.3.x (最新补丁) |
-| 升级 @electron/remote | ⬜   | 2.0.8    | 2.1.x             |
-| 测试所有功能          | ⬜   | -        | -                 |
+| 升级 Electron 18.x    | ✅   | 18.0.4   | 18.3.x (最新补丁) |
+| 升级 @electron/remote | ✅   | 2.0.8    | 2.1.x             |
+| 测试所有功能          | ⬜   | -        | 需本地验证        |
+
+### 操作步骤
+
+- 修改 `package.json` 中 `electron`、`@electron/remote` 版本后，**一律用脚本验证**，不手敲命令。
+
+### 验证清单（均通过脚本执行）
+
+- [ ] 运行 `scripts\setup-dev-env.cmd` 成功（含依赖安装、Electron、原生模块编译、格式化）
+- [ ] 运行 `scripts\dev.cmd` 能正常启动并操作
+- [ ] 运行 `scripts\build-win-portable.cmd` 构建成功
+- [ ] 若本阶段涉及依赖或原生模块变更，已检查并更新 `scripts\setup-dev-env.cmd`、`scripts\build-win-portable.cmd`、`scripts\build-win-installer.cmd` 中的清理/编译项（如移除 keytar、统一 VS 版本等）
 
 ---
 
@@ -387,19 +417,19 @@ marktext-tauri-poc/
 
 ## 进度跟踪
 
-| 阶段                        | 状态      | 开始日期   | 完成日期   |
-| --------------------------- | --------- | ---------- | ---------- |
-| 阶段 0: 基础准备            | ✅ 完成   | 2026-02-04 | 2026-02-04 |
-| 阶段 1: 构建工具升级        | ✅ 完成   | 2026-02-04 | 2026-02-04 |
-| 阶段 2: 减少原生模块        | ⬜ 待开始 | -          | -          |
-| 阶段 3: Electron 小版本升级 | ⬜ 待开始 | -          | -          |
-| 阶段 4: Electron 大版本升级 | ⬜ 待开始 | -          | -          |
-| 阶段 5: Vue 生态升级准备    | ⬜ 待开始 | -          | -          |
-| 阶段 6: Vue 3 迁移          | ⬜ 待开始 | -          | -          |
-| 阶段 7: TypeScript 迁移     | ⬜ 待开始 | -          | -          |
-| 阶段 8: Tauri 评估与 PoC    | ⬜ 待开始 | -          | -          |
-| 阶段 9: Tauri 迁移          | ⬜ 待开始 | -          | -          |
-| 阶段 10: 编辑器引擎现代化   | ⬜ 待开始 | -          | -          |
+| 阶段                        | 状态      | 开始日期     | 完成日期   |
+| --------------------------- | --------- | ------------ | ---------- |
+| 阶段 0: 基础准备            | ✅ 完成   | 2026-02-04   | 2026-02-04 |
+| 阶段 1: 构建工具升级        | ✅ 完成   | 2026-02-04   | 2026-02-04 |
+| 阶段 2: 减少原生模块        | ⬜ 待开始 | -            | -          |
+| 阶段 3: Electron 小版本升级 | ✅ 进行中 | 待验证后完成 | -          |
+| 阶段 4: Electron 大版本升级 | ⬜ 待开始 | -            | -          |
+| 阶段 5: Vue 生态升级准备    | ⬜ 待开始 | -            | -          |
+| 阶段 6: Vue 3 迁移          | ⬜ 待开始 | -            | -          |
+| 阶段 7: TypeScript 迁移     | ⬜ 待开始 | -            | -          |
+| 阶段 8: Tauri 评估与 PoC    | ⬜ 待开始 | -            | -          |
+| 阶段 9: Tauri 迁移          | ⬜ 待开始 | -            | -          |
+| 阶段 10: 编辑器引擎现代化   | ⬜ 待开始 | -            | -          |
 
 ---
 
@@ -447,15 +477,23 @@ const whiteListedModules = ["vue", "snabbdom", "snabbdom-to-html", "mermaid"];
 
    - 更新本文档状态
    - 创建 git tag
-   - 测试所有平台
+   - **用脚本验证**：`scripts\setup-dev-env.cmd`、`scripts\dev.cmd`、`scripts\build-win-portable.cmd` 等，不手写验证步骤
+   - 测试所有平台（Windows 以脚本为准）
 
-2. **风险控制**:
+2. **升级后必须更新脚本**:
+
+   - 依赖或原生模块有增删、Node/Electron/VS 版本变更时，必须同步修改：
+     - 环境设置脚本：`scripts\setup-dev-env.cmd`
+     - 构建脚本：`scripts\build-win-portable.cmd`、`scripts\build-win-installer.cmd`、`scripts\build-windows.ps1`
+   - 避免脚本中仍引用已删除依赖（如 keytar）或错误版本，导致验证/构建异常。
+
+3. **风险控制**:
 
    - 每个阶段都要可回滚
    - 保持向后兼容（数据、配置）
-   - 充分测试再合并
+   - 充分测试再合并（以脚本通过为准）
 
-3. **文档更新**:
+4. **文档更新**:
    - 更新 README
    - 更新构建文档
    - 更新贡献指南

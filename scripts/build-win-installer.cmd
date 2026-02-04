@@ -92,7 +92,6 @@ call npx electron-builder --win -c.buildDependenciesFromSource=false
 if errorlevel 1 (
     echo [警告] 打包遇到问题，尝试重新编译原生模块...
     echo   - 清除编译缓存...
-    if exist "node_modules\keytar\build" rd /s /q "node_modules\keytar\build" 2>nul
     if exist "node_modules\fontmanager-redux\build" rd /s /q "node_modules\fontmanager-redux\build" 2>nul
     if exist "node_modules\native-keymap\build" rd /s /q "node_modules\native-keymap\build" 2>nul
     del /s /q "node_modules\*.forge-meta" 2>nul

@@ -69,14 +69,12 @@ echo.
 echo [步骤 4/5] 检查原生模块...
 set "NEED_REBUILD=0"
 if "%1"=="--rebuild" set "NEED_REBUILD=1"
-if not exist "node_modules\keytar\build\Release\keytar.node" set "NEED_REBUILD=1"
 if not exist "node_modules\fontmanager-redux\build\Release\fontmanager.node" set "NEED_REBUILD=1"
 if not exist "node_modules\native-keymap\build\Release\keymapping.node" set "NEED_REBUILD=1"
 
 if "%NEED_REBUILD%"=="1" (
     if "%1"=="--rebuild" (
         echo   - 强制重新编译原生模块...
-        if exist "node_modules\keytar\build" rd /s /q "node_modules\keytar\build" 2>nul
         if exist "node_modules\fontmanager-redux\build" rd /s /q "node_modules\fontmanager-redux\build" 2>nul
         if exist "node_modules\native-keymap\build" rd /s /q "node_modules\native-keymap\build" 2>nul
         del /s /q "node_modules\*.forge-meta" 2>nul
