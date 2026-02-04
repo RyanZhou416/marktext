@@ -87,57 +87,47 @@ const whiteListedModules = ["vue", "snabbdom", "snabbdom-to-html"];
 
 ---
 
-## 阶段 2: 减少原生模块
+## 阶段 2: 减少原生模块 ✅
 
 **目标**: 将原生模块从 3 个减少到 2 个
 
-| 任务                          | 状态 | 说明                   |
-| ----------------------------- | ---- | ---------------------- |
-| 替换 `keytar` → `safeStorage` | ⬜   | 使用 Electron 内置 API |
-| 更新密码存储逻辑              | ⬜   | 主进程实现加解密       |
-| 迁移现有存储数据              | ⬜   | 兼容旧版本数据         |
+| 任务                          | 状态 | 说明                     |
+| ----------------------------- | ---- | ------------------------ |
+| 替换 `keytar` → `safeStorage` | ✅   | 使用 Electron 内置 API   |
+| 更新密码存储逻辑              | ✅   | 主进程实现加解密         |
+| 迁移现有存储数据              | ✅   | 自动迁移，兼容旧版本数据 |
 
-### 技术方案
+### 实现细节
 
-**keytar 当前用法**:
+**新增文件**:
 
-```javascript
-// 旧代码
-const keytar = require("keytar");
-await keytar.setPassword("marktext", "github-token", token);
-const token = await keytar.getPassword("marktext", "github-token");
-```
+- `src/main/dataCenter/secureStorage.js` - 安全存储模块
 
-**safeStorage 替代方案**:
+**实现特点**:
 
-```javascript
-// 新代码 (主进程)
-const { safeStorage } = require("electron");
-const Store = require("electron-store");
+1. 使用 Electron `safeStorage` API 进行加密/解密
+2. 数据存储在 `electron-store` 中（base64 编码的加密数据）
+3. 自动检测并迁移 keytar 中的旧数据
+4. 兼容 keytar API 接口，最小化代码改动
+5. 支持加密不可用时的降级处理
 
-const store = new Store();
+**迁移逻辑**:
 
-function setSecureValue(key, value) {
-  if (safeStorage.isEncryptionAvailable()) {
-    const encrypted = safeStorage.encryptString(value);
-    store.set(key, encrypted.toString("base64"));
-  }
-}
-
-function getSecureValue(key) {
-  const encrypted = store.get(key);
-  if (encrypted && safeStorage.isEncryptionAvailable()) {
-    return safeStorage.decryptString(Buffer.from(encrypted, "base64"));
-  }
-  return null;
-}
-```
+- 首次启动时自动检测 keytar 数据
+- 迁移成功后从 keytar 删除旧数据
+- 使用标记防止重复迁移
 
 ### 验证清单
 
-- [ ] GitHub token 存储/读取正常
-- [ ] 图床配置存储正常
-- [ ] 旧版本数据可以迁移
+- [x] GitHub token 存储/读取正常
+- [x] 图床配置存储正常
+- [x] 旧版本数据可以迁移
+
+### 收益
+
+- 减少 1 个原生模块依赖
+- 简化构建流程（无需编译 keytar）
+- 减小安装包体积
 
 ---
 
