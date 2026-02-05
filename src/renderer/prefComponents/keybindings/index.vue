@@ -13,7 +13,7 @@
         <el-table-column prop="accelerator" label="Key Combination" width="220">
         </el-table-column>
         <el-table-column fixed="right" label="Options" width="90">
-          <template slot-scope="scope">
+          <template #default="scope">
             <el-button
               @click="handleEditClick(scope.$index, scope.row)"
               type="text"

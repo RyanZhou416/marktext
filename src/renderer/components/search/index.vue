@@ -178,7 +178,7 @@ export default {
     document.addEventListener('keyup', this.docKeyup)
   },
 
-  beforeDestroy () {
+  beforeUnmount () {
     bus.$off('find', this.listenFind)
     bus.$off('replace', this.listenReplace)
     bus.$off('findNext', this.listenFindNext)

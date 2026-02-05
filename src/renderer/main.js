@@ -1,39 +1,14 @@
-import Vue from 'vue'
+import { createApp, h } from 'vue'
 // vue-electron 移除 - 不兼容 contextIsolation，使用 util/electron.js 替代
 // source-map-support 移除 - 需要 Node.js fs/path 模块
 import bootstrapRenderer from './bootstrap'
-import VueRouter from 'vue-router'
-import lang from 'element-ui/lib/locale/lang/en'
-import locale from 'element-ui/lib/locale'
+import { createRouter, createWebHashHistory, RouterView } from 'vue-router'
+import { createPinia } from 'pinia'
+import ElementPlus from 'element-plus'
+import 'element-plus/dist/index.css'
 import axios from './axios'
-import store from './store'
+import store from './store' // Vuex store (临时保留，逐步迁移到 Pinia)
 import './assets/symbolIcon'
-import {
-  Dialog,
-  Form,
-  FormItem,
-  InputNumber,
-  Button,
-  Tooltip,
-  Upload,
-  Slider,
-  Checkbox,
-  ColorPicker,
-  Col,
-  Row,
-  Tree,
-  Autocomplete,
-  Switch,
-  Select,
-  Option,
-  Radio,
-  RadioGroup,
-  Table,
-  TableColumn,
-  Tabs,
-  TabPane,
-  Input
-} from 'element-ui'
 import services from './services'
 import routes from './router'
 import { addElementStyle } from '@/util/theme'
@@ -53,50 +28,38 @@ addElementStyle()
 // -----------------------------------------------
 // Be careful when changing code before this line!
 
-// Configure Vue
-locale.use(lang)
+// Create Vue 3 app instance
+const App = {
+  render () {
+    return h(RouterView, { class: 'view' })
+  }
+}
 
-Vue.use(Dialog)
-Vue.use(Form)
-Vue.use(FormItem)
-Vue.use(InputNumber)
-Vue.use(Button)
-Vue.use(Tooltip)
-Vue.use(Upload)
-Vue.use(Slider)
-Vue.use(Checkbox)
-Vue.use(ColorPicker)
-Vue.use(Col)
-Vue.use(Row)
-Vue.use(Tree)
-Vue.use(Autocomplete)
-Vue.use(Switch)
-Vue.use(Select)
-Vue.use(Option)
-Vue.use(Radio)
-Vue.use(RadioGroup)
-Vue.use(Table)
-Vue.use(TableColumn)
-Vue.use(Tabs)
-Vue.use(TabPane)
-Vue.use(Input)
+const app = createApp(App)
 
-Vue.use(VueRouter)
-// VueElectron 已移除 - 使用 util/electron.js 替代
-Vue.http = Vue.prototype.$http = axios
-Vue.config.productionTip = false
+// Configure Element Plus (locale set in component level if needed)
+app.use(ElementPlus)
 
-services.forEach((s) => {
-  Vue.prototype['$' + s.name] = s[s.name]
-})
+// Configure Pinia (新状态管理)
+const pinia = createPinia()
+app.use(pinia)
 
-const router = new VueRouter({
+// Configure Vue Router 4
+const router = createRouter({
+  history: createWebHashHistory(),
   routes: routes(window.marktext.env.type)
 })
 
-/* eslint-disable no-new */
-new Vue({
-  store,
-  router,
-  template: '<router-view class="view"></router-view>'
-}).$mount('#app')
+app.use(router)
+app.use(store) // Vuex store (临时保留，逐步迁移)
+
+// Add axios to global properties
+app.config.globalProperties.$http = axios
+
+// Add services to global properties
+services.forEach((s) => {
+  app.config.globalProperties['$' + s.name] = s[s.name]
+})
+
+// Mount the app
+app.mount('#app')

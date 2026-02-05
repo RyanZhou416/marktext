@@ -1,24 +1,26 @@
 <template>
   <div class="rename">
     <el-dialog
-      :visible.sync="showRename"
+      v-model="showRename"
       :show-close="false"
       :modal="true"
       custom-class="ag-dialog-table"
       width="410px"
     >
-      <div slot="title" class="search-wrapper">
-        <div class="input-wrapper">
-          <input
-            type="text" v-model="tempName" class="search"
-            @keyup.13="confirm"
-            ref="search"
-          >
-          <svg class="icon" aria-hidden="true" @click="confirm">
-            <use xlink:href="#icon-markdown"></use>
-          </svg>
+      <template #header>
+        <div class="search-wrapper">
+          <div class="input-wrapper">
+            <input
+              type="text" v-model="tempName" class="search"
+              @keyup.13="confirm"
+              ref="search"
+            >
+            <svg class="icon" aria-hidden="true" @click="confirm">
+              <use xlink:href="#icon-markdown"></use>
+            </svg>
+          </div>
         </div>
-      </div>
+      </template>
     </el-dialog>
   </div>
 </template>
@@ -39,7 +41,7 @@ export default {
       bus.$on('rename', this.handleRename)
     })
   },
-  beforeDestroy () {
+  beforeUnmount () {
     bus.$off('rename', this.handleRename)
   },
   computed: {

@@ -10,8 +10,10 @@
         :trigger-on-focus="false"
         @select="handleSelect"
       >
-        <i class="el-icon-search el-input__icon" slot="suffix"> </i>
-        <template slot-scope="{ item }">
+        <template #suffix>
+          <i class="el-icon-search el-input__icon"></i>
+        </template>
+        <template #default="{ item }">
           <div class="name">{{ item.category }}</div>
           <span class="addr">{{ item.preference }}</span>
         </template>

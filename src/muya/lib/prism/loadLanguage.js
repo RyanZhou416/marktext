@@ -84,16 +84,16 @@ function initLoadLanguage (Prism) {
           // Note: prismjs files usually end with .js but sometimes min.js, here we assume dev/source is .js
           const key = `/node_modules/prismjs/components/prism-${lang}.js`
           const relativeKey = `../../../../node_modules/prismjs/components/prism-${lang}.js`
-          
+
           let loader = prismComponents[key] || prismComponentsRelative[relativeKey]
-          
+
           if (!loader) {
              // Fallback: try to find key that ends with prism-{lang}.js
-             const foundKey = Object.keys(prismComponents).find(k => k.endsWith(`/prism-${lang}.js`)) ||
+            const foundKey = Object.keys(prismComponents).find(k => k.endsWith(`/prism-${lang}.js`)) ||
                               Object.keys(prismComponentsRelative).find(k => k.endsWith(`/prism-${lang}.js`))
-             if (foundKey) {
-                loader = prismComponents[foundKey] || prismComponentsRelative[foundKey]
-             }
+            if (foundKey) {
+              loader = prismComponents[foundKey] || prismComponentsRelative[foundKey]
+            }
           }
 
           if (loader) {

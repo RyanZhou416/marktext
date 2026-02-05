@@ -1,7 +1,7 @@
 import { resolve } from 'path'
 import { execSync } from 'child_process'
 import { defineConfig, externalizeDepsPlugin } from 'electron-vite'
-import vue from '@vitejs/plugin-vue2'
+import vue from '@vitejs/plugin-vue'
 import { nodePolyfills } from 'vite-plugin-node-polyfills'
 import { createRequire } from 'module'
 
@@ -108,8 +108,8 @@ export default defineConfig({
         muya: resolve(__dirname, 'src/muya'),
         main: resolve(__dirname, 'src/main'),
         snapsvg: resolve(__dirname, 'src/muya/lib/assets/libs/snapsvg-shim.js'),
-        // Vue 2.7 ESM build
-        vue: 'vue/dist/vue.esm.js',
+        // Vue 3 ESM bundler build (includes runtime compiler)
+        vue: 'vue/dist/vue.esm-bundler.js',
         // Node.js modules without browser polyfills - provide empty stubs
         // Actual functionality is provided via preload script
         fs: resolve(__dirname, 'src/renderer/node/stubs/empty.js'),
@@ -139,14 +139,15 @@ export default defineConfig({
     optimizeDeps: {
       include: [
         'vue',
-        'vuex',
+        'pinia',
         'vue-router',
-        'element-ui',
+        'element-plus',
         'snabbdom',
         'snabbdom-to-html',
         'mermaid',
         'katex',
-        'prismjs'
+        'prismjs',
+        'mitt'
       ],
       // Force optimization of CommonJS modules
       esbuildOptions: {

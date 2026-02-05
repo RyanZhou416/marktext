@@ -52,7 +52,7 @@
         <el-table-column prop="word" label="Word"> </el-table-column>
 
         <el-table-column fixed="right" label="Options" width="90">
-          <template slot-scope="scope">
+          <template #default="scope">
             <el-button
               @click="handleDeleteClick(scope.row)"
               type="text"

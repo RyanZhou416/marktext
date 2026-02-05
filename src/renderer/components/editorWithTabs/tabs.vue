@@ -184,8 +184,7 @@ export default {
     if (this.drake) {
       this.drake.destroy()
     }
-  },
-  beforeDestroy () {
+
     bus.$off('TABS::close-this', this.closeTab)
     bus.$off('TABS::close-others', this.closeOthers)
     bus.$off('TABS::close-saved', this.closeSaved)

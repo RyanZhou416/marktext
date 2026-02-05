@@ -115,7 +115,7 @@ export default {
       this.tabId = id
     })
   },
-  beforeDestroy () {
+  beforeUnmount () {
     // NOTE: Clear timer and manually commit changes. After mode switching and cleanup may follow
     // further key inputs, so ignore all inputs.
     this.viewDestroyed = true

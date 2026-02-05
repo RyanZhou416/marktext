@@ -1,51 +1,53 @@
 <template>
   <div class="command-palette">
     <el-dialog
-      :visible.sync="showCommandPalette"
+      v-model="showCommandPalette"
       :show-close="false"
       :modal="true"
       @close="handleDialogClose"
       custom-class="ag-dialog-table"
       width="500px"
     >
-      <div slot="title" class="search-wrapper">
-        <div class="input-wrapper">
-          <input
-            ref="search"
-            type="text"
-            v-model="query"
-            class="search"
-            @keydown="handleBeforeInput"
-            @keyup="handleInput"
-            :placeholder="placeholderText"
-          />
-        </div>
-        <loading v-if="searcherBusy"></loading>
-        <transition name="fade" v-else-if="availableCommands.length">
-          <ul class="commands">
-            <li
-              v-for="(item, index) of availableCommands"
-              :key="index"
-              ref="command-items"
-              @click="search(item.id)"
-              :class="{ active: index === selectedCommandIndex }"
-            >
-              <span class="title" :title="item.title">{{
-                item.description
-              }}</span>
-              <span class="shortcut">
-                <span
-                  class="shortcut"
-                  v-for="(accelerator, index) of item.shortcut"
-                  :key="index"
-                >
-                  <kbd>{{ accelerator }}</kbd>
+      <template #header>
+        <div class="search-wrapper">
+          <div class="input-wrapper">
+            <input
+              ref="search"
+              type="text"
+              v-model="query"
+              class="search"
+              @keydown="handleBeforeInput"
+              @keyup="handleInput"
+              :placeholder="placeholderText"
+            />
+          </div>
+          <loading v-if="searcherBusy"></loading>
+          <transition name="fade" v-else-if="availableCommands.length">
+            <ul class="commands">
+              <li
+                v-for="(item, index) of availableCommands"
+                :key="index"
+                ref="command-items"
+                @click="search(item.id)"
+                :class="{ active: index === selectedCommandIndex }"
+              >
+                <span class="title" :title="item.title">{{
+                  item.description
+                }}</span>
+                <span class="shortcut">
+                  <span
+                    class="shortcut"
+                    v-for="(accelerator, index) of item.shortcut"
+                    :key="index"
+                  >
+                    <kbd>{{ accelerator }}</kbd>
+                  </span>
                 </span>
-              </span>
-            </li>
-          </ul>
-        </transition>
-      </div>
+              </li>
+            </ul>
+          </transition>
+        </div>
+      </template>
     </el-dialog>
   </div>
 </template>
@@ -82,7 +84,7 @@ export default {
       bus.$on('show-command-palette', this.handleShow)
     })
   },
-  beforeDestroy () {
+  beforeUnmount () {
     bus.$off('show-command-palette', this.handleShow)
   },
   methods: {
