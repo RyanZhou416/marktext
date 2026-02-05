@@ -56,7 +56,7 @@ module.exports = {
           ['@', './src/renderer'],
           ['muya', './src/muya']
         ],
-        extensions: ['.js', '.vue', '.json', '.css', '.node']
+        extensions: ['.js', '.ts', '.vue', '.json', '.css', '.node']
       }
     },
     // Ignore Vite-specific import suffixes (?raw, ?inline, etc.)
