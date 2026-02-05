@@ -139,7 +139,12 @@ const dragDropCtrl = ContentState => {
       }
       const image = fileList.find(file => /image/.test(file.type))
       if (image && dropAnchor) {
-        const { name, path } = image
+        const { name } = image
+        // Use webUtils.getPathForFile() for contextIsolation compatibility
+        // Fall back to image.path for non-Electron environments
+        const path = (window.electronAPI && window.electronAPI.webUtils)
+          ? window.electronAPI.webUtils.getPathForFile(image)
+          : image.path
         const id = `loading-${getUniqueId()}`
         const text = `![${id}](${path})`
         const imageBlock = this.createBlockP(text)

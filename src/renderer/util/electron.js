@@ -226,6 +226,14 @@ export const webFrame = {
   }
 }
 
+// WebUtils API (for drag & drop file path access with contextIsolation)
+export const webUtils = {
+  getPathForFile: (file) => {
+    const api = getElectronAPI()
+    return api && api.webUtils ? api.webUtils.getPathForFile(file) : ''
+  }
+}
+
 // File System API
 export const fs = {
   // Read operations
@@ -663,6 +671,7 @@ export default {
   clipboard,
   nativeImage,
   webFrame,
+  webUtils,
   fs,
   path,
   os,

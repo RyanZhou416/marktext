@@ -35,7 +35,7 @@
 
 <script>
 import bus from '@/bus'
-import { ipcRenderer } from '../../util/electron'
+import { ipcRenderer, webUtils } from '../../util/electron'
 import importIcon from '@/assets/icons/import_file.svg'
 
 export default {
@@ -69,9 +69,15 @@ export default {
       if (e.dataTransfer.files) {
         const fileList = []
         for (const file of e.dataTransfer.files) {
-          fileList.push(file.path)
+          // Use webUtils.getPathForFile() for contextIsolation compatibility
+          const filePath = webUtils.getPathForFile(file)
+          if (filePath) {
+            fileList.push(filePath)
+          }
         }
-        ipcRenderer.send('mt::window::drop', fileList)
+        if (fileList.length > 0) {
+          ipcRenderer.send('mt::window::drop', fileList)
+        }
       }
     }
   }

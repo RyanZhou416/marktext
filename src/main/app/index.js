@@ -9,6 +9,7 @@ import {
   clipboard,
   dialog,
   ipcMain,
+  Menu,
   nativeTheme,
   shell
 } from 'electron'
@@ -649,6 +650,35 @@ class App {
         log.error('Failed to get available fonts:', err)
         return []
       }
+    })
+
+    // Context menu IPC handler for contextIsolation
+    // Renderer sends menu template, main process creates and shows the menu
+    ipcMain.on('mt::show-context-menu', (e, { type, x, y, menuTemplate, tabId, pathname }) => {
+      const win = BrowserWindow.fromWebContents(e.sender)
+      if (!win) return
+
+      const template = menuTemplate.map(item => {
+        if (item.type === 'separator') {
+          return { type: 'separator' }
+        }
+        return {
+          label: item.label,
+          enabled: item.enabled !== false,
+          click: () => {
+            // Send action back to renderer process
+            win.webContents.send('mt::context-menu-clicked', {
+              type,
+              actionId: item.id,
+              tabId,
+              pathname
+            })
+          }
+        }
+      })
+
+      const menu = Menu.buildFromTemplate(template)
+      menu.popup({ window: win, x, y })
     })
   }
 }

@@ -18,7 +18,8 @@ const {
   shell,
   clipboard,
   nativeImage,
-  webFrame
+  webFrame,
+  webUtils
 } = require('electron')
 const fs = require('fs')
 const fsPromises = require('fs/promises')
@@ -311,6 +312,11 @@ const safeWebFrame = {
   getZoomLevel: () => webFrame.getZoomLevel()
 }
 
+// WebUtils API (for drag & drop file path access with contextIsolation)
+const safeWebUtils = {
+  getPathForFile: (file) => webUtils.getPathForFile(file)
+}
+
 // Platform detection helpers
 const platformHelpers = {
   isOsx: process.platform === 'darwin',
@@ -329,6 +335,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   clipboard: safeClipboard,
   nativeImage: safeNativeImage,
   webFrame: safeWebFrame,
+  webUtils: safeWebUtils,
   fs: safeFs,
   path: safePath,
   os: safeOs,
