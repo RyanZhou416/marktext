@@ -1,6 +1,34 @@
-import fs from 'fs-extra'
-import fsPromises from 'fs/promises'
-import path from 'path'
+// 根据运行环境选择模块
+// 渲染进程使用 electronAPI，主进程直接使用 Node.js
+let fs, fsPromises, path
+
+if (typeof window !== 'undefined' && window.electronAPI) {
+  // 渲染进程 - 使用 electronAPI
+  const api = window.electronAPI
+  fs = {
+    existsSync: api.fs.existsSync,
+    lstatSync: api.fs.lstatSync,
+    readlinkSync: api.fs.readlinkSync,
+    mkdirSync: (p, opts) => api.fs.mkdirSync(p, opts),
+    // ensureDirSync 的简单实现
+    ensureDirSync: (dirPath) => {
+      try {
+        api.fs.mkdirSync(dirPath, { recursive: true })
+      } catch (e) {
+        if (e.code !== 'EEXIST') throw e
+      }
+    }
+  }
+  fsPromises = {
+    access: api.fs.access
+  }
+  path = api.path
+} else {
+  // 主进程 - 直接使用 Node.js 模块
+  fs = require('fs-extra')
+  fsPromises = require('fs/promises')
+  path = require('path')
+}
 
 /**
  * Test whether or not the given path exists.

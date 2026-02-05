@@ -1,8 +1,25 @@
-import fs from 'fs'
-import path from 'path'
 import { isFile, isFile2, isSymbolicLink } from './index'
 
-const isOsx = process.platform === 'darwin'
+// 根据运行环境选择模块
+let fs, path, isOsx, processInfo
+
+if (typeof window !== 'undefined' && window.electronAPI) {
+  // 渲染进程 - 使用 electronAPI
+  const api = window.electronAPI
+  fs = {
+    readlinkSync: api.fs.readlinkSync,
+    statSync: api.fs.statSync
+  }
+  path = api.path
+  isOsx = api.isOsx
+  processInfo = api.process
+} else {
+  // 主进程 - 直接使用 Node.js 模块
+  fs = require('fs')
+  path = require('path')
+  isOsx = process.platform === 'darwin'
+  processInfo = process
+}
 
 export const MARKDOWN_EXTENSIONS = Object.freeze([
   'markdown',
@@ -108,8 +125,9 @@ export const isChildOfDirectory = (dir, child) => {
 }
 
 export const getResourcesPath = () => {
-  let resPath = process.resourcesPath
-  if (process.env.NODE_ENV === 'development') {
+  let resPath = processInfo.resourcesPath
+  const nodeEnv = processInfo.env ? processInfo.env.NODE_ENV : 'production'
+  if (nodeEnv === 'development') {
     // Default locations:
     //   Linux/Windows: node_modules/electron/dist/resources/
     //   macOS: node_modules/electron/dist/Electron.app/Contents/Resources

@@ -1,5 +1,5 @@
-import { ipcRenderer } from 'electron'
-import log from 'electron-log'
+import { ipcRenderer } from '../util/electron'
+import log from '../util/logger'
 import bus from '../bus'
 import staticCommands, { RootCommand } from '../commands'
 
@@ -14,7 +14,9 @@ const mutations = {
     state.rootCommand.subcommands.push(command)
   },
   SORT_COMMANDS (state) {
-    state.rootCommand.subcommands.sort((a, b) => a.description.localeCompare(b.description))
+    state.rootCommand.subcommands.sort((a, b) =>
+      a.description.localeCompare(b.description)
+    )
   }
 }
 
@@ -35,12 +37,12 @@ const actions = {
     })
 
     // Register commands that are created at runtime.
-    bus.$on('cmd::register-command', command => {
+    bus.$on('cmd::register-command', (command) => {
       commit('REGISTER_COMMAND', command)
     })
 
     // Allow other compontents to execute commands with predefined values.
-    bus.$on('cmd::execute', commandId => {
+    bus.$on('cmd::execute', (commandId) => {
       executeCommand(state, commandId)
     })
     ipcRenderer.on('mt::execute-command-by-id', (e, commandId) => {
@@ -51,7 +53,7 @@ const actions = {
 
 const executeCommand = (state, commandId) => {
   const { subcommands } = state.rootCommand
-  const command = subcommands.find(c => c.id === commandId)
+  const command = subcommands.find((c) => c.id === commandId)
   if (!command) {
     const errorMsg = `Cannot execute command "${commandId}" because it's missing.`
     log.error(errorMsg)
@@ -60,7 +62,7 @@ const executeCommand = (state, commandId) => {
   command.execute()
 }
 
-const normalizeAccelerator = acc => {
+const normalizeAccelerator = (acc) => {
   try {
     return acc
       .replace(/cmdorctrl|cmd/i, 'Cmd')

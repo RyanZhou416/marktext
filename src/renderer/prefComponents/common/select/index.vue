@@ -1,32 +1,26 @@
 <template>
-  <section class="pref-select-item" :class="{'ag-underdevelop': disable}">
+  <section class="pref-select-item" :class="{ 'ag-underdevelop': disable }">
     <div class="description" v-if="description">
-      <span>{{description}}:</span>
-      <i class="el-icon-info"
-        v-if="more"
-        @click="handleMoreClick"
-      ></i>
+      <span>{{ description }}:</span>
+      <i class="el-icon-info" v-if="more" @click="handleMoreClick"></i>
     </div>
-    <el-select
-      v-model="selectValue"
-      @change="select"
-      :disabled="disable"
-    >
+    <el-select v-model="selectValue" @change="select" :disabled="disable">
       <el-option
         v-for="item in options"
         :key="item.value"
         :label="item.label"
-        :value="item.value">
+        :value="item.value"
+      >
       </el-option>
     </el-select>
     <div v-if="notes" class="notes">
-      {{notes}}
+      {{ notes }}
     </div>
   </section>
 </template>
 
 <script>
-import { shell } from 'electron'
+import { shell } from '../../../util/electron'
 
 export default {
   data () {
@@ -94,7 +88,7 @@ export default {
   margin-bottom: 10px;
   & i {
     cursor: pointer;
-    opacity: .7;
+    opacity: 0.7;
     color: var(--iconColor);
   }
   & i:hover {
@@ -105,7 +99,8 @@ li.el-select-dropdown__item {
   color: var(--editorColor);
   height: 30px;
 }
-li.el-select-dropdown__item.hover, li.el-select-dropdown__item:hover {
+li.el-select-dropdown__item.hover,
+li.el-select-dropdown__item:hover {
   background: var(--floatHoverColor);
 }
 div.el-select-dropdown {

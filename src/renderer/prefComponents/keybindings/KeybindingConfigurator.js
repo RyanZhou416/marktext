@@ -1,4 +1,4 @@
-import { ipcRenderer } from 'electron'
+import { ipcRenderer } from '../../util/electron'
 import { isEqualAccelerator } from 'common/keybinding'
 import getCommandDescriptionById from '@/commands/descriptions'
 import { isOsx } from '@/util'
@@ -6,7 +6,7 @@ import { isOsx } from '@/util'
 const SHORTCUT_TYPE_DEFAULT = 0
 const SHORTCUT_TYPE_USER = 1
 
-const getShortcutDescriptionById = id => {
+const getShortcutDescriptionById = (id) => {
   const description = getCommandDescriptionById(id)
   if (!description) {
     return id
@@ -23,7 +23,10 @@ export default class KeybindingConfigurator {
    */
   constructor (defaultKeybindings, userKeybindings) {
     this.defaultKeybindings = defaultKeybindings
-    this.keybindingList = this._buildUiKeybindingList(defaultKeybindings, userKeybindings)
+    this.keybindingList = this._buildUiKeybindingList(
+      defaultKeybindings,
+      userKeybindings
+    )
     this.isDirty = false
   }
 
@@ -34,7 +37,9 @@ export default class KeybindingConfigurator {
         // Skip MarkText menu that is only available on macOS.
         continue
       }
-      uiKeybindings.push(this._toUiKeybinding(id, defaultKeybindings, userKeybindings))
+      uiKeybindings.push(
+        this._toUiKeybinding(id, defaultKeybindings, userKeybindings)
+      )
     }
     uiKeybindings.sort((a, b) => a.description.localeCompare(b.description))
     return uiKeybindings
@@ -66,7 +71,10 @@ export default class KeybindingConfigurator {
     }
 
     const userKeybindings = this._getUserKeybindingMap()
-    const result = await ipcRenderer.invoke('mt::keybinding-save-user-keybindings', userKeybindings)
+    const result = await ipcRenderer.invoke(
+      'mt::keybinding-save-user-keybindings',
+      userKeybindings
+    )
     if (result) {
       this.isDirty = false
       return true
@@ -86,7 +94,7 @@ export default class KeybindingConfigurator {
   }
 
   change (id, accelerator) {
-    const entry = this.keybindingList.find(entry => entry.id === id)
+    const entry = this.keybindingList.find((entry) => entry.id === id)
     if (!entry) {
       return false
     }
@@ -109,7 +117,8 @@ export default class KeybindingConfigurator {
 
   resetToDefault (id) {
     const accelerator = this.defaultKeybindings.get(id)
-    if (accelerator == null) { // allow empty string
+    if (accelerator == null) {
+      // allow empty string
       return false
     }
     return this.change(id, accelerator)
@@ -135,7 +144,12 @@ export default class KeybindingConfigurator {
   }
 
   _isDuplicate (accelerator) {
-    return accelerator !== '' && this.keybindingList.findIndex(entry => isEqualAccelerator(entry.accelerator, accelerator)) !== -1
+    return (
+      accelerator !== '' &&
+      this.keybindingList.findIndex((entry) =>
+        isEqualAccelerator(entry.accelerator, accelerator)
+      ) !== -1
+    )
   }
 
   _isDefaultBinding (id, accelerator) {

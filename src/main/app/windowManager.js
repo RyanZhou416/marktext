@@ -1,7 +1,10 @@
 import { app, BrowserWindow, ipcMain } from 'electron'
 import EventEmitter from 'events'
 import log from 'electron-log'
-import Watcher, { WATCHER_STABILITY_THRESHOLD, WATCHER_STABILITY_POLL_INTERVAL } from '../filesystem/watcher'
+import Watcher, {
+  WATCHER_STABILITY_THRESHOLD,
+  WATCHER_STABILITY_POLL_INTERVAL
+} from '../filesystem/watcher'
 import { WindowType } from '../windows/base'
 
 class WindowActivityList {
@@ -245,7 +248,10 @@ class WindowManager extends EventEmitter {
           const len = filePathScores.length
           for (let i = 0; i < len; ++i) {
             // Update score only if the file is not already opened.
-            if (filePathScores[i].score !== -1 && filePathScores[i].score < scores[i].score) {
+            if (
+              filePathScores[i].score !== -1 &&
+              filePathScores[i].score < scores[i].score
+            ) {
               filePathScores[i] = scores[i]
             }
           }
@@ -266,7 +272,7 @@ class WindowManager extends EventEmitter {
         windowId = lastActiveEditorId
       }
 
-      let item = buf.find(w => w.windowId === windowId)
+      let item = buf.find((w) => w.windowId === windowId)
       if (!item) {
         item = { windowId, fileList: [] }
         buf.push(item)
@@ -314,7 +320,9 @@ class WindowManager extends EventEmitter {
     if (window) {
       window.destroy()
     } else {
-      log.error('Something went wrong: Cannot find associated application window!')
+      log.error(
+        'Something went wrong: Cannot find associated application window!'
+      )
       browserWindow.destroy()
     }
 
@@ -353,9 +361,17 @@ class WindowManager extends EventEmitter {
     })
 
     // Force close a BrowserWindow
-    ipcMain.on('mt::close-window', e => {
+    ipcMain.on('mt::close-window', (e) => {
       const win = BrowserWindow.fromWebContents(e.sender)
       this.forceClose(win)
+    })
+
+    // Close window (used by custom titlebar)
+    ipcMain.on('mt::window-close', (e) => {
+      const win = BrowserWindow.fromWebContents(e.sender)
+      if (win) {
+        win.close()
+      }
     })
 
     ipcMain.on('mt::open-file', (e, filePath, options) => {
@@ -376,7 +392,7 @@ class WindowManager extends EventEmitter {
       }
     })
 
-    ipcMain.on('mt::window-toggle-always-on-top', e => {
+    ipcMain.on('mt::window-toggle-always-on-top', (e) => {
       const win = BrowserWindow.fromWebContents(e.sender)
       const flag = !win.isAlwaysOnTop()
       win.setAlwaysOnTop(flag)
@@ -385,7 +401,7 @@ class WindowManager extends EventEmitter {
 
     // --- local events ---------------
 
-    ipcMain.on('watcher-unwatch-all-by-id', windowId => {
+    ipcMain.on('watcher-unwatch-all-by-id', (windowId) => {
       this._watcher.unwatchByWindowId(windowId)
     })
     ipcMain.on('watcher-watch-file', (win, filePath) => {
@@ -420,26 +436,27 @@ class WindowManager extends EventEmitter {
 
     ipcMain.on('window-file-saved', (windowId, pathname) => {
       // A changed event is emitted earliest after the stability threshold.
-      const duration = WATCHER_STABILITY_THRESHOLD + (WATCHER_STABILITY_POLL_INTERVAL * 2)
+      const duration =
+        WATCHER_STABILITY_THRESHOLD + WATCHER_STABILITY_POLL_INTERVAL * 2
       this._watcher.ignoreChangedEvent(windowId, pathname, duration)
     })
 
-    ipcMain.on('window-close-by-id', id => {
+    ipcMain.on('window-close-by-id', (id) => {
       this.forceCloseById(id)
     })
-    ipcMain.on('window-reload-by-id', id => {
+    ipcMain.on('window-reload-by-id', (id) => {
       const window = this.get(id)
       if (window) {
         window.reload()
       }
     })
-    ipcMain.on('window-toggle-always-on-top', win => {
+    ipcMain.on('window-toggle-always-on-top', (win) => {
       const flag = !win.isAlwaysOnTop()
       win.setAlwaysOnTop(flag)
       this._appMenu.updateAlwaysOnTopMenu(win.id, flag)
     })
 
-    ipcMain.on('broadcast-preferences-changed', prefs => {
+    ipcMain.on('broadcast-preferences-changed', (prefs) => {
       // We can not dynamic change the title bar style, so do not need to send it to renderer.
       if (typeof prefs.titleBarStyle !== 'undefined') {
         delete prefs.titleBarStyle
@@ -451,9 +468,56 @@ class WindowManager extends EventEmitter {
       }
     })
 
-    ipcMain.on('broadcast-user-data-changed', userData => {
+    ipcMain.on('broadcast-user-data-changed', (userData) => {
       for (const { browserWindow } of this._windows.values()) {
         browserWindow.webContents.send('mt::user-preference', userData)
+      }
+    })
+
+    // Window management IPC handlers for contextIsolation
+    ipcMain.on('mt::window-minimize', (e) => {
+      const win = BrowserWindow.fromWebContents(e.sender)
+      if (win) {
+        win.minimize()
+      }
+    })
+
+    ipcMain.on('mt::window-maximize', (e) => {
+      const win = BrowserWindow.fromWebContents(e.sender)
+      if (win) {
+        win.maximize()
+      }
+    })
+
+    ipcMain.on('mt::window-unmaximize', (e) => {
+      const win = BrowserWindow.fromWebContents(e.sender)
+      if (win) {
+        win.unmaximize()
+      }
+    })
+
+    ipcMain.on('mt::window-set-fullscreen', (e, flag) => {
+      const win = BrowserWindow.fromWebContents(e.sender)
+      if (win) {
+        win.setFullScreen(flag)
+      }
+    })
+
+    ipcMain.on('mt::window-toggle-full-screen', (e) => {
+      const win = BrowserWindow.fromWebContents(e.sender)
+      if (win) {
+        win.setFullScreen(!win.isFullScreen())
+      }
+    })
+
+    ipcMain.on('mt::show-app-menu', (e, { x, y }) => {
+      const win = BrowserWindow.fromWebContents(e.sender)
+      if (win) {
+        const { Menu } = require('electron')
+        const menu = Menu.getApplicationMenu()
+        if (menu) {
+          menu.popup({ window: win, x, y })
+        }
       }
     })
   }

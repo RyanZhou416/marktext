@@ -1,4 +1,4 @@
-import { ipcRenderer } from 'electron'
+import { ipcRenderer } from '../util/electron'
 import notice from '../services/notification'
 
 const state = {}
@@ -33,12 +33,13 @@ const actions = {
       })
     })
     ipcRenderer.on('mt::UPDATE_AVAILABLE', (e, message) => {
-      notice.notify({
-        title: 'Update Available',
-        type: 'primary',
-        message,
-        showConfirm: true
-      })
+      notice
+        .notify({
+          title: 'Update Available',
+          type: 'primary',
+          message,
+          showConfirm: true
+        })
         .then(() => {
           const needUpdate = true
           ipcRenderer.send('mt::NEED_UPDATE', { needUpdate })

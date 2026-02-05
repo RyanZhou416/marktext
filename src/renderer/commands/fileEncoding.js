@@ -1,4 +1,4 @@
-import { ipcRenderer } from 'electron'
+import { ipcRenderer } from '../util/electron'
 import { ENCODING_NAME_MAP, getEncodingName } from 'common/encoding'
 import { delay } from '@/util'
 import bus from '../bus'
@@ -57,7 +57,7 @@ class FileEncodingCommand {
     bus.$emit('show-command-palette', this)
   }
 
-  executeSubcommand = async id => {
+  executeSubcommand = async (id) => {
     // NOTE: We support UTF-BOM encodings but don't allow to set them.
     if (!id.endsWith('-bom')) {
       ipcRenderer.emit('mt::set-file-encoding', null, id)

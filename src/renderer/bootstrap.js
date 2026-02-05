@@ -1,17 +1,11 @@
-import path from 'path'
-import { ipcRenderer } from 'electron'
-import log from 'electron-log'
+import { ipcRenderer } from './util/electron'
+import log from './util/logger'
 import RendererPaths from './node/paths'
 
-let exceptionLogger = s => console.error(s)
+let exceptionLogger = (s) => console.error(s)
 
 const configureLogger = () => {
-  const { debug, paths, windowId } = global.marktext.env
-  log.transports.console.level = process.env.NODE_ENV === 'development' ? 'info' : false // mirror to window console
-  log.transports.mainConsole = null
-  log.transports.file.resolvePath = () => path.join(paths.logPath, `editor-${windowId}.log`)
-  log.transports.file.level = debug ? 'debug' : 'info'
-  log.transports.file.sync = false
+  // 使用自定义 logger - electron-log 不兼容 contextIsolation
   exceptionLogger = log.error
 }
 
@@ -48,7 +42,7 @@ const parseUrlArgs = () => {
 
 const bootstrapRenderer = () => {
   // Register renderer exception handler
-  window.addEventListener('error', event => {
+  window.addEventListener('error', (event) => {
     if (event.error) {
       const { message, name, stack } = event.error
       const copy = {
@@ -66,13 +60,7 @@ const bootstrapRenderer = () => {
     }
   })
 
-  const {
-    debug,
-    initialState,
-    userDataPath,
-    windowId,
-    type
-  } = parseUrlArgs()
+  const { debug, initialState, userDataPath, windowId, type } = parseUrlArgs()
   const paths = new RendererPaths(userDataPath)
   const marktext = {
     initialState,
@@ -84,7 +72,7 @@ const bootstrapRenderer = () => {
     },
     paths
   }
-  global.marktext = marktext
+  window.marktext = marktext
 
   configureLogger()
 }

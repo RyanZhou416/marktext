@@ -1,5 +1,4 @@
-import path from 'path'
-import { ipcRenderer, shell } from 'electron'
+import { ipcRenderer, shell, path, processInfo } from '../util/electron'
 import { addFile, unlinkFile, addDirectory, unlinkDirectory } from './treeCtrl'
 import bus from '../bus'
 import { create, paste, rename } from '../util/fileSystem'
@@ -91,7 +90,11 @@ const actions = {
         case 'add': {
           const { pathname, data, isMarkdown } = change
           commit('ADD_FILE', change)
-          if (isMarkdown && state.newFileNameCache && pathname === state.newFileNameCache) {
+          if (
+            isMarkdown &&
+            state.newFileNameCache &&
+            pathname === state.newFileNameCache
+          ) {
             const fileState = getFileStateFromData(data)
             dispatch('UPDATE_CURRENT_FILE', fileState)
             commit('SET_NEWFILENAME', '')
@@ -111,7 +114,7 @@ const actions = {
         case 'change':
           break
         default:
-          if (process.env.NODE_ENV === 'development') {
+          if (processInfo.env.NODE_ENV === 'development') {
             console.log(`Unknown directory watch type: "${type}"`)
           }
           break
@@ -132,7 +135,7 @@ const actions = {
       const { pathname } = state.activeItem
       shell.showItemInFolder(pathname)
     })
-    bus.$on('SIDEBAR::new', type => {
+    bus.$on('SIDEBAR::new', (type) => {
       const { pathname, isDirectory } = state.activeItem
       const dirname = isDirectory ? pathname : path.dirname(pathname)
       commit('CREATE_PATH', { dirname, type })
@@ -140,7 +143,7 @@ const actions = {
     })
     bus.$on('SIDEBAR::remove', () => {
       const { pathname } = state.activeItem
-      ipcRenderer.invoke('mt::fs-trash-item', pathname).catch(err => {
+      ipcRenderer.invoke('mt::fs-trash-item', pathname).catch((err) => {
         notice.notify({
           title: 'Error while deleting',
           type: 'error',
@@ -148,7 +151,7 @@ const actions = {
         })
       })
     })
-    bus.$on('SIDEBAR::copy-cut', type => {
+    bus.$on('SIDEBAR::copy-cut', (type) => {
       const { pathname: src } = state.activeItem
       commit('SET_CLIPBOARD', { type, src })
     })
@@ -157,7 +160,8 @@ const actions = {
       const { pathname, isDirectory } = state.activeItem
       const dirname = isDirectory ? pathname : path.dirname(pathname)
       if (clipboard && clipboard.src) {
-        clipboard.dest = dirname + PATH_SEPARATOR + path.basename(clipboard.src)
+        clipboard.dest =
+          dirname + PATH_SEPARATOR + path.basename(clipboard.src)
 
         if (path.normalize(clipboard.src) === path.normalize(clipboard.dest)) {
           notice.notify({
@@ -172,7 +176,7 @@ const actions = {
           .then(() => {
             commit('SET_CLIPBOARD', null)
           })
-          .catch(err => {
+          .catch((err) => {
             notice.notify({
               title: 'Error while pasting',
               type: 'error',
@@ -204,7 +208,7 @@ const actions = {
           commit('SET_NEWFILENAME', fullName)
         }
       })
-      .catch(err => {
+      .catch((err) => {
         notice.notify({
           title: 'Error in Side Bar',
           type: 'error',
@@ -217,10 +221,9 @@ const actions = {
     const src = state.renameCache
     const dirname = path.dirname(src)
     const dest = dirname + PATH_SEPARATOR + name
-    rename(src, dest)
-      .then(() => {
-        commit('RENAME_IF_NEEDED', { src, dest })
-      })
+    rename(src, dest).then(() => {
+      commit('RENAME_IF_NEEDED', { src, dest })
+    })
   },
 
   OPEN_SETTING_WINDOW () {

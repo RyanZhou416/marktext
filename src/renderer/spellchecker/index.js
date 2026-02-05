@@ -1,4 +1,4 @@
-import { ipcRenderer } from 'electron'
+import { ipcRenderer } from '../util/electron'
 import { isOsx } from '@/util'
 
 /**
@@ -40,7 +40,9 @@ export class SpellChecker {
         // No language string needed on macOS.
         return await ipcRenderer.invoke('mt::spellchecker-set-enabled', true)
       }
-      return await this.switchLanguage(lang || this.currentSpellcheckerLanguage)
+      return await this.switchLanguage(
+        lang || this.currentSpellcheckerLanguage
+      )
     } catch (error) {
       this.deactivateSpellchecker()
       throw error

@@ -1,4 +1,4 @@
-import { ipcRenderer } from 'electron'
+import { ipcRenderer } from '../util/electron'
 import bus from '../bus'
 
 const width = localStorage.getItem('side-bar-width')
@@ -17,8 +17,12 @@ const getters = {}
 const mutations = {
   SET_LAYOUT (state, layout) {
     if (layout.showSideBar !== undefined) {
-      const { windowId } = global.marktext.env
-      ipcRenderer.send('mt::update-sidebar-menu', windowId, !!layout.showSideBar)
+      const { windowId } = window.marktext.env
+      ipcRenderer.send(
+        'mt::update-sidebar-menu',
+        windowId,
+        !!layout.showSideBar
+      )
     }
     Object.assign(state, layout)
   },
@@ -38,7 +42,8 @@ const actions = {
       if (layout.rightColumn) {
         commit('SET_LAYOUT', {
           ...layout,
-          rightColumn: layout.rightColumn === state.rightColumn ? '' : layout.rightColumn,
+          rightColumn:
+            layout.rightColumn === state.rightColumn ? '' : layout.rightColumn,
           showSideBar: true
         })
       } else {
@@ -52,17 +57,22 @@ const actions = {
       dispatch('DISPATCH_LAYOUT_MENU_ITEMS')
     })
 
-    bus.$on('view:toggle-layout-entry', entryName => {
+    bus.$on('view:toggle-layout-entry', (entryName) => {
       commit('TOGGLE_LAYOUT_ENTRY', entryName)
-      const { windowId } = global.marktext.env
-      ipcRenderer.send('mt::view-layout-changed', windowId, { [entryName]: state[entryName] })
+      const { windowId } = window.marktext.env
+      ipcRenderer.send('mt::view-layout-changed', windowId, {
+        [entryName]: state[entryName]
+      })
     })
   },
 
   DISPATCH_LAYOUT_MENU_ITEMS ({ state }) {
-    const { windowId } = global.marktext.env
+    const { windowId } = window.marktext.env
     const { showTabBar, showSideBar } = state
-    ipcRenderer.send('mt::view-layout-changed', windowId, { showTabBar, showSideBar })
+    ipcRenderer.send('mt::view-layout-changed', windowId, {
+      showTabBar,
+      showSideBar
+    })
   },
 
   CHANGE_SIDE_BAR_WIDTH ({ commit }, width) {

@@ -1,4 +1,4 @@
-import { ipcRenderer } from 'electron'
+import { ipcRenderer } from '../util/electron'
 import { delay } from '@/util'
 import bus from '../bus'
 
@@ -11,15 +11,18 @@ class LineEndingCommand {
     this.description = 'File: Change Line Ending'
     this.placeholder = 'Select an option'
 
-    this.subcommands = [{
-      id: 'file.line-ending-crlf',
-      description: crlfDescription,
-      value: 'crlf'
-    }, {
-      id: 'file.line-ending-lf',
-      description: lfDescription,
-      value: 'lf'
-    }]
+    this.subcommands = [
+      {
+        id: 'file.line-ending-crlf',
+        description: crlfDescription,
+        value: 'crlf'
+      },
+      {
+        id: 'file.line-ending-lf',
+        description: lfDescription,
+        value: 'lf'
+      }
+    ]
     this.subcommandSelectedIndex = -1
 
     // Reference to editor state.

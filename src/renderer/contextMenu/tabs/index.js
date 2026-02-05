@@ -1,4 +1,4 @@
-import { getCurrentWindow, Menu as RemoteMenu, MenuItem as RemoteMenuItem } from '@electron/remote'
+import { ipcRenderer } from '../../util/electron'
 import {
   CLOSE_THIS,
   CLOSE_OTHERS,
@@ -11,20 +11,36 @@ import {
 } from './menuItems'
 
 export const showContextMenu = (event, tab) => {
-  const menu = new RemoteMenu()
-  const win = getCurrentWindow()
   const { pathname } = tab
-  const CONTEXT_ITEMS = [CLOSE_THIS, CLOSE_OTHERS, CLOSE_SAVED, CLOSE_ALL, SEPARATOR, RENAME, COPY_PATH, SHOW_IN_FOLDER]
+  const CONTEXT_ITEMS = [
+    CLOSE_THIS,
+    CLOSE_OTHERS,
+    CLOSE_SAVED,
+    CLOSE_ALL,
+    SEPARATOR,
+    RENAME,
+    COPY_PATH,
+    SHOW_IN_FOLDER
+  ]
   const FILE_CONTEXT_ITEMS = [RENAME, COPY_PATH, SHOW_IN_FOLDER]
 
-  FILE_CONTEXT_ITEMS.forEach(item => {
+  FILE_CONTEXT_ITEMS.forEach((item) => {
     item.enabled = !!pathname
   })
 
-  CONTEXT_ITEMS.forEach(item => {
-    const menuItem = new RemoteMenuItem(item)
-    menuItem._tabId = tab.id
-    menu.append(menuItem)
+  // Convert menu items to serializable format for IPC
+  const menuTemplate = CONTEXT_ITEMS.map((item) => ({
+    ...item,
+    _tabId: tab.id,
+    click: item.id // Use id to identify the action in main process
+  }))
+
+  ipcRenderer.send('mt::show-context-menu', {
+    type: 'tabs',
+    x: event.clientX,
+    y: event.clientY,
+    tabId: tab.id,
+    pathname: tab.pathname,
+    menuTemplate
   })
-  menu.popup([{ window: win, x: event.clientX, y: event.clientY }])
 }

@@ -1,4 +1,6 @@
-export const delay = time => {
+import { processInfo } from './electron'
+
+export const delay = (time) => {
   let timerId
   let rejectFn
   const p = new Promise((resolve, reject) => {
@@ -23,7 +25,9 @@ const ID_PREFEX = 'mt-'
 let id = 0
 
 export const serialize = function (params) {
-  return Object.keys(params).map(key => `${key}=${encodeURI(params[key])}`).join('&')
+  return Object.keys(params)
+    .map((key) => `${key}=${encodeURI(params[key])}`)
+    .join('&')
 }
 
 export const merge = function (...args) {
@@ -48,12 +52,14 @@ export const adjustCursor = (cursor, preline, line, nextline) => {
   let newCursor = Object.assign({}, { line: cursor.line, ch: cursor.ch })
   // It's need to adjust the cursor when cursor is at begin or end in table row.
   if (/\|[^|]+\|.+\|\s*$/.test(line)) {
-    if (/\|\s*:?-+:?\s*\|[:-\s|]+\|\s*$/.test(line)) { // cursor in `| --- | :---: |` :the second line of table
+    if (/\|\s*:?-+:?\s*\|[:-\s|]+\|\s*$/.test(line)) {
+      // cursor in `| --- | :---: |` :the second line of table
       newCursor.line += 1 // reset the cursor to the next line
       newCursor.ch = nextline.indexOf('|') + 1
-    } else { // cursor is not at the second line to table
+    } else {
+      // cursor is not at the second line to table
       if (cursor.ch <= line.indexOf('|')) newCursor.ch = line.indexOf('|') + 1
-      if (cursor.ch >= line.lastIndexOf('|')) newCursor.ch = line.lastIndexOf('|') - 1
+      if (cursor.ch >= line.lastIndexOf('|')) { newCursor.ch = line.lastIndexOf('|') - 1 }
     }
   }
 
@@ -101,7 +107,9 @@ export const animatedScrollTo = function (element, to, duration, callback) {
 
   const animateScroll = function () {
     const now = +new Date()
-    const val = Math.floor(easeInOutQuad(now - animationStart, start, change, duration))
+    const val = Math.floor(
+      easeInOutQuad(now - animationStart, start, change, duration)
+    )
 
     element.scrollTop = val
 
@@ -122,7 +130,7 @@ export const getUniqueId = () => {
   return `${ID_PREFEX}${id++}`
 }
 
-export const hasKeys = obj => Object.keys(obj).length > 0
+export const hasKeys = (obj) => Object.keys(obj).length > 0
 
 /**
  * Clone an object as a shallow or deep copy.
@@ -150,10 +158,10 @@ export const cloneObject = (obj, inheritFromObject = true) => {
  *
  * @param {*} obj Object to clone
  */
-export const deepClone = obj => {
+export const deepClone = (obj) => {
   return JSON.parse(JSON.stringify(obj))
 }
 
-export const isOsx = process.platform === 'darwin'
-export const isWindows = process.platform === 'win32'
-export const isLinux = process.platform === 'linux'
+export const isOsx = processInfo.platform === 'darwin'
+export const isWindows = processInfo.platform === 'win32'
+export const isLinux = processInfo.platform === 'linux'

@@ -1,4 +1,4 @@
-import { ipcRenderer } from 'electron'
+import { ipcRenderer } from '../util/electron'
 import { delay } from '@/util'
 import bus from '../bus'
 
@@ -28,19 +28,23 @@ class TrailingNewlineCommand {
       index = 2
     }
 
-    this.subcommands = [{
-      id: 'file.trailing-newline-trim',
-      description: descriptions[0],
-      value: 0
-    }, {
-      id: 'file.trailing-newline-single',
-      description: descriptions[1],
-      value: 1
-    }, {
-      id: 'file.trailing-newline-disabled',
-      description: descriptions[2],
-      value: 3
-    }]
+    this.subcommands = [
+      {
+        id: 'file.trailing-newline-trim',
+        description: descriptions[0],
+        value: 0
+      },
+      {
+        id: 'file.trailing-newline-single',
+        description: descriptions[1],
+        value: 1
+      },
+      {
+        id: 'file.trailing-newline-disabled',
+        description: descriptions[2],
+        value: 3
+      }
+    ]
     this.subcommands[index].description = `${descriptions[index]} - current`
     this.subcommandSelectedIndex = index
   }

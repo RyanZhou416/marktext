@@ -1,7 +1,5 @@
 <template>
-  <div
-    class="editor-container"
-  >
+  <div class="editor-container">
     <side-bar v-if="init"></side-bar>
     <div class="editor-middle">
       <title-bar
@@ -14,9 +12,7 @@
         :is-saved="isSaved"
       ></title-bar>
       <div class="editor-placeholder" v-if="!init"></div>
-      <recent
-        v-if="!hasCurrentFile && init"
-      ></recent>
+      <recent v-if="!hasCurrentFile && init"></recent>
       <editor-with-tabs
         v-if="hasCurrentFile && init"
         :markdown="markdown"
@@ -52,7 +48,7 @@ import { loadingPageMixins } from '@/mixins'
 import { mapState } from 'vuex'
 import bus from '@/bus'
 import { DEFAULT_STYLE } from '@/config'
-import { ipcRenderer } from 'electron'
+import { ipcRenderer } from '../util/electron'
 
 export default {
   name: 'marktext',
@@ -70,31 +66,28 @@ export default {
   },
   mixins: [loadingPageMixins],
   data () {
-    return {
-    }
+    return {}
   },
   computed: {
     ...mapState({
-      showTabBar: state => state.layout.showTabBar,
-      sourceCode: state => state.preferences.sourceCode,
-      theme: state => state.preferences.theme,
-      textDirection: state => state.preferences.textDirection
+      showTabBar: (state) => state.layout.showTabBar,
+      sourceCode: (state) => state.preferences.sourceCode,
+      theme: (state) => state.preferences.theme,
+      textDirection: (state) => state.preferences.textDirection
     }),
     ...mapState({
-      zoom: state => state.preferences.zoom
+      zoom: (state) => state.preferences.zoom
     }),
     ...mapState({
-      projectTree: state => state.project.projectTree,
-      pathname: state => state.editor.currentFile.pathname,
-      filename: state => state.editor.currentFile.filename,
-      isSaved: state => state.editor.currentFile.isSaved,
-      markdown: state => state.editor.currentFile.markdown,
-      cursor: state => state.editor.currentFile.cursor,
-      wordCount: state => state.editor.currentFile.wordCount
+      projectTree: (state) => state.project.projectTree,
+      pathname: (state) => state.editor.currentFile.pathname,
+      filename: (state) => state.editor.currentFile.filename,
+      isSaved: (state) => state.editor.currentFile.isSaved,
+      markdown: (state) => state.editor.currentFile.markdown,
+      cursor: (state) => state.editor.currentFile.cursor,
+      wordCount: (state) => state.editor.currentFile.wordCount
     }),
-    ...mapState([
-      'windowActive', 'platform', 'init'
-    ]),
+    ...mapState(['windowActive', 'platform', 'init']),
     hasCurrentFile () {
       return this.markdown !== undefined
     }
@@ -113,8 +106,8 @@ export default {
     const { commit, dispatch } = this.$store
 
     // Apply initial state (theme and titleBarStyle) and delay load other values.
-    if (global.marktext.initialState) {
-      commit('SET_USER_PREFERENCE', global.marktext.initialState)
+    if (window.marktext.initialState) {
+      commit('SET_USER_PREFERENCE', window.marktext.initialState)
     }
 
     // store/index.js
@@ -166,33 +159,40 @@ export default {
     dispatch('LISTEN_FOR_NOTIFICATION')
 
     // prevent Chromium's default behavior and try to open the first file
-    window.addEventListener('dragover', e => {
-      // Cancel to allow tab drag&drop.
-      if (!e.dataTransfer.types.length) return
+    window.addEventListener(
+      'dragover',
+      (e) => {
+        // Cancel to allow tab drag&drop.
+        if (!e.dataTransfer.types.length) return
 
-      if (e.dataTransfer.types.indexOf('Files') >= 0) {
-        if (e.dataTransfer.items.length === 1 && e.dataTransfer.items[0].type.indexOf('image') > -1) {
-          // Do nothing, because we already drag/drop image in muya.
-        } else {
-          e.preventDefault()
-          if (this.timer) {
-            clearTimeout(this.timer)
+        if (e.dataTransfer.types.indexOf('Files') >= 0) {
+          if (
+            e.dataTransfer.items.length === 1 &&
+            e.dataTransfer.items[0].type.indexOf('image') > -1
+          ) {
+            // Do nothing, because we already drag/drop image in muya.
+          } else {
+            e.preventDefault()
+            if (this.timer) {
+              clearTimeout(this.timer)
+            }
+            this.timer = setTimeout(() => {
+              bus.$emit('importDialog', false)
+            }, 300)
+            bus.$emit('importDialog', true)
           }
-          this.timer = setTimeout(() => {
-            bus.$emit('importDialog', false)
-          }, 300)
-          bus.$emit('importDialog', true)
-        }
 
-        e.dataTransfer.dropEffect = 'copy'
-      } else {
-        e.stopPropagation()
-        e.dataTransfer.dropEffect = 'none'
-      }
-    }, false)
+          e.dataTransfer.dropEffect = 'copy'
+        } else {
+          e.stopPropagation()
+          e.dataTransfer.dropEffect = 'none'
+        }
+      },
+      false
+    )
 
     this.$nextTick(() => {
-      const style = global.marktext.initialState || DEFAULT_STYLE
+      const style = window.marktext.initialState || DEFAULT_STYLE
       addStyles(style)
       this.hideLoadingPage()
     })
@@ -201,35 +201,35 @@ export default {
 </script>
 
 <style scoped>
-  .editor-placeholder,
-  .editor-container {
-    display: flex;
-    flex-direction: row;
-    position: absolute;
-    width: 100vw;
-    height: 100vh;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-  }
-  .editor-container .hide {
-    z-index: -1;
-    opacity: 0;
-    position: absolute;
-    left: -10000px;
-  }
-  .editor-placeholder {
-    background: var(--editorBgColor);
-  }
-  .editor-middle {
-    display: flex;
-    flex-direction: column;
+.editor-placeholder,
+.editor-container {
+  display: flex;
+  flex-direction: row;
+  position: absolute;
+  width: 100vw;
+  height: 100vh;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+}
+.editor-container .hide {
+  z-index: -1;
+  opacity: 0;
+  position: absolute;
+  left: -10000px;
+}
+.editor-placeholder {
+  background: var(--editorBgColor);
+}
+.editor-middle {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 100vh;
+  position: relative;
+  & > .editor {
     flex: 1;
-    min-height: 100vh;
-    position: relative;
-    & > .editor {
-      flex: 1;
-    }
   }
+}
 </style>

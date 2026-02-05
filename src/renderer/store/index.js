@@ -1,6 +1,6 @@
 import Vue from 'vue'
 import Vuex from 'vuex'
-import { ipcRenderer } from 'electron'
+import { ipcRenderer, processInfo } from '../util/electron'
 
 import listenForMain from './listenForMain'
 import project from './project'
@@ -16,8 +16,8 @@ Vue.use(Vuex)
 
 // global states
 const state = {
-  platform: process.platform, // platform of system `darwin` | `win32` | `linux`
-  appVersion: process.versions.MARKTEXT_VERSION_STRING, // MarkText version string
+  platform: processInfo.platform, // platform of system `darwin` | `win32` | `linux`
+  appVersion: processInfo.versions.MARKTEXT_VERSION_STRING, // MarkText version string
   windowActive: true, // whether current window is active or focused
   init: false // whether MarkText is initialized
 }

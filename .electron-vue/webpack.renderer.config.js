@@ -14,18 +14,15 @@ const { BundleAnalyzerPlugin } = require("webpack-bundle-analyzer");
 const ESLintPlugin = require("eslint-webpack-plugin");
 
 const { getRendererEnvironmentDefinitions } = require("./marktextEnvironment");
-const { dependencies } = require("../package.json");
 
 const isProduction = process.env.NODE_ENV === "production";
 /**
- * List of node_modules to include in webpack bundle
- * Required for specific packages like Vue UI libraries
- * that provide pure *.vue files that need compiling
- * https://simulatedgreg.gitbooks.io/electron-vue/content/en/webpack-configurations.html#white-listing-externals
+ * 渲染进程现代化配置
+ *
+ * 使用 target: 'web' 生成纯浏览器兼容的 bundle。
+ * 所有 Node.js 功能通过 preload + contextBridge 暴露。
+ * 不再使用 externals，所有依赖都打包进 bundle。
  */
-// ESM-only 模块必须加入白名单，否则打包后 require() 加载会失败
-// 使用 node tools/checkEsmModules.js 检测哪些包需要加入
-const whiteListedModules = ["vue", "snabbdom", "snabbdom-to-html", "mermaid"];
 
 /** @type {import('webpack').Configuration} */
 const rendererConfig = {
@@ -40,11 +37,8 @@ const rendererConfig = {
   entry: {
     renderer: path.join(__dirname, "../src/renderer/main.js"),
   },
-  externals: [
-    ...Object.keys(dependencies || {}).filter(
-      (d) => !whiteListedModules.includes(d)
-    ),
-  ],
+  // 不使用 externals - 所有依赖打包进 bundle
+  externals: [],
   module: {
     rules: [
       {
@@ -149,10 +143,7 @@ const rendererConfig = {
       },
     ],
   },
-  node: {
-    __dirname: !isProduction,
-    __filename: !isProduction,
-  },
+  // web 环境不需要 node 配置
   plugins: [
     new ESLintPlugin({
       cache: !isProduction,
@@ -180,22 +171,20 @@ const rendererConfig = {
       },
       isBrowser: false,
       isDevelopment: !isProduction,
-      nodeModules: !isProduction
-        ? path.resolve(__dirname, "../node_modules")
-        : false,
+      // nodeModules 不再需要 - 渲染进程是纯 web 环境
+      nodeModules: false,
     }),
     new webpack.DefinePlugin(getRendererEnvironmentDefinitions()),
-    // Use node http request instead axios's XHR adapter.
-    new webpack.NormalModuleReplacementPlugin(
-      /.+[\/\\]node_modules[\/\\]axios[\/\\]lib[\/\\]adapters[\/\\]xhr\.js$/,
-      "http.js"
-    ),
+    // 定义 global 为 window，兼容某些库
+    new webpack.DefinePlugin({
+      global: "window",
+    }),
     new VueLoaderPlugin(),
   ],
   cache: false,
   output: {
     filename: "[name].js",
-    libraryTarget: "commonjs2",
+    // 不使用 libraryTarget - 标准 web bundle
     path: path.join(__dirname, "../dist/electron"),
     assetModuleFilename: "assets/[name].[contenthash:8][ext]",
     asyncChunks: true,
@@ -213,8 +202,26 @@ const rendererConfig = {
       vue$: "vue/dist/vue.esm.js",
     },
     extensions: [".js", ".vue", ".json", ".css", ".node"],
+    // 告诉 webpack 不要尝试 polyfill Node.js 核心模块
+    fallback: {
+      fs: false,
+      path: false,
+      os: false,
+      crypto: false,
+      stream: false,
+      buffer: false,
+      util: false,
+      assert: false,
+      http: false,
+      https: false,
+      zlib: false,
+      url: false,
+      child_process: false,
+      constants: false,
+    },
   },
-  target: "electron-renderer",
+  // 纯 web 环境
+  target: "web",
 };
 
 /**
@@ -260,6 +267,8 @@ if (isProduction) {
       "process.env.UNSPLASH_ACCESS_KEY": JSON.stringify(
         process.env.UNSPLASH_ACCESS_KEY
       ),
+      // 生产环境的 __static 路径 - 通过 preload 获取
+      __static: '"static"',
     }),
     new MiniCssExtractPlugin({
       // Options similar to the same options in webpackOptions.output

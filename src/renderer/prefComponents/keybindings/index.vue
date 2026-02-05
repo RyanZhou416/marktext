@@ -3,26 +3,39 @@
     <h4>Key Bindings</h4>
     <section class="keybindings">
       <div class="text">
-        Customize MarkText shortcuts and click on the save button below to apply all changes (requires a restart).
-        All available and default key binding can be found <a class="link" @click="openKeybindingWiki">online</a>.
+        Customize MarkText shortcuts and click on the save button below to apply
+        all changes (requires a restart). All available and default key binding
+        can be found <a class="link" @click="openKeybindingWiki">online</a>.
       </div>
-      <el-table
-        :data="keybindingList"
-        style="width: 100%"
-      >
+      <el-table :data="keybindingList" style="width: 100%">
         <el-table-column prop="description" label="Description">
         </el-table-column>
         <el-table-column prop="accelerator" label="Key Combination" width="220">
         </el-table-column>
         <el-table-column fixed="right" label="Options" width="90">
           <template slot-scope="scope">
-            <el-button @click="handleEditClick(scope.$index, scope.row)" type="text" size="small" title="Edit">
+            <el-button
+              @click="handleEditClick(scope.$index, scope.row)"
+              type="text"
+              size="small"
+              title="Edit"
+            >
               <i class="el-icon-edit"></i>
             </el-button>
-            <el-button @click="handleResetClick(scope.$index, scope.row)" type="text" size="small" title="Reset">
+            <el-button
+              @click="handleResetClick(scope.$index, scope.row)"
+              type="text"
+              size="small"
+              title="Reset"
+            >
               <i class="el-icon-refresh-right"></i>
             </el-button>
-            <el-button @click="handleUnbindClick(scope.$index, scope.row)" type="text" size="small" title="Unbind">
+            <el-button
+              @click="handleUnbindClick(scope.$index, scope.row)"
+              type="text"
+              size="small"
+              title="Unbind"
+            >
               <i class="el-icon-delete"></i>
             </el-button>
           </template>
@@ -32,12 +45,16 @@
     <section class="footer">
       <separator></separator>
       <el-button size="medium" @click="saveKeybindings">Save</el-button>
-      <el-button size="medium" @click="restoreDefaults">Restore default key bindings</el-button>
+      <el-button size="medium" @click="restoreDefaults"
+        >Restore default key bindings</el-button
+      >
     </section>
     <section v-if="showDebugTools" class="keyboard-debug">
       <separator></separator>
       <div><strong>Debug options:</strong></div>
-      <el-button size="medium" @click="dumpKeyboardInformation">Dump keyboard information</el-button>
+      <el-button size="medium" @click="dumpKeyboardInformation"
+        >Dump keyboard information</el-button
+      >
     </section>
     <key-input-dialog
       :showWithId="selectedShortcutId"
@@ -47,8 +64,8 @@
 </template>
 
 <script>
-import { ipcRenderer, shell } from 'electron'
-import log from 'electron-log'
+import { ipcRenderer, shell } from '../../util/electron'
+import log from '../../util/logger'
 import { setKeyboardLayout } from '@hfelix/electron-localshortcut'
 import Compound from '../common/compound'
 import Separator from '../common/separator'
@@ -72,23 +89,38 @@ export default {
   },
 
   mounted () {
-    ipcRenderer.invoke('mt::keybinding-get-keyboard-info')
+    ipcRenderer
+      .invoke('mt::keybinding-get-keyboard-info')
       .then(({ layout, keymap }) => {
         // Update the key mapper to prevent problems on non-US keyboards.
         setKeyboardLayout(layout, keymap)
       })
-      .catch(error => log.error('Error while loading keyboard information for settings:', error))
+      .catch((error) =>
+        log.error(
+          'Error while loading keyboard information for settings:',
+          error
+        )
+      )
 
-    ipcRenderer.invoke('mt::keybinding-get-pref-keybindings')
+    ipcRenderer
+      .invoke('mt::keybinding-get-pref-keybindings')
       .then(({ defaultKeybindings, userKeybindings }) => {
-        this.keybindingConfigurator = new KeybindingConfigurator(defaultKeybindings, userKeybindings)
+        this.keybindingConfigurator = new KeybindingConfigurator(
+          defaultKeybindings,
+          userKeybindings
+        )
         this.keybindingList = this.keybindingConfigurator.getKeybindings()
       })
-      .catch(error => log.error('Error while loading keyboard information for settings:', error))
+      .catch((error) =>
+        log.error(
+          'Error while loading keyboard information for settings:',
+          error
+        )
+      )
 
     // Show keyboard debugging tools which has been moved from CLI because we
     // need an active window on Windows.
-    this.showDebugTools = global.marktext.env.debug
+    this.showDebugTools = window.marktext.env.debug
   },
 
   unmounted () {
@@ -98,12 +130,15 @@ export default {
 
   methods: {
     openKeybindingWiki () {
-      shell.openExternal('https://github.com/marktext/marktext/blob/master/docs/KEYBINDINGS.md')
+      shell.openExternal(
+        'https://github.com/marktext/marktext/blob/master/docs/KEYBINDINGS.md'
+      )
     },
     saveKeybindings () {
       if (this.keybindingConfigurator && this.keybindingList.length > 0) {
-        this.keybindingConfigurator.save()
-          .then(success => {
+        this.keybindingConfigurator
+          .save()
+          .then((success) => {
             if (!success) {
               notice.notify({
                 title: 'Failed to save',
@@ -112,12 +147,13 @@ export default {
               })
             }
           })
-          .catch(error => log.error(error))
+          .catch((error) => log.error(error))
       }
     },
     restoreDefaults () {
-      this.keybindingConfigurator.resetAll()
-        .then(success => {
+      this.keybindingConfigurator
+        .resetAll()
+        .then((success) => {
           if (!success) {
             notice.notify({
               title: 'Failed to save',
@@ -126,7 +162,7 @@ export default {
             })
           }
         })
-        .catch(error => log.error(error))
+        .catch((error) => log.error(error))
     },
     handleEditClick (index, entry) {
       if (index >= 0 && entry) {
@@ -138,7 +174,10 @@ export default {
       const { id } = entry
       const success = keybindingConfigurator.resetToDefault(id)
       if (!success) {
-        this.handleDuplicateShortcut(id, keybindingConfigurator.getDefaultAccelerator(id))
+        this.handleDuplicateShortcut(
+          id,
+          keybindingConfigurator.getDefaultAccelerator(id)
+        )
       }
     },
     handleUnbindClick (index, entry) {
@@ -190,7 +229,8 @@ export default {
     font-size: 13px;
   }
 }
-.el-table, .el-table__expanded-cell {
+.el-table,
+.el-table__expanded-cell {
   background: var(--editorBgColor);
 }
 .el-table button {
@@ -235,10 +275,13 @@ export default {
 .pref-keybindings .el-table__fixed::before {
   background: var(--tableBorderColor);
 }
-.pref-keybindings .el-table__body tr.hover-row.current-row>td,
-.pref-keybindings .el-table__body tr.hover-row.el-table__row--striped.current-row>td,
-.pref-keybindings .el-table__body tr.hover-row.el-table__row--striped>td,
-.pref-keybindings .el-table__body tr.hover-row>td {
+.pref-keybindings .el-table__body tr.hover-row.current-row > td,
+.pref-keybindings
+  .el-table__body
+  tr.hover-row.el-table__row--striped.current-row
+  > td,
+.pref-keybindings .el-table__body tr.hover-row.el-table__row--striped > td,
+.pref-keybindings .el-table__body tr.hover-row > td {
   background: var(--selectionColor);
 }
 .pref-keybindings .el-table .el-table__cell {

@@ -1,35 +1,81 @@
-import path from 'path'
-import crypto from 'crypto'
-import fs from 'fs-extra'
-import { statSync, constants } from 'fs'
-import cp from 'child_process'
-import { tmpdir } from 'os'
+import {
+  path,
+  fs as electronFs,
+  os,
+  childProcess as cp,
+  crypto
+} from './electron'
 import dayjs from 'dayjs'
 import { Octokit } from '@octokit/rest'
 import { isImageFile } from 'common/filesystem/paths'
 import { isWindows } from './index'
 
+const { statSync, constants } = electronFs
+const tmpdir = () => os.tmpdir()
+
+// fs-extra 功能的简单实现
+// 在 contextIsolation 模式下，我们通过 electronAPI 使用基础 fs 功能
+const fse = {
+  ensureDir: async (dirPath) => {
+    try {
+      await electronFs.mkdir(dirPath, { recursive: true })
+    } catch (e) {
+      if (e.code !== 'EEXIST') throw e
+    }
+  },
+  outputFile: async (filepath, data) => {
+    const dir = path.dirname(filepath)
+    await fse.ensureDir(dir)
+    await electronFs.writeFile(filepath, data)
+  },
+  move: async (src, dest, options = {}) => {
+    // 简单实现：复制后删除
+    await fse.copy(src, dest)
+    await electronFs.rm(src, { recursive: true, force: true })
+  },
+  copy: async (src, dest) => {
+    const stat = await electronFs.stat(src)
+    if (stat.isDirectory()) {
+      await fse.ensureDir(dest)
+      const entries = await electronFs.readdir(src, { withFileTypes: true })
+      for (const entry of entries) {
+        const srcPath = path.join(src, entry.name)
+        const destPath = path.join(dest, entry.name)
+        if (entry.isDirectory()) {
+          await fse.copy(srcPath, destPath)
+        } else {
+          await electronFs.copyFile(srcPath, destPath)
+        }
+      }
+    } else {
+      await electronFs.copyFile(src, dest)
+    }
+  },
+  writeFile: (filepath, data, encoding) => electronFs.writeFile(filepath, data, { encoding }),
+  unlink: (filepath) => electronFs.unlink(filepath),
+  stat: (filepath) => electronFs.stat(filepath),
+  readFile: (filepath) => electronFs.readFile(filepath)
+}
+
 export const create = async (pathname, type) => {
   return type === 'directory'
-    ? fs.ensureDir(pathname)
-    : fs.outputFile(pathname, '')
+    ? fse.ensureDir(pathname)
+    : fse.outputFile(pathname, '')
 }
 
 export const paste = async ({ src, dest, type }) => {
-  return type === 'cut'
-    ? fs.move(src, dest)
-    : fs.copy(src, dest)
+  return type === 'cut' ? fse.move(src, dest) : fse.copy(src, dest)
 }
 
 export const rename = async (src, dest) => {
-  return fs.move(src, dest)
+  return fse.move(src, dest)
 }
 
 export const getHash = (content, encoding, type) => {
   return crypto.createHash(type).update(content, encoding).digest('hex')
 }
 
-export const getContentHash = content => {
+export const getContentHash = (content) => {
   return getHash(content, 'utf8', 'sha1')
 }
 
@@ -42,7 +88,12 @@ export const getContentHash = content => {
  * @param {String} imagePath The image to move.
  * @returns {String} The relative path the the image from given `filePath`.
  */
-export const moveToRelativeFolder = async (cwd, relativeName, filePath, imagePath) => {
+export const moveToRelativeFolder = async (
+  cwd,
+  relativeName,
+  filePath,
+  imagePath
+) => {
   if (!relativeName) {
     // Use fallback name according settings description
     relativeName = 'assets'
@@ -55,8 +106,8 @@ export const moveToRelativeFolder = async (cwd, relativeName, filePath, imagePat
   //  - root directory + relative directory name
   const absPath = path.resolve(cwd, relativeName)
   const dstPath = path.resolve(absPath, path.basename(imagePath))
-  await fs.ensureDir(absPath)
-  await fs.move(imagePath, dstPath, { overwrite: true })
+  await fse.ensureDir(absPath)
+  await fse.move(imagePath, dstPath, { overwrite: true })
 
   // Find relative path between given file and saved image.
   const dstRelPath = path.relative(path.dirname(filePath), dstPath)
@@ -69,7 +120,7 @@ export const moveToRelativeFolder = async (cwd, relativeName, filePath, imagePat
 }
 
 export const moveImageToFolder = async (pathname, image, outputDir) => {
-  await fs.ensureDir(outputDir)
+  await fse.ensureDir(outputDir)
   const isPath = typeof image === 'string'
   if (isPath) {
     const dirname = path.dirname(pathname)
@@ -85,13 +136,16 @@ export const moveImageToFolder = async (pathname, image, outputDir) => {
       const hash = getContentHash(imagePath)
       // To avoid name conflict.
       const hashFilePath = path.join(outputDir, `${hash}${extname}`)
-      await fs.copy(imagePath, hashFilePath)
+      await fse.copy(imagePath, hashFilePath)
       return hashFilePath
     } else {
       return Promise.resolve(image)
     }
   } else {
-    const imagePath = path.join(outputDir, `${dayjs().format('YYYY-MM-DD-HH-mm-ss')}-${image.name}`)
+    const imagePath = path.join(
+      outputDir,
+      `${dayjs().format('YYYY-MM-DD-HH-mm-ss')}-${image.name}`
+    )
     const binaryString = await new Promise((resolve, reject) => {
       const fileReader = new FileReader()
       fileReader.onload = () => {
@@ -99,7 +153,7 @@ export const moveImageToFolder = async (pathname, image, outputDir) => {
       }
       fileReader.readAsBinaryString(image)
     })
-    await fs.writeFile(imagePath, binaryString, 'binary')
+    await fse.writeFile(imagePath, binaryString, 'binary')
     return imagePath
   }
 }
@@ -108,7 +162,12 @@ export const moveImageToFolder = async (pathname, image, outputDir) => {
  * @jocs todo, rewrite it use class
  */
 export const uploadImage = async (pathname, image, preferences) => {
-  const { currentUploader, imageBed, githubToken: auth, cliScript } = preferences
+  const {
+    currentUploader,
+    imageBed,
+    githubToken: auth,
+    cliScript
+  } = preferences
   const { owner, repo, branch } = imageBed.github
   const isPath = typeof image === 'string'
   const MAX_SIZE = 5 * 1024 * 1024
@@ -127,8 +186,12 @@ export const uploadImage = async (pathname, image, preferences) => {
     const octokit = new Octokit({
       auth
     })
-    const path = dayjs().format('YYYY/MM') + `/${dayjs().format('DD-HH-mm-ss')}-${filename}`
-    const message = `Upload by MarkText at ${dayjs().format('YYYY-MM-DD HH:mm:ss')}`
+    const path =
+      dayjs().format('YYYY/MM') +
+      `/${dayjs().format('DD-HH-mm-ss')}-${filename}`
+    const message = `Upload by MarkText at ${dayjs().format(
+      'YYYY-MM-DD HH:mm:ss'
+    )}`
     const payload = {
       owner,
       repo,
@@ -140,11 +203,12 @@ export const uploadImage = async (pathname, image, preferences) => {
     if (!branch) {
       delete payload.branch
     }
-    octokit.repos.createOrUpdateFileContents(payload)
-      .then(result => {
+    octokit.repos
+      .createOrUpdateFileContents(payload)
+      .then((result) => {
         re(result.data.content.download_url)
       })
-      .catch(_ => {
+      .catch((_) => {
         rj('Upload failed, the image will be copied to the image folder')
       })
   }
@@ -155,12 +219,12 @@ export const uploadImage = async (pathname, image, preferences) => {
       isPath = false
       const data = new Uint8Array(filepath)
       filepath = path.join(tmpdir(), +new Date())
-      await fs.writeFile(filepath, data)
+      await fse.writeFile(filepath, data)
     }
     if (uploader === 'picgo') {
       cp.exec(`picgo u "${filepath}"`, async (err, data) => {
         if (!isPath) {
-          await fs.unlink(filepath)
+          await fse.unlink(filepath)
         }
         if (err) {
           return rj(err)
@@ -175,7 +239,7 @@ export const uploadImage = async (pathname, image, preferences) => {
     } else {
       cp.execFile(cliScript, [filepath], async (err, data) => {
         if (!isPath) {
-          await fs.unlink(filepath)
+          await fse.unlink(filepath)
         }
         if (err) {
           return rj(err)
@@ -186,7 +250,9 @@ export const uploadImage = async (pathname, image, preferences) => {
   }
 
   const notification = () => {
-    rj('Cannot upload more than 5M image, the image will be copied to the image folder')
+    rj(
+      'Cannot upload more than 5M image, the image will be copied to the image folder'
+    )
   }
 
   if (isPath) {
@@ -194,7 +260,7 @@ export const uploadImage = async (pathname, image, preferences) => {
     const imagePath = path.resolve(dirname, image)
     const isImage = isImageFile(imagePath)
     if (isImage) {
-      const { size } = await fs.stat(imagePath)
+      const { size } = await fse.stat(imagePath)
       if (size > MAX_SIZE) {
         notification()
       } else {
@@ -204,7 +270,7 @@ export const uploadImage = async (pathname, image, preferences) => {
             uploadByCommand(currentUploader, imagePath)
             break
           case 'github': {
-            const imageFile = await fs.readFile(imagePath)
+            const imageFile = await fse.readFile(imagePath)
             const base64 = Buffer.from(imageFile).toString('base64')
             uploadByGithub(base64, path.basename(imagePath))
             break
@@ -231,7 +297,8 @@ export const uploadImage = async (pathname, image, preferences) => {
         }
       }
 
-      const readerFunction = currentUploader !== 'github' ? 'readAsArrayBuffer' : 'readAsDataURL'
+      const readerFunction =
+        currentUploader !== 'github' ? 'readAsArrayBuffer' : 'readAsDataURL'
       reader[readerFunction](image)
     }
   }
@@ -241,7 +308,12 @@ export const uploadImage = async (pathname, image, preferences) => {
 export const isFileExecutableSync = (filepath) => {
   try {
     const stat = statSync(filepath)
-    return stat.isFile() && (stat.mode & (constants.S_IXUSR | constants.S_IXGRP | constants.S_IXOTH)) !== 0
+    return (
+      stat.isFile() &&
+      (stat.mode &
+        (constants.S_IXUSR | constants.S_IXGRP | constants.S_IXOTH)) !==
+        0
+    )
   } catch (err) {
     // err ignored
     return false

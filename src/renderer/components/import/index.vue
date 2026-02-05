@@ -10,16 +10,16 @@
       <div class="body">
         <div
           class="drop-container"
-          :class="{active: isOver}"
+          :class="{ active: isOver }"
           @dragover="dragOverHandler"
           @dragleave="dragLeaveHandler"
           @drop="dropHandler"
         >
           <div class="img-wrapper">
-            <img :src="`${importIcon.url}`" alt="import file">
+            <img :src="`${importIcon.url}`" alt="import file" />
           </div>
           <div>Import or Open</div>
-          <p> Drop here to get you stuff into MarkText</p>
+          <p>Drop here to get you stuff into MarkText</p>
         </div>
         <div class="file-list">
           <div>.md</div>
@@ -35,7 +35,7 @@
 
 <script>
 import bus from '@/bus'
-import { ipcRenderer } from 'electron'
+import { ipcRenderer } from '../../util/electron'
 import importIcon from '@/assets/icons/import_file.svg'
 
 export default {

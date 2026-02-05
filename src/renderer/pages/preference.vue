@@ -4,7 +4,7 @@
     <side-bar></side-bar>
     <div
       class="pref-content"
-      :class="{ 'frameless': titleBarStyle === 'custom' || isOsx }"
+      :class="{ frameless: titleBarStyle === 'custom' || isOsx }"
     >
       <div class="title-bar" v-if="!showCustomTitleBar"></div>
       <router-view class="pref-setting"></router-view>
@@ -33,8 +33,8 @@ export default {
   },
   computed: {
     ...mapState({
-      theme: state => state.preferences.theme,
-      titleBarStyle: state => state.preferences.titleBarStyle
+      theme: (state) => state.preferences.theme,
+      titleBarStyle: (state) => state.preferences.titleBarStyle
     }),
     showCustomTitleBar () {
       return this.titleBarStyle === 'custom' && !this.isOsx
@@ -49,7 +49,7 @@ export default {
   },
   created () {
     this.$nextTick(() => {
-      const state = global.marktext.initialState || DEFAULT_STYLE
+      const state = window.marktext.initialState || DEFAULT_STYLE
       addThemeStyle(state.theme)
 
       this.$store.dispatch('ASK_FOR_USER_PREFERENCE')
@@ -103,8 +103,13 @@ export default {
       height: calc(100vh - var(--titleBarHeight));
       overflow: auto;
     }
-    & span, & div,
-    & h1, & h2, & h3, & h4, & h5 {
+    & span,
+    & div,
+    & h1,
+    & h2,
+    & h3,
+    & h4,
+    & h5 {
       user-select: none;
     }
   }

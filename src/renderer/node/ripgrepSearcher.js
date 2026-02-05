@@ -21,13 +21,16 @@
 // OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-import { spawn } from 'child_process'
-import path from 'path'
+import { path, childProcess } from '../util/electron'
+
+const { spawn } = childProcess
 
 function cleanResultLine (resultLine) {
   resultLine = getText(resultLine)
 
-  return resultLine[resultLine.length - 1] === '\n' ? resultLine.slice(0, -1) : resultLine
+  return resultLine[resultLine.length - 1] === '\n'
+    ? resultLine.slice(0, -1)
+    : resultLine
 }
 
 function getPositionFromColumn (lines, column) {
@@ -105,12 +108,14 @@ function processSubmatch (submatch, lineText, offsetRow) {
 }
 
 function getText (input) {
-  return 'text' in input ? input.text : Buffer.from(input.bytes, 'base64').toString()
+  return 'text' in input
+    ? input.text
+    : Buffer.from(input.bytes, 'base64').toString()
 }
 
 class RipgrepDirectorySearcher {
   constructor () {
-    this.rgPath = global.marktext.paths.ripgrepBinaryPath
+    this.rgPath = window.marktext.paths.ripgrepBinaryPath
   }
 
   // Performs a text search for files in the specified `Directory`s, subject to the
@@ -150,8 +155,8 @@ class RipgrepDirectorySearcher {
   search (directories, pattern, options) {
     const numPathsFound = { num: 0 }
 
-    const allPromises = directories.map(
-      directory => this.searchInDirectory(directory, pattern, options, numPathsFound)
+    const allPromises = directories.map((directory) =>
+      this.searchInDirectory(directory, pattern, options, numPathsFound)
     )
 
     const promise = Promise.all(allPromises)
@@ -209,10 +214,16 @@ class RipgrepDirectorySearcher {
     if (options.trailingContextLineCount) {
       args.push('--after-context', options.trailingContextLineCount)
     }
-    for (const inclusion of this.prepareGlobs(options.inclusions, directoryPath)) {
+    for (const inclusion of this.prepareGlobs(
+      options.inclusions,
+      directoryPath
+    )) {
       args.push('--iglob', inclusion)
     }
-    for (const exclusion of this.prepareGlobs(options.exclusions, directoryPath)) {
+    for (const exclusion of this.prepareGlobs(
+      options.exclusions,
+      directoryPath
+    )) {
       args.push('--iglob', '!' + exclusion)
     }
 
@@ -252,15 +263,15 @@ class RipgrepDirectorySearcher {
           resolve()
         }
       })
-      child.on('error', err => {
+      child.on('error', (err) => {
         reject(err)
       })
 
-      child.stderr.on('data', chunk => {
+      child.stderr.on('data', (chunk) => {
         bufferError += chunk
       })
 
-      child.stdout.on('data', chunk => {
+      child.stdout.on('data', (chunk) => {
         if (cancelled) {
           return
         }

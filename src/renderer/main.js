@@ -1,6 +1,6 @@
 import Vue from 'vue'
-import VueElectron from 'vue-electron'
-import sourceMapSupport from 'source-map-support'
+// vue-electron 移除 - 不兼容 contextIsolation，使用 util/electron.js 替代
+// source-map-support 移除 - 需要 Node.js fs/path 模块
 import bootstrapRenderer from './bootstrap'
 import VueRouter from 'vue-router'
 import lang from 'element-ui/lib/locale/lang/en'
@@ -43,14 +43,9 @@ import './assets/styles/printService.css'
 
 // -----------------------------------------------
 
-// Decode source map in production - must be registered first
-sourceMapSupport.install({
-  environment: 'node',
-  handleUncaughtExceptions: false,
-  hookRequire: false
-})
+// source-map-support 已移除 - 使用浏览器原生错误堆栈
 
-global.marktext = {}
+window.marktext = {}
 bootstrapRenderer()
 
 addElementStyle()
@@ -87,17 +82,16 @@ Vue.use(TabPane)
 Vue.use(Input)
 
 Vue.use(VueRouter)
-
-Vue.use(VueElectron)
+// VueElectron 已移除 - 使用 util/electron.js 替代
 Vue.http = Vue.prototype.$http = axios
 Vue.config.productionTip = false
 
-services.forEach(s => {
+services.forEach((s) => {
   Vue.prototype['$' + s.name] = s[s.name]
 })
 
 const router = new VueRouter({
-  routes: routes(global.marktext.env.type)
+  routes: routes(window.marktext.env.type)
 })
 
 /* eslint-disable no-new */

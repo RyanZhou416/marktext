@@ -1,27 +1,43 @@
 <template>
   <section class="image-folder">
     <h5>Global or relative image folder</h5>
-    <text-box description="Global image folder" :input="imageFolderPath"
-      :regexValidator="/^(?:$|([a-zA-Z]:)?[\/\\].*$)/" :defaultValue="folderPathPlaceholder"
-      :onChange="value => modifyImageFolderPath(value)"></text-box>
+    <text-box
+      description="Global image folder"
+      :input="imageFolderPath"
+      :regexValidator="/^(?:$|([a-zA-Z]:)?[\/\\].*$)/"
+      :defaultValue="folderPathPlaceholder"
+      :onChange="(value) => modifyImageFolderPath(value)"
+    ></text-box>
     <div>
-      <el-button size="mini" @click="modifyImageFolderPath(undefined)">Open...</el-button>
+      <el-button size="mini" @click="modifyImageFolderPath(undefined)"
+        >Open...</el-button
+      >
       <el-button size="mini" @click="openImageFolder">Show in Folder</el-button>
     </div>
     <compound>
       <template #head>
-        <bool description="Prefer relative assets folder"
+        <bool
+          description="Prefer relative assets folder"
           more="https://github.com/marktext/marktext/blob/develop/docs/IMAGES.md"
           :bool="imagePreferRelativeDirectory"
-          :onChange="value => onSelectChange('imagePreferRelativeDirectory', value)"></bool>
+          :onChange="
+            (value) => onSelectChange('imagePreferRelativeDirectory', value)
+          "
+        ></bool>
       </template>
       <template #children>
-        <text-box description="Relative image folder name" :input="imageRelativeDirectoryName"
+        <text-box
+          description="Relative image folder name"
+          :input="imageRelativeDirectoryName"
           :regexValidator="/^(?:$|(?![a-zA-Z]:)[^\/\\].*$)/"
           :defaultValue="relativeDirectoryNamePlaceholder"
-          :onChange="value => onSelectChange('imageRelativeDirectoryName', value)"></text-box>
+          :onChange="
+            (value) => onSelectChange('imageRelativeDirectoryName', value)
+          "
+        ></text-box>
         <div class="footnote">
-          Include <code>${filename}</code> in the text-box above to automatically insert the document file name.
+          Include <code>${filename}</code> in the text-box above to
+          automatically insert the document file name.
         </div>
       </template>
     </compound>
@@ -30,7 +46,7 @@
 
 <script>
 import { mapState } from 'vuex'
-import { shell } from 'electron'
+import { shell } from '../../../../util/electron'
 import Bool from '@/prefComponents/common/bool'
 import Compound from '@/prefComponents/common/compound'
 import TextBox from '@/prefComponents/common/textBox'
@@ -42,14 +58,15 @@ export default {
     TextBox
   },
   data () {
-    return {
-    }
+    return {}
   },
   computed: {
     ...mapState({
-      imageFolderPath: state => state.preferences.imageFolderPath,
-      imagePreferRelativeDirectory: state => state.preferences.imagePreferRelativeDirectory,
-      imageRelativeDirectoryName: state => state.preferences.imageRelativeDirectoryName
+      imageFolderPath: (state) => state.preferences.imageFolderPath,
+      imagePreferRelativeDirectory: (state) =>
+        state.preferences.imagePreferRelativeDirectory,
+      imageRelativeDirectoryName: (state) =>
+        state.preferences.imageRelativeDirectoryName
     }),
     imageInsertAction: {
       get: function () {
@@ -63,7 +80,9 @@ export default {
     },
     relativeDirectoryNamePlaceholder: {
       get: function () {
-        return this.$store.state.preferences.imageRelativeDirectoryName || 'assets'
+        return (
+          this.$store.state.preferences.imageRelativeDirectoryName || 'assets'
+        )
       }
     }
   },

@@ -1,28 +1,24 @@
 <template>
   <div
     class="editor-wrapper"
-    :class="[{ 'typewriter': typewriter, 'focus': focus, 'source': sourceCode }]"
-    :style="{ 'lineHeight': lineHeight, 'fontSize': `${fontSize}px`,
-    'font-family': editorFontFamily ? `${editorFontFamily}, ${defaultFontFamily}` : `${defaultFontFamily}` }"
+    :class="[{ typewriter: typewriter, focus: focus, source: sourceCode }]"
+    :style="{
+      lineHeight: lineHeight,
+      fontSize: `${fontSize}px`,
+      'font-family': editorFontFamily
+        ? `${editorFontFamily}, ${defaultFontFamily}`
+        : `${defaultFontFamily}`,
+    }"
     :dir="textDirection"
   >
-    <div
-      ref="editor"
-      class="editor-component"
-    ></div>
-    <div
-      class="image-viewer"
-      v-show="imageViewerVisible"
-    >
+    <div ref="editor" class="editor-component"></div>
+    <div class="image-viewer" v-show="imageViewerVisible">
       <span class="icon-close" @click="setImageViewerVisible(false)">
         <svg :viewBox="CloseIcon.viewBox">
           <use :xlink:href="CloseIcon.url"></use>
         </svg>
       </span>
-      <div
-        ref="imageViewer"
-      >
-      </div>
+      <div ref="imageViewer"></div>
     </div>
     <el-dialog
       :visible.sync="dialogTableVisible"
@@ -31,11 +27,9 @@
       custom-class="ag-dialog-table"
       width="454px"
       center
-      dir='ltr'
+      dir="ltr"
     >
-      <div slot="title" class="dialog-title">
-        Insert Table
-      </div>
+      <div slot="title" class="dialog-title">Insert Table</div>
       <el-form :model="tableChecker" :inline="true">
         <el-form-item label="Rows">
           <el-input-number
@@ -58,24 +52,19 @@
         </el-form-item>
       </el-form>
       <div slot="footer" class="dialog-footer">
-        <el-button @click="dialogTableVisible = false">
-          Cancel
-        </el-button>
+        <el-button @click="dialogTableVisible = false"> Cancel </el-button>
         <el-button type="primary" @click="handleDialogTableConfirm">
           OK
         </el-button>
       </div>
     </el-dialog>
-    <search
-      v-if="!sourceCode"
-    ></search>
+    <search v-if="!sourceCode"></search>
   </div>
 </template>
 
 <script>
-import { shell } from 'electron'
-import path from 'path'
-import log from 'electron-log'
+import { shell, path, processInfo } from '../../util/electron'
+import log from '../../util/logger'
 import { mapState } from 'vuex'
 // import ViewImage from 'view-image'
 import { isChildOfDirectory } from 'common/filesystem/paths'
@@ -101,7 +90,11 @@ import Printer from '@/services/printService'
 import { SpellcheckerLanguageCommand } from '@/commands'
 import { SpellChecker } from '@/spellchecker'
 import { isOsx, animatedScrollTo } from '@/util'
-import { moveImageToFolder, moveToRelativeFolder, uploadImage } from '@/util/fileSystem'
+import {
+  moveImageToFolder,
+  moveToRelativeFolder,
+  uploadImage
+} from '@/util/fileSystem'
 import { guessClipboardFilePath } from '@/util/clipboard'
 import { getCssForOptions, getHtmlToc } from '@/util/pdf'
 import { addCommonStyle, setEditorWidth } from '@/util/theme'
@@ -130,49 +123,55 @@ export default {
 
   computed: {
     ...mapState({
-      preferences: state => state.preferences,
-      preferLooseListItem: state => state.preferences.preferLooseListItem,
-      autoPairBracket: state => state.preferences.autoPairBracket,
-      autoPairMarkdownSyntax: state => state.preferences.autoPairMarkdownSyntax,
-      autoPairQuote: state => state.preferences.autoPairQuote,
-      bulletListMarker: state => state.preferences.bulletListMarker,
-      orderListDelimiter: state => state.preferences.orderListDelimiter,
-      tabSize: state => state.preferences.tabSize,
-      listIndentation: state => state.preferences.listIndentation,
-      frontmatterType: state => state.preferences.frontmatterType,
-      superSubScript: state => state.preferences.superSubScript,
-      footnote: state => state.preferences.footnote,
-      isHtmlEnabled: state => state.preferences.isHtmlEnabled,
-      isGitlabCompatibilityEnabled: state => state.preferences.isGitlabCompatibilityEnabled,
-      lineHeight: state => state.preferences.lineHeight,
-      fontSize: state => state.preferences.fontSize,
-      codeFontSize: state => state.preferences.codeFontSize,
-      codeFontFamily: state => state.preferences.codeFontFamily,
-      codeBlockLineNumbers: state => state.preferences.codeBlockLineNumbers,
-      trimUnnecessaryCodeBlockEmptyLines: state => state.preferences.trimUnnecessaryCodeBlockEmptyLines,
-      editorFontFamily: state => state.preferences.editorFontFamily,
-      hideQuickInsertHint: state => state.preferences.hideQuickInsertHint,
-      hideLinkPopup: state => state.preferences.hideLinkPopup,
-      autoCheck: state => state.preferences.autoCheck,
-      editorLineWidth: state => state.preferences.editorLineWidth,
-      imageInsertAction: state => state.preferences.imageInsertAction,
-      imagePreferRelativeDirectory: state => state.preferences.imagePreferRelativeDirectory,
-      imageRelativeDirectoryName: state => state.preferences.imageRelativeDirectoryName,
-      imageFolderPath: state => state.preferences.imageFolderPath,
-      theme: state => state.preferences.theme,
-      sequenceTheme: state => state.preferences.sequenceTheme,
-      hideScrollbar: state => state.preferences.hideScrollbar,
-      spellcheckerEnabled: state => state.preferences.spellcheckerEnabled,
-      spellcheckerNoUnderline: state => state.preferences.spellcheckerNoUnderline,
-      spellcheckerLanguage: state => state.preferences.spellcheckerLanguage,
+      preferences: (state) => state.preferences,
+      preferLooseListItem: (state) => state.preferences.preferLooseListItem,
+      autoPairBracket: (state) => state.preferences.autoPairBracket,
+      autoPairMarkdownSyntax: (state) =>
+        state.preferences.autoPairMarkdownSyntax,
+      autoPairQuote: (state) => state.preferences.autoPairQuote,
+      bulletListMarker: (state) => state.preferences.bulletListMarker,
+      orderListDelimiter: (state) => state.preferences.orderListDelimiter,
+      tabSize: (state) => state.preferences.tabSize,
+      listIndentation: (state) => state.preferences.listIndentation,
+      frontmatterType: (state) => state.preferences.frontmatterType,
+      superSubScript: (state) => state.preferences.superSubScript,
+      footnote: (state) => state.preferences.footnote,
+      isHtmlEnabled: (state) => state.preferences.isHtmlEnabled,
+      isGitlabCompatibilityEnabled: (state) =>
+        state.preferences.isGitlabCompatibilityEnabled,
+      lineHeight: (state) => state.preferences.lineHeight,
+      fontSize: (state) => state.preferences.fontSize,
+      codeFontSize: (state) => state.preferences.codeFontSize,
+      codeFontFamily: (state) => state.preferences.codeFontFamily,
+      codeBlockLineNumbers: (state) => state.preferences.codeBlockLineNumbers,
+      trimUnnecessaryCodeBlockEmptyLines: (state) =>
+        state.preferences.trimUnnecessaryCodeBlockEmptyLines,
+      editorFontFamily: (state) => state.preferences.editorFontFamily,
+      hideQuickInsertHint: (state) => state.preferences.hideQuickInsertHint,
+      hideLinkPopup: (state) => state.preferences.hideLinkPopup,
+      autoCheck: (state) => state.preferences.autoCheck,
+      editorLineWidth: (state) => state.preferences.editorLineWidth,
+      imageInsertAction: (state) => state.preferences.imageInsertAction,
+      imagePreferRelativeDirectory: (state) =>
+        state.preferences.imagePreferRelativeDirectory,
+      imageRelativeDirectoryName: (state) =>
+        state.preferences.imageRelativeDirectoryName,
+      imageFolderPath: (state) => state.preferences.imageFolderPath,
+      theme: (state) => state.preferences.theme,
+      sequenceTheme: (state) => state.preferences.sequenceTheme,
+      hideScrollbar: (state) => state.preferences.hideScrollbar,
+      spellcheckerEnabled: (state) => state.preferences.spellcheckerEnabled,
+      spellcheckerNoUnderline: (state) =>
+        state.preferences.spellcheckerNoUnderline,
+      spellcheckerLanguage: (state) => state.preferences.spellcheckerLanguage,
 
-      currentFile: state => state.editor.currentFile,
-      projectTree: state => state.project.projectTree,
+      currentFile: (state) => state.editor.currentFile,
+      projectTree: (state) => state.project.projectTree,
 
       // edit modes
-      typewriter: state => state.preferences.typewriter,
-      focus: state => state.preferences.focus,
-      sourceCode: state => state.preferences.sourceCode
+      typewriter: (state) => state.preferences.typewriter,
+      focus: (state) => state.preferences.focus,
+      sourceCode: (state) => state.preferences.sourceCode
     })
   },
 
@@ -239,15 +238,21 @@ export default {
       if (value !== oldValue && this.editor) {
         // Agreement：Any black series theme needs to contain dark `word`.
         if (/dark/i.test(value)) {
-          this.editor.setOptions({
-            mermaidTheme: 'dark',
-            vegaTheme: 'dark'
-          }, true)
+          this.editor.setOptions(
+            {
+              mermaidTheme: 'dark',
+              vegaTheme: 'dark'
+            },
+            true
+          )
         } else {
-          this.editor.setOptions({
-            mermaidTheme: 'default',
-            vegaTheme: 'latimes'
-          }, true)
+          this.editor.setOptions(
+            {
+              mermaidTheme: 'default',
+              vegaTheme: 'latimes'
+            },
+            true
+          )
         }
       }
     },
@@ -493,7 +498,7 @@ export default {
       Muya.use(EmojiPicker)
       Muya.use(ImagePathPicker)
       Muya.use(ImageSelector, {
-        unsplashAccessKey: process.env.UNSPLASH_ACCESS_KEY,
+        unsplashAccessKey: processInfo.env.UNSPLASH_ACCESS_KEY,
         photoCreatorClick: this.photoCreatorClick
       })
       Muya.use(Transformer)
@@ -549,14 +554,22 @@ export default {
         })
       }
 
-      const { container } = this.editor = new Muya(ele, options)
+      const { container } = (this.editor = new Muya(ele, options))
 
       // Create spell check wrapper and enable spell checking if preferred.
-      this.spellchecker = new SpellChecker(spellcheckerEnabled, spellcheckerLanguage)
+      this.spellchecker = new SpellChecker(
+        spellcheckerEnabled,
+        spellcheckerLanguage
+      )
 
       // Register command palette entry for switching spellchecker language.
-      this.switchLanguageCommand = new SpellcheckerLanguageCommand(this.spellchecker)
-      setTimeout(() => bus.$emit('cmd::register-command', this.switchLanguageCommand), 100)
+      this.switchLanguageCommand = new SpellcheckerLanguageCommand(
+        this.spellchecker
+      )
+      setTimeout(
+        () => bus.$emit('cmd::register-command', this.switchLanguageCommand),
+        100
+      )
 
       if (typewriter) {
         this.scrollToCursor()
@@ -590,18 +603,28 @@ export default {
       bus.$on('scroll-to-header', this.scrollToHeader)
       bus.$on('screenshot-captured', this.handleScreenShot)
       bus.$on('switch-spellchecker-language', this.switchSpellcheckLanguage)
-      bus.$on('open-command-spellchecker-switch-language', this.openSpellcheckerLanguageCommand)
+      bus.$on(
+        'open-command-spellchecker-switch-language',
+        this.openSpellcheckerLanguageCommand
+      )
       bus.$on('replace-misspelling', this.replaceMisspelling)
 
-      this.editor.on('change', changes => {
+      this.editor.on('change', (changes) => {
         // WORKAROUND: "id: 'muya'"
-        this.$store.dispatch('LISTEN_FOR_CONTENT_CHANGE', Object.assign(changes, { id: 'muya' }))
+        this.$store.dispatch(
+          'LISTEN_FOR_CONTENT_CHANGE',
+          Object.assign(changes, { id: 'muya' })
+        )
       })
 
       this.editor.on('format-click', ({ event, formatType, data }) => {
-        const ctrlOrMeta = (isOsx && event.metaKey) || (!isOsx && event.ctrlKey)
+        const ctrlOrMeta =
+          (isOsx && event.metaKey) || (!isOsx && event.ctrlKey)
         if (formatType === 'link' && ctrlOrMeta) {
-          this.$store.dispatch('FORMAT_LINK_CLICK', { data, dirname: window.DIRNAME })
+          this.$store.dispatch('FORMAT_LINK_CLICK', {
+            data,
+            dirname: window.DIRNAME
+          })
         } else if (formatType === 'image' && ctrlOrMeta) {
           if (this.imageViewer) {
             this.imageViewer.destroy()
@@ -631,7 +654,7 @@ export default {
       //   this.setImageViewerVisible(true)
       // })
 
-      this.editor.on('selectionChange', changes => {
+      this.editor.on('selectionChange', (changes) => {
         const { y } = changes.cursorCoords
         if (this.typewriter) {
           const startPosition = container.scrollTop
@@ -647,14 +670,18 @@ export default {
         if (container.clientHeight - y < 100) {
           // editableHeight is the lowest cursor position(till to top) that editor allowed.
           const editableHeight = container.clientHeight - 100
-          animatedScrollTo(container, container.scrollTop + (y - editableHeight), 0)
+          animatedScrollTo(
+            container,
+            container.scrollTop + (y - editableHeight),
+            0
+          )
         }
 
         this.selectionChange = changes
         this.$store.dispatch('SELECTION_CHANGE', changes)
       })
 
-      this.editor.on('selectionFormats', formats => {
+      this.editor.on('selectionFormats', (formats) => {
         this.$store.dispatch('SELECTION_FORMATS', formats)
       })
 
@@ -670,14 +697,20 @@ export default {
 
     jumpClick (linkInfo) {
       const { href } = linkInfo
-      this.$store.dispatch('FORMAT_LINK_CLICK', { data: { href }, dirname: window.DIRNAME })
+      this.$store.dispatch('FORMAT_LINK_CLICK', {
+        data: { href },
+        dirname: window.DIRNAME
+      })
     },
 
     async imagePathAutoComplete (src) {
       const files = await this.$store.dispatch('ASK_FOR_IMAGE_AUTO_PATH', src)
-      return files.map(f => {
+      return files.map((f) => {
         const iconClass = f.type === 'directory' ? 'icon-folder' : 'icon-image'
-        return Object.assign(f, { iconClass, text: f.file + (f.type === 'directory' ? '/' : '') })
+        return Object.assign(f, {
+          iconClass,
+          text: f.file + (f.type === 'directory' ? '/' : '')
+        })
       })
     },
 
@@ -690,10 +723,7 @@ export default {
         imageRelativeDirectoryName,
         preferences
       } = this
-      const {
-        filename,
-        pathname
-      } = this.currentFile
+      const { filename, pathname } = this.currentFile
 
       // Save an image relative to the file if the relative image directory include the filename variable.
       // The image is save relative to the root folder without a variable.
@@ -712,16 +742,18 @@ export default {
         }
       }
 
-      const getResolvedImagePath = imagePath => {
+      const getResolvedImagePath = (imagePath) => {
+        // Filename w/o extension
         const replacement = isTabSavedOnDisk
-          // Filename w/o extension
           ? filename.replace(/\.[^/.]+$/, '')
           : ''
         return imagePath.replace(/\${filename}/g, replacement)
       }
 
       const resolvedImageFolderPath = getResolvedImagePath(imageFolderPath)
-      const resolvedImageRelativeDirectoryName = getResolvedImagePath(imageRelativeDirectoryName)
+      const resolvedImageRelativeDirectoryName = getResolvedImagePath(
+        imageRelativeDirectoryName
+      )
       let destImagePath = ''
       switch (imageInsertAction) {
         case 'upload': {
@@ -733,14 +765,27 @@ export default {
               type: 'warning',
               message: err
             })
-            destImagePath = await moveImageToFolder(pathname, image, resolvedImageFolderPath)
+            destImagePath = await moveImageToFolder(
+              pathname,
+              image,
+              resolvedImageFolderPath
+            )
           }
           break
         }
         case 'folder': {
-          destImagePath = await moveImageToFolder(pathname, image, resolvedImageFolderPath)
+          destImagePath = await moveImageToFolder(
+            pathname,
+            image,
+            resolvedImageFolderPath
+          )
           if (isTabSavedOnDisk && imagePreferRelativeDirectory) {
-            destImagePath = await moveToRelativeFolder(relativeBasePath, resolvedImageRelativeDirectoryName, pathname, destImagePath)
+            destImagePath = await moveToRelativeFolder(
+              relativeBasePath,
+              resolvedImageRelativeDirectoryName,
+              pathname,
+              destImagePath
+            )
           }
           break
         }
@@ -750,11 +795,20 @@ export default {
             destImagePath = image
           } else {
             // Save and move image to image folder if input is binary.
-            destImagePath = await moveImageToFolder(pathname, image, resolvedImageFolderPath)
+            destImagePath = await moveImageToFolder(
+              pathname,
+              image,
+              resolvedImageFolderPath
+            )
 
             // Respect user preferences if tab exists on disk.
             if (isTabSavedOnDisk && imagePreferRelativeDirectory) {
-              destImagePath = await moveToRelativeFolder(relativeBasePath, resolvedImageRelativeDirectoryName, pathname, destImagePath)
+              destImagePath = await moveToRelativeFolder(
+                relativeBasePath,
+                resolvedImageRelativeDirectoryName,
+                pathname,
+                destImagePath
+              )
             }
           }
           break
@@ -791,11 +845,14 @@ export default {
 
       // This method is also called from bus, so validate state before continuing.
       if (!isEnabled) {
-        throw new Error('Cannot switch language because spell checker is disabled!')
+        throw new Error(
+          'Cannot switch language because spell checker is disabled!'
+        )
       }
 
-      spellchecker.switchLanguage(languageCode)
-        .then(langCode => {
+      spellchecker
+        .switchLanguage(languageCode)
+        .then((langCode) => {
           if (!langCode) {
             // Unable to switch language due to missing dictionary. The spell checker is now in an invalid state.
             notice.notify({
@@ -805,7 +862,7 @@ export default {
             })
           }
         })
-        .catch(error => {
+        .catch((error) => {
           log.error(`Error while switching to language "${languageCode}":`)
           log.error(error)
 
@@ -852,7 +909,10 @@ export default {
         return
       }
 
-      if (this.editor && (this.editor.hasFocus() || this.editor.contentState.selectedTableCells)) {
+      if (
+        this.editor &&
+        (this.editor.hasFocus() || this.editor.contentState.selectedTableCells)
+      ) {
         this.editor.selectAll()
       } else {
         const activeElement = document.activeElement
@@ -896,7 +956,11 @@ export default {
       this.$nextTick(() => {
         const { container } = this.editor
         const { y } = this.editor.getSelection().cursorCoords
-        animatedScrollTo(container, container.scrollTop + y - STANDAR_Y, duration)
+        animatedScrollTo(
+          container,
+          container.scrollTop + y - STANDAR_Y,
+          duration
+        )
       })
     },
 
@@ -915,7 +979,11 @@ export default {
       if (anchor) {
         const { y } = anchor.getBoundingClientRect()
         const DURATION = 300
-        animatedScrollTo(container, container.scrollTop + y - STANDAR_Y, DURATION)
+        animatedScrollTo(
+          container,
+          container.scrollTop + y - STANDAR_Y,
+          DURATION
+        )
       }
     },
 
@@ -926,13 +994,7 @@ export default {
     },
 
     async handleExport (options) {
-      const {
-        type,
-        header,
-        footer,
-        headerFooterStyled,
-        htmlTitle
-      } = options
+      const { type, header, footer, headerFooterStyled, htmlTitle } = options
 
       if (!/^pdf|print|styledHtml$/.test(type)) {
         throw new Error(`Invalid type to export: "${type}".`)
@@ -956,7 +1018,8 @@ export default {
             notice.notify({
               title: `Printing/Exporting ${htmlTitle || 'html'} failed`,
               type: 'error',
-              message: err.message || 'There is something wrong when exporting.'
+              message:
+                err.message || 'There is something wrong when exporting.'
             })
           }
           break
@@ -964,9 +1027,13 @@ export default {
         case 'pdf': {
           // NOTE: We need to set page size via Electron.
           try {
-            const { pageSize, pageSizeWidth, pageSizeHeight, isLandscape } = options
+            const { pageSize, pageSizeWidth, pageSizeHeight, isLandscape } =
+              options
             const pageOptions = {
-              pageSize, pageSizeWidth, pageSizeHeight, isLandscape
+              pageSize,
+              pageSizeWidth,
+              pageSizeHeight,
+              isLandscape
             }
 
             const html = await this.editor.exportStyledHTML({
@@ -985,7 +1052,9 @@ export default {
             notice.notify({
               title: 'Printing/Exporting failed',
               type: 'error',
-              message: `There is something wrong when export ${htmlTitle || 'PDF'}.`
+              message: `There is something wrong when export ${
+                htmlTitle || 'PDF'
+              }.`
             })
             this.handlePrintServiceClearup()
           }
@@ -1010,7 +1079,9 @@ export default {
             notice.notify({
               title: 'Printing/Exporting failed',
               type: 'error',
-              message: `There is something wrong when print ${htmlTitle || ''}.`
+              message: `There is something wrong when print ${
+                htmlTitle || ''
+              }.`
             })
             this.handlePrintServiceClearup()
           }
@@ -1144,7 +1215,10 @@ export default {
     bus.$off('scroll-to-header', this.scrollToHeader)
     bus.$off('screenshot-captured', this.handleScreenShot)
     bus.$off('switch-spellchecker-language', this.switchSpellcheckLanguage)
-    bus.$off('open-command-spellchecker-switch-language', this.openSpellcheckerLanguageCommand)
+    bus.$off(
+      'open-command-spellchecker-switch-language',
+      this.openSpellcheckerLanguageCommand
+    )
     bus.$off('replace-misspelling', this.replaceMisspelling)
 
     document.removeEventListener('keyup', this.keyup)
@@ -1156,74 +1230,74 @@ export default {
 </script>
 
 <style>
-  .editor-wrapper {
-    height: 100%;
-    position: relative;
-    flex: 1;
-    color: var(--editorColor);
-    & .ag-dialog-table {
-      & .el-button {
-        font-size: 13px;
-        width: 70px;
-      }
+.editor-wrapper {
+  height: 100%;
+  position: relative;
+  flex: 1;
+  color: var(--editorColor);
+  & .ag-dialog-table {
+    & .el-button {
+      font-size: 13px;
+      width: 70px;
     }
   }
+}
 
-  .editor-wrapper.source {
+.editor-wrapper.source {
+  position: absolute;
+  z-index: -1;
+  top: 0;
+  left: 0;
+  overflow: hidden;
+}
+
+.editor-component {
+  height: 100%;
+  overflow: auto;
+  box-sizing: border-box;
+  cursor: default;
+}
+
+.typewriter .editor-component {
+  padding-top: calc(50vh - 136px);
+  padding-bottom: calc(50vh - 54px);
+}
+
+.image-viewer {
+  position: fixed;
+  backdrop-filter: blur(5px);
+  top: 0;
+  right: 0;
+  left: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.8);
+  z-index: 11;
+  & .icon-close {
+    z-index: 1000;
+    width: 30px;
+    height: 30px;
     position: absolute;
-    z-index: -1;
-    top: 0;
-    left: 0;
-    overflow: hidden;
-  }
-
-  .editor-component {
-    height: 100%;
-    overflow: auto;
-    box-sizing: border-box;
-    cursor: default;
-  }
-
-  .typewriter .editor-component {
-    padding-top: calc(50vh - 136px);
-    padding-bottom: calc(50vh - 54px);
-  }
-
-  .image-viewer {
-    position: fixed;
-    backdrop-filter: blur(5px);
-    top: 0;
-    right: 0;
-    left: 0;
-    bottom: 0;
-    background: rgba(0, 0, 0, .8);
-    z-index: 11;
-    & .icon-close {
-      z-index: 1000;
-      width: 30px;
-      height: 30px;
-      position: absolute;
-      top: 50px;
-      left: 50px;
-      display: block;
-      & svg {
-        fill: #efefef;
-        width: 100%;
-        height: 100%;
-      }
+    top: 50px;
+    left: 50px;
+    display: block;
+    & svg {
+      fill: #efefef;
+      width: 100%;
+      height: 100%;
     }
   }
+}
 
-  .iv-container {
-    width: 100%;
-    height: 100%;
-  }
+.iv-container {
+  width: 100%;
+  height: 100%;
+}
 
-  .iv-snap-view {
-    opacity: 1;
-    bottom: 20px;
-    right: 20px;
-    top: auto;
-    left: auto;
-  }
+.iv-snap-view {
+  opacity: 1;
+  bottom: 20px;
+  right: 20px;
+  top: auto;
+  left: auto;
+}
 </style>

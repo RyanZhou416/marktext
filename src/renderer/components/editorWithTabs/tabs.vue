@@ -1,16 +1,13 @@
 <template>
   <div class="editor-tabs">
-    <div
-      class="scrollable-tabs"
-      ref="tabContainer"
-    >
-      <ul
-        ref="tabDropContainer"
-        class="tabs-container"
-      >
+    <div class="scrollable-tabs" ref="tabContainer">
+      <ul ref="tabDropContainer" class="tabs-container">
         <li
           :title="file.pathname"
-          :class="{'active': currentFile.id === file.id, 'unsaved': !file.isSaved }"
+          :class="{
+            active: currentFile.id === file.id,
+            unsaved: !file.isSaved,
+          }"
           v-for="file of tabs"
           :key="file.id"
           :data-id="file.id"
@@ -19,7 +16,9 @@
           @contextmenu.prevent="handleContextMenu($event, file)"
         >
           <span>{{ file.filename }}</span>
-          <svg class="close-icon icon" aria-hidden="true"
+          <svg
+            class="close-icon icon"
+            aria-hidden="true"
             @click.stop="removeFileInTab(file)"
           >
             <circle id="unsaved-circle-icon" cx="6" cy="6" r="3"></circle>
@@ -28,12 +27,8 @@
         </li>
       </ul>
     </div>
-    <div
-      class="new-file"
-    >
-      <svg class="icon" aria-hidden="true"
-        @click.stop="newFile()"
-      >
+    <div class="new-file">
+      <svg class="icon" aria-hidden="true" @click.stop="newFile()">
         <use xlink:href="#icon-plus"></use>
       </svg>
     </div>
@@ -41,7 +36,7 @@
 </template>
 
 <script>
-import { shell, clipboard } from 'electron'
+import { shell, clipboard } from '../../util/electron'
 import { mapState } from 'vuex'
 import autoScroll from 'dom-autoscroller'
 import dragula from 'dragula'
@@ -58,8 +53,8 @@ export default {
   mixins: [tabsMixins],
   computed: {
     ...mapState({
-      currentFile: state => state.editor.currentFile,
-      tabs: state => state.editor.tabs
+      currentFile: (state) => state.editor.currentFile,
+      tabs: (state) => state.editor.tabs
     })
   },
   methods: {
@@ -74,17 +69,20 @@ export default {
       }
 
       const tabs = this.$refs.tabContainer
-      const newLeft = Math.max(0, Math.min(tabs.scrollLeft + delta, tabs.scrollWidth))
+      const newLeft = Math.max(
+        0,
+        Math.min(tabs.scrollLeft + delta, tabs.scrollWidth)
+      )
       tabs.scrollLeft = newLeft
     },
     closeTab (tabId) {
-      const tab = this.tabs.find(f => f.id === tabId)
+      const tab = this.tabs.find((f) => f.id === tabId)
       if (tab) {
         this.$store.dispatch('CLOSE_TAB', tab)
       }
     },
     closeOthers (tabId) {
-      const tab = this.tabs.find(f => f.id === tabId)
+      const tab = this.tabs.find((f) => f.id === tabId)
       if (tab) {
         this.$store.dispatch('CLOSE_OTHER_TABS', tab)
       }
@@ -96,19 +94,19 @@ export default {
       this.$store.dispatch('CLOSE_ALL_TABS')
     },
     rename (tabId) {
-      const tab = this.tabs.find(f => f.id === tabId)
+      const tab = this.tabs.find((f) => f.id === tabId)
       if (tab && tab.pathname) {
         this.$store.dispatch('RENAME_FILE', tab)
       }
     },
     copyPath (tabId) {
-      const tab = this.tabs.find(f => f.id === tabId)
+      const tab = this.tabs.find((f) => f.id === tabId)
       if (tab && tab.pathname) {
         clipboard.writeText(tab.pathname)
       }
     },
     showInFolder (tabId) {
-      const tab = this.tabs.find(f => f.id === tabId)
+      const tab = this.tabs.find((f) => f.id === tabId)
       if (tab && tab.pathname) {
         shell.showItemInFolder(tab.pathname)
       }
@@ -138,7 +136,7 @@ export default {
       tabs.addEventListener('wheel', this.handleTabScroll)
 
       // Allow tab drag and drop to reorder tabs.
-      const drake = this.drake = dragula([this.$refs.tabDropContainer], {
+      const drake = (this.drake = dragula([this.$refs.tabDropContainer], {
         direction: 'horizontal',
         revertOnSpill: true,
         mirrorContainer: this.$refs.tabDropContainer,
@@ -158,7 +156,7 @@ export default {
           fromId: droppedId,
           toId: isLastTab ? null : nextTabId
         })
-      })
+      }))
 
       // TODO(perf): Create a copy of dom-autoscroller and just hook tabs-container to
       //   improve performance. Currently autoScroll is triggered when the mouse is moved
@@ -200,139 +198,139 @@ export default {
 </script>
 
 <style scoped>
-  svg.close-icon #unsaved-circle-icon {
-    fill: var(--themeColor);
+svg.close-icon #unsaved-circle-icon {
+  fill: var(--themeColor);
+}
+.editor-tabs {
+  position: relative;
+  display: flex;
+  flex-direction: row;
+  height: 35px;
+  user-select: none;
+  box-shadow: 0px 0px 9px 2px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+  &:hover > .new-file {
+    opacity: 1 !important;
   }
-  .editor-tabs {
+}
+.scrollable-tabs {
+  flex: 0 1 auto;
+  height: 35px;
+  overflow: hidden;
+}
+.tabs-container {
+  min-width: min-content;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  height: 35px;
+  position: relative;
+  display: flex;
+  flex-direction: row;
+  overflow-y: hidden;
+  z-index: 2;
+  &::-webkit-scrollbar:horizontal {
+    display: none;
+  }
+  & > li {
     position: relative;
-    display: flex;
-    flex-direction: row;
+    padding: 0 8px;
+    color: var(--editorColor50);
+    font-size: 12px;
+    line-height: 35px;
     height: 35px;
-    user-select: none;
-    box-shadow: 0px 0px 9px 2px rgba(0, 0, 0, .1);
-    overflow: hidden;
-    &:hover > .new-file {
-      opacity: 1 !important;
-    }
-  }
-  .scrollable-tabs {
-    flex: 0 1 auto;
-    height: 35px;
-    overflow: hidden;
-  }
-  .tabs-container {
-    min-width: min-content;
-    list-style: none;
-    margin: 0;
-    padding: 0;
-    height: 35px;
-    position: relative;
-    display: flex;
-    flex-direction: row;
-    overflow-y: hidden;
-    z-index: 2;
-    &::-webkit-scrollbar:horizontal {
-      display: none;
-    }
-    & > li {
-      position: relative;
-      padding: 0 8px;
-      color: var(--editorColor50);
-      font-size: 12px;
-      line-height: 35px;
-      height: 35px;
-      max-width: 280px;
-      background: var(--floatBgColor);
-      display: flex;
-      align-items: center;
-      &[aria-grabbed="true"] {
-        color: var(--editorColor30) !important;
-      }
-      & > svg {
-        opacity: 0;
-      }
-      &:focus {
-        outline: none;
-      }
-      &:hover > svg {
-        opacity: 1;
-      }
-      &:hover > svg.close-icon #default-close-icon {
-        display: block !important;
-      }
-      &:hover > svg.close-icon #unsaved-circle-icon {
-        display: none !important;
-      }
-      & > span {
-        overflow: hidden;
-        text-overflow: ellipsis;
-        white-space: nowrap;
-        margin-right: 3px;
-      }
-    }
-    & > li.unsaved:not(.active) {
-      & > svg.close-icon {
-        opacity: 1;
-      }
-      & > svg.close-icon #unsaved-circle-icon {
-        display: block;
-      }
-      & > svg.close-icon #default-close-icon {
-        display: none;
-      }
-    }
-    & > li.active {
-      background: var(--itemBgColor);
-      z-index: 3;
-      &:after {
-        content: '';
-        position: absolute;
-        left: 0;
-        bottom: 0;
-        right: 0;
-        height: 2px;
-        background: var(--themeColor);
-      }
-      & > svg {
-        opacity: 1;
-      }
-      & > svg.close-icon #unsaved-circle-icon {
-        display: none;
-      }
-    }
-  }
-  .editor-tabs > .new-file {
-    flex: 0 0 35px;
-    width: 35px;
-    height: 35px;
-    border-right: none;
-    background: transparent;
+    max-width: 280px;
+    background: var(--floatBgColor);
     display: flex;
     align-items: center;
-    justify-content: space-around;
-    cursor: pointer;
-    color: var(--editorColor50);
-    opacity: 0;
-    &.always-visible {
+    &[aria-grabbed="true"] {
+      color: var(--editorColor30) !important;
+    }
+    & > svg {
+      opacity: 0;
+    }
+    &:focus {
+      outline: none;
+    }
+    &:hover > svg {
       opacity: 1;
     }
+    &:hover > svg.close-icon #default-close-icon {
+      display: block !important;
+    }
+    &:hover > svg.close-icon #unsaved-circle-icon {
+      display: none !important;
+    }
+    & > span {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      margin-right: 3px;
+    }
   }
+  & > li.unsaved:not(.active) {
+    & > svg.close-icon {
+      opacity: 1;
+    }
+    & > svg.close-icon #unsaved-circle-icon {
+      display: block;
+    }
+    & > svg.close-icon #default-close-icon {
+      display: none;
+    }
+  }
+  & > li.active {
+    background: var(--itemBgColor);
+    z-index: 3;
+    &:after {
+      content: "";
+      position: absolute;
+      left: 0;
+      bottom: 0;
+      right: 0;
+      height: 2px;
+      background: var(--themeColor);
+    }
+    & > svg {
+      opacity: 1;
+    }
+    & > svg.close-icon #unsaved-circle-icon {
+      display: none;
+    }
+  }
+}
+.editor-tabs > .new-file {
+  flex: 0 0 35px;
+  width: 35px;
+  height: 35px;
+  border-right: none;
+  background: transparent;
+  display: flex;
+  align-items: center;
+  justify-content: space-around;
+  cursor: pointer;
+  color: var(--editorColor50);
+  opacity: 0;
+  &.always-visible {
+    opacity: 1;
+  }
+}
 
-  /* dragula effects */
-  .gu-mirror {
-    position: fixed !important;
-    margin: 0 !important;
-    z-index: 9999 !important;
-    opacity: 0.8;
-    cursor: grabbing;
-  }
-  .gu-hide {
-    display: none !important;
-  }
-  .gu-unselectable {
-    user-select: none !important;
-  }
-  .gu-transit {
-    opacity: 0.2;
-  }
+/* dragula effects */
+.gu-mirror {
+  position: fixed !important;
+  margin: 0 !important;
+  z-index: 9999 !important;
+  opacity: 0.8;
+  cursor: grabbing;
+}
+.gu-hide {
+  display: none !important;
+}
+.gu-unselectable {
+  user-select: none !important;
+}
+.gu-transit {
+  opacity: 0.2;
+}
 </style>

@@ -6,6 +6,12 @@
   "files.eol": "\n",
   "files.insertFinalNewline": true,
 
+  // Disable auto format on save to prevent ESLint conflicts
+  "editor.formatOnSave": false,
+  "editor.codeActionsOnSave": {
+    "source.fixAll.eslint": "explicit"
+  },
+
   "search.exclude": {
     "**/.git": true,
     "**/build": true,

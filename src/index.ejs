@@ -61,12 +61,26 @@
         }
       }
     </style>
-    <% if (htmlWebpackPlugin.options.nodeModules) { %>
-      <!-- Add `node_modules/` to global paths so `require` works properly in development -->
-      <script>
-        require('module').globalPaths.push('<%= htmlWebpackPlugin.options.nodeModules.replace(/\\/g, '\\\\') %>')
-      </script>
-    <% } %>
+    <!-- 
+      渲染进程现代化：纯 Web 环境
+      - 不使用 require（Node.js 功能通过 preload 暴露）
+      - global 和 process 通过下方脚本 polyfill
+    -->
+    <script>
+      // Polyfill global for libraries that expect it
+      if (typeof window.global === 'undefined') {
+        window.global = window;
+      }
+      // Polyfill process for libraries that check process.env
+      if (typeof window.process === 'undefined') {
+        window.process = {
+          env: {},
+          platform: 'browser',
+          version: '',
+          nextTick: function(cb) { setTimeout(cb, 0); }
+        };
+      }
+    </script>
   </head>
   <body autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
     <!-- Vue app -->
@@ -97,12 +111,11 @@
       })
     </script>
 
-    <!-- Set `__static` path to static files in production -->
-    <% if (!htmlWebpackPlugin.options.isBrowser && !htmlWebpackPlugin.options.isDevelopment) { %>
-      <script>
-        window.__static = require('path').join(__dirname, '/static').replace(/\\/g, '\\\\')
-      </script>
-    <% } %>
+    <!-- 
+      __static 路径：
+      - 开发环境：由 webpack DefinePlugin 定义
+      - 生产环境：由 webpack DefinePlugin 定义为 "static"，preload 会提供完整路径
+    -->
 
     <!-- webpack builds are automatically injected -->
   </body>

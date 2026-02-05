@@ -18,7 +18,7 @@
             @keydown="handleBeforeInput"
             @keyup="handleInput"
             :placeholder="placeholderText"
-          >
+          />
         </div>
         <loading v-if="searcherBusy"></loading>
         <transition name="fade" v-else-if="availableCommands.length">
@@ -28,16 +28,18 @@
               :key="index"
               ref="command-items"
               @click="search(item.id)"
-              :class="{'active': index === selectedCommandIndex}"
+              :class="{ active: index === selectedCommandIndex }"
             >
-              <span class="title" :title="item.title">{{item.description}}</span>
+              <span class="title" :title="item.title">{{
+                item.description
+              }}</span>
               <span class="shortcut">
                 <span
                   class="shortcut"
                   v-for="(accelerator, index) of item.shortcut"
                   :key="index"
                 >
-                    <kbd>{{accelerator}}</kbd>
+                  <kbd>{{ accelerator }}</kbd>
                 </span>
               </span>
             </li>
@@ -50,7 +52,7 @@
 
 <script>
 import { mapState } from 'vuex'
-import log from 'electron-log'
+import log from '../../util/logger'
 import bus from '../../bus'
 import loading from '../loading'
 
@@ -60,7 +62,7 @@ export default {
   },
   computed: {
     ...mapState({
-      rootCommand: state => state.commandCenter.rootCommand
+      rootCommand: (state) => state.commandCenter.rootCommand
     })
   },
   data () {
@@ -86,11 +88,14 @@ export default {
   methods: {
     handleShow (command) {
       this.currentCommand = command || this.rootCommand
-      this.currentCommand.run()
+      this.currentCommand
+        .run()
         .then(() => {
           this.availableCommands = this.currentCommand.subcommands
-          this.selectedCommandIndex = this.currentCommand.subcommandSelectedIndex
-          this.placeholderText = this.currentCommand.placeholder || this.defaultPlaceholderText
+          this.selectedCommandIndex =
+            this.currentCommand.subcommandSelectedIndex
+          this.placeholderText =
+            this.currentCommand.placeholder || this.defaultPlaceholderText
           this.query = ''
           this.showCommandPalette = true
           bus.$emit('editor-blur')
@@ -99,7 +104,9 @@ export default {
             const items = this.$refs['command-items']
             const { selectedCommandIndex } = this
             if (items && items.length > 0 && selectedCommandIndex >= 0) {
-              this.$refs['command-items'][selectedCommandIndex].scrollIntoView({ block: 'end' })
+              this.$refs['command-items'][selectedCommandIndex].scrollIntoView({
+                block: 'end'
+              })
             }
 
             if (this.$refs.search) {
@@ -107,7 +114,7 @@ export default {
             }
           })
         })
-        .catch(error => {
+        .catch((error) => {
           // Allow to throw new Error(null) to indicate an invalid state.
           if (error && error.message) {
             log.error('Unable to initialize command:', error)
@@ -138,7 +145,9 @@ export default {
 
           const items = this.$refs['command-items']
           if (items && items.length > 0) {
-            this.$refs['command-items'][this.selectedCommandIndex].scrollIntoView({ block: 'end' })
+            this.$refs['command-items'][
+              this.selectedCommandIndex
+            ].scrollIntoView({ block: 'end' })
           }
           break
         }
@@ -153,7 +162,9 @@ export default {
 
           const items = this.$refs['command-items']
           if (items && items.length > 0) {
-            this.$refs['command-items'][this.selectedCommandIndex].scrollIntoView({ block: 'end' })
+            this.$refs['command-items'][
+              this.selectedCommandIndex
+            ].scrollIntoView({ block: 'end' })
           }
           break
         }
@@ -195,7 +206,10 @@ export default {
         // Command selected from dropdown.
         this.executeCommand(commandId)
         return
-      } else if (selectedCommandIndex >= 0 && selectedCommandIndex < availableCommands.length) {
+      } else if (
+        selectedCommandIndex >= 0 &&
+        selectedCommandIndex < availableCommands.length
+      ) {
         // Pressed enter on selected command.
         this.executeCommand(availableCommands[selectedCommandIndex].id)
         return
@@ -211,13 +225,14 @@ export default {
       // Allow to handle search result by command (e.g. quick search).
       if (currentCommand.search) {
         this.searcherBusy = true
-        currentCommand.search(queryString)
-          .then(result => {
+        currentCommand
+          .search(queryString)
+          .then((result) => {
             this.searcherBusy = false
             this.availableCommands = result || []
             this.selectedCommandIndex = this.availableCommands.length ? 0 : -1
           })
-          .catch(error => {
+          .catch((error) => {
             // The query was cancel or restarted if `message` is null.
             if (error && error.message) {
               this.searcherBusy = false
@@ -233,14 +248,17 @@ export default {
       if (!queryString) {
         this.availableCommands = currentCommand.subcommands
       } else {
-        this.availableCommands = currentCommand.subcommands
-          .filter(c => c.description.toLowerCase().indexOf(queryString.toLowerCase()) !== -1)
+        this.availableCommands = currentCommand.subcommands.filter(
+          (c) =>
+            c.description.toLowerCase().indexOf(queryString.toLowerCase()) !==
+            -1
+        )
       }
       this.selectedCommandIndex = this.availableCommands.length ? 0 : -1
     },
     executeCommand (commandId) {
       const { availableCommands, currentCommand } = this
-      const command = availableCommands.find(c => c.id === commandId)
+      const command = availableCommands.find((c) => c.id === commandId)
       if (!command) {
         log.error(`Cannot find command "${commandId}".`)
         return
@@ -272,128 +290,129 @@ export default {
 </script>
 
 <style scoped>
-  /* Hide scrollbar for this dialog */
-  ::-webkit-scrollbar {
-    display: none;
-  }
+/* Hide scrollbar for this dialog */
+::-webkit-scrollbar {
+  display: none;
+}
 
-  .search-wrapper {
-    position: absolute;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    width: 500px;
-    height: auto;
-    top: 0;
-    left: 50%;
-    transform: translateX(-50%);
-    padding: 8px;
-    margin: 0 auto;
-    margin-top: 8px;
-    box-sizing: border-box;
-    color: var(--editorColor);
-    background: var(--floatBgColor);
-    border: 1px solid var(--floatBorderColor);
-    border-radius: 4px;
-    box-shadow: 0 3px 8px 3px var(--floatShadow);
-    z-index: 10000;
+.search-wrapper {
+  position: absolute;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 500px;
+  height: auto;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 8px;
+  margin: 0 auto;
+  margin-top: 8px;
+  box-sizing: border-box;
+  color: var(--editorColor);
+  background: var(--floatBgColor);
+  border: 1px solid var(--floatBorderColor);
+  border-radius: 4px;
+  box-shadow: 0 3px 8px 3px var(--floatShadow);
+  z-index: 10000;
+}
+.input-wrapper {
+  display: block;
+  width: 100%;
+  border: 1px solid var(--inputBgColor);
+  background: var(--inputBgColor);
+  border-radius: 3px;
+}
+input.search {
+  width: 100%;
+  height: 30px;
+  margin: 0 10px;
+  font-size: 14px;
+  color: var(--editorColor);
+  background: transparent;
+  outline: none;
+  border: none;
+}
+.cpt-loading {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 50px;
+  padding: 0;
+  margin: 8px 0 0 0;
+  box-sizing: border-box;
+}
+ul.commands {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  max-height: 300px;
+  padding: 0;
+  margin: 8px 0 0 0;
+  box-sizing: border-box;
+  list-style: none;
+  overflow: hidden;
+  overflow-y: scroll;
+}
+ul.commands li {
+  position: relative;
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: center;
+  max-width: 100%;
+  height: 35px;
+  padding: 0 8px;
+  font-size: 14px;
+  line-height: 35px;
+  text-overflow: ellipsis;
+  cursor: pointer;
+}
+ul.commands li:hover {
+  background: var(--floatHoverColor);
+  opacity: 0.9;
+}
+ul.commands li.active {
+  background: var(--floatHoverColor);
+}
+ul.commands li span {
+  text-overflow: ellipsis;
+  overflow: hidden;
+  white-space: nowrap;
+}
+ul.commands li span.shortcut {
+  font-size: 12px;
+  line-height: 20px;
+  & > kbd {
+    margin-left: 2px;
   }
-  .input-wrapper {
-    display: block;
-    width: 100%;
-    border: 1px solid var(--inputBgColor);
-    background: var(--inputBgColor);
-    border-radius: 3px;
-  }
-  input.search {
-    width: 100%;
-    height: 30px;
-    margin: 0 10px;
-    font-size: 14px;
-    color: var(--editorColor);
-    background: transparent;
-    outline: none;
-    border: none;
-  }
-  .cpt-loading {
-    position: relative;
-    display: flex;
-    flex-direction: column;
-    width: 100%;
-    height: 50px;
-    padding: 0;
-    margin: 8px 0 0 0;
-    box-sizing: border-box;
-  }
-  ul.commands {
-    display: flex;
-    flex-direction: column;
-    width: 100%;
-    max-height: 300px;
-    padding: 0;
-    margin: 8px 0 0 0;
-    box-sizing: border-box;
-    list-style: none;
-    overflow: hidden;
-    overflow-y: scroll;
-  }
-  ul.commands li {
-    position: relative;
-    display: flex;
-    flex-direction: row;
-    justify-content: space-between;
-    align-items: center;
-    max-width: 100%;
-    height: 35px;
-    padding: 0 8px;
-    font-size: 14px;
-    line-height: 35px;
-    text-overflow: ellipsis;
-    cursor: pointer;
-  }
-  ul.commands li:hover {
-    background: var(--floatHoverColor);
-    opacity: 0.9;
-  }
-  ul.commands li.active {
-    background: var(--floatHoverColor);
-  }
-  ul.commands li span {
-    text-overflow: ellipsis;
-    overflow: hidden;
-    white-space: nowrap;
-  }
-  ul.commands li span.shortcut {
-    font-size: 12px;
-    line-height: 20px;
-    & > kbd {
-      margin-left: 2px;
-    }
-  }
+}
 
-  .fade-enter-active, .fade-leave-active {
-    transition: opacity .2s;
-  }
-  .fade-enter, .fade-leave-to /* .fade-leave-active below version 2.1.8 */ {
-    opacity: 0;
-  }
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.2s;
+}
+.fade-enter, .fade-leave-to /* .fade-leave-active below version 2.1.8 */ {
+  opacity: 0;
+}
 </style>
 <style>
-  .command-palette .cpt-loading .loader {
-    margin-top: 20px;
-  }
+.command-palette .cpt-loading .loader {
+  margin-top: 20px;
+}
 
-  .command-palette .el-dialog,
-  .command-palette .el-dialog.ag-dialog-table {
-    box-shadow: none !important;
-    border: none !important;
-    background: none !important;
-  }
-  .command-palette .el-dialog__header {
-    margin-bottom: 20px;
-    padding: 0 !important;
-  }
-  .command-palette .el-dialog__body {
-    display: none !important;
-  }
+.command-palette .el-dialog,
+.command-palette .el-dialog.ag-dialog-table {
+  box-shadow: none !important;
+  border: none !important;
+  background: none !important;
+}
+.command-palette .el-dialog__header {
+  margin-bottom: 20px;
+  padding: 0 !important;
+}
+.command-palette .el-dialog__body {
+  display: none !important;
+}
 </style>

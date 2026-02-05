@@ -1,28 +1,27 @@
 <template>
-  <section class="pref-text-box-item" :class="{'ag-underdevelop': disable}">
+  <section class="pref-text-box-item" :class="{ 'ag-underdevelop': disable }">
     <div class="description">
-      <span>{{description}}:</span>
-      <i class="el-icon-info" v-if="more"
-        @click="handleMoreClick"
-      ></i>
+      <span>{{ description }}:</span>
+      <i class="el-icon-info" v-if="more" @click="handleMoreClick"></i>
     </div>
     <el-input
       class="input"
-      :class="{error: invalidInput}"
+      :class="{ error: invalidInput }"
       :placeholder="defaultValue"
       v-model="inputText"
       @input="handleInput"
       size="small"
-      clearable>
+      clearable
+    >
     </el-input>
     <div v-if="notes" class="notes">
-      {{notes}}
+      {{ notes }}
     </div>
   </section>
 </template>
 
 <script>
-import { shell } from 'electron'
+import { shell } from '../../../util/electron'
 
 export default {
   data () {
@@ -98,51 +97,51 @@ export default {
 </script>
 
 <style>
-  .pref-text-box-item {
-    font-size: 14px;
-    user-select: none;
-    margin: 20px 0;
+.pref-text-box-item {
+  font-size: 14px;
+  user-select: none;
+  margin: 20px 0;
+  color: var(--editorColor);
+  width: 100%;
+  & input.el-input__inner {
+    height: 30px;
+    background: transparent;
     color: var(--editorColor);
+    border-color: var(--editorColor10);
+    padding-right: 15px;
+    &::placeholder {
+      color: var(--editorColor30);
+    }
+  }
+  & .notes {
+    margin-top: 10px;
+    font-style: italic;
+    font-size: 12px;
+  }
+  & .input {
     width: 100%;
-    & input.el-input__inner {
-      height: 30px;
-      background: transparent;
-      color: var(--editorColor);
-      border-color: var(--editorColor10);
-      padding-right: 15px;
-      &::placeholder {
-        color: var(--editorColor30);
-      }
-    }
-    & .notes {
-      margin-top: 10px;
-      font-style: italic;
-      font-size: 12px;
-    }
-    & .input {
-      width: 100%;
-    }
-    & .el-input.is-active .el-input__inner,
-    & .el-input__inner:focus {
-      border-color: var(--themeColor);
-    }
-    & .el-input__icon,
-    & .el-input__inner {
-      line-height: 30px;
-    }
-    & .description {
-      margin-bottom: 10px;
-    }
-    & i {
-      cursor: pointer;
-      opacity: .7;
-      color: var(--iconColor);
-    }
-    & i:hover {
-      color: var(--themeColor);
-    }
   }
-  .pref-text-box-item .el-input.error input {
-    color: #f56c6c;
+  & .el-input.is-active .el-input__inner,
+  & .el-input__inner:focus {
+    border-color: var(--themeColor);
   }
+  & .el-input__icon,
+  & .el-input__inner {
+    line-height: 30px;
+  }
+  & .description {
+    margin-bottom: 10px;
+  }
+  & i {
+    cursor: pointer;
+    opacity: 0.7;
+    color: var(--iconColor);
+  }
+  & i:hover {
+    color: var(--themeColor);
+  }
+}
+.pref-text-box-item .el-input.error input {
+  color: #f56c6c;
+}
 </style>

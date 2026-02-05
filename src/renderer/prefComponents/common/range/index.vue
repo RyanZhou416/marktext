@@ -1,24 +1,26 @@
 <template>
-  <section class="pref-range-item" :class="{'ag-underdevelop': disable}">
+  <section class="pref-range-item" :class="{ 'ag-underdevelop': disable }">
     <div class="description">
-      <span>{{description}}:</span> <span class="value" v-if="selectValue">{{selectValue}} <span v-if="unit">{{unit}}</span></span>
-      <i class="el-icon-info" v-if="more"
-        @click="handleMoreClick"
-      ></i>
+      <span>{{ description }}:</span>
+      <span class="value" v-if="selectValue"
+        >{{ selectValue }} <span v-if="unit">{{ unit }}</span></span
+      >
+      <i class="el-icon-info" v-if="more" @click="handleMoreClick"></i>
     </div>
     <el-slider
       v-model="selectValue"
       @change="select"
       :min="min"
       :max="max"
-      :format-tooltip="value => value + (unit ? unit : '')"
-      :step="step">
+      :format-tooltip="(value) => value + (unit ? unit : '')"
+      :step="step"
+    >
     </el-slider>
   </section>
 </template>
 
 <script>
-import { shell } from 'electron'
+import { shell } from '../../../util/electron'
 
 export default {
   data () {
@@ -69,7 +71,7 @@ export default {
   & .value {
     text-align: right;
     font-style: italic;
-    float: right
+    float: right;
   }
   & .el-slider {
     width: 100%;
@@ -96,7 +98,7 @@ export default {
   }
   & i {
     cursor: pointer;
-    opacity: .7;
+    opacity: 0.7;
     color: var(--iconColor);
   }
   & i:hover {

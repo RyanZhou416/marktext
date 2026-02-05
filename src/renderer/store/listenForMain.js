@@ -1,4 +1,4 @@
-import { ipcRenderer } from 'electron'
+import { ipcRenderer } from '../util/electron'
 import bus from '../bus'
 
 const state = {}
@@ -21,7 +21,7 @@ const actions = {
   },
 
   LISTEN_FOR_SHOW_DIALOG ({ commit }) {
-    ipcRenderer.on('mt::about-dialog', e => {
+    ipcRenderer.on('mt::about-dialog', (e) => {
       bus.$emit('aboutDialog')
     })
     ipcRenderer.on('mt::show-export-dialog', (e, type) => {

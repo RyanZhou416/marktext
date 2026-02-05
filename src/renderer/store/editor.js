@@ -1,11 +1,21 @@
-import { clipboard, ipcRenderer, shell, webFrame } from 'electron'
-import path from 'path'
+import {
+  clipboard,
+  ipcRenderer,
+  shell,
+  webFrame,
+  path
+} from '../util/electron'
 import equal from 'fast-deep-equal'
 import { isSamePathSync } from 'common/filesystem/paths'
 import bus from '../bus'
 import { hasKeys, getUniqueId } from '../util'
 import listToTree from '../util/listToTree'
-import { createDocumentState, getOptionsFromState, getSingleFileState, getBlankFileState } from './help'
+import {
+  createDocumentState,
+  getOptionsFromState,
+  getSingleFileState,
+  getBlankFileState
+} from './help'
 import notice from '../services/notification'
 import {
   FileEncodingCommand,
@@ -39,7 +49,13 @@ const mutations = {
       window.DIRNAME = pathname ? path.dirname(pathname) : ''
       // set state first, then emit file changed event
       state.currentFile = currentFile
-      bus.$emit('file-changed', { id, markdown, cursor, renderCursor: true, history })
+      bus.$emit('file-changed', {
+        id,
+        markdown,
+        cursor,
+        renderCursor: true,
+        history
+      })
     }
   },
   ADD_FILE_TO_TABS (state, currentFile) {
@@ -57,12 +73,19 @@ const mutations = {
     }
 
     if (file.id === currentFile.id) {
-      const fileState = state.tabs[index] || state.tabs[index - 1] || state.tabs[0] || {}
+      const fileState =
+        state.tabs[index] || state.tabs[index - 1] || state.tabs[0] || {}
       state.currentFile = fileState
       if (typeof fileState.markdown === 'string') {
         const { id, markdown, cursor, history, pathname } = fileState
         window.DIRNAME = pathname ? path.dirname(pathname) : ''
-        bus.$emit('file-changed', { id, markdown, cursor, renderCursor: true, history })
+        bus.$emit('file-changed', {
+          id,
+          markdown,
+          cursor,
+          renderCursor: true,
+          history
+        })
       }
     }
 
@@ -88,11 +111,11 @@ const mutations = {
       return arr.length === len
     }
 
-    const fromIndex = tabs.findIndex(t => t.id === fromId)
+    const fromIndex = tabs.findIndex((t) => t.id === fromId)
     if (!toId) {
       moveItem(tabs, fromIndex, tabs.length - 1)
     } else {
-      const toIndex = tabs.findIndex(t => t.id === toId)
+      const toIndex = tabs.findIndex((t) => t.id === toId)
       const realToIndex = fromIndex < toIndex ? toIndex - 1 : toIndex
       moveItem(tabs, fromIndex, realToIndex)
     }
@@ -109,18 +132,29 @@ const mutations = {
       markdown,
       filename
     } = data
-    const options = { encoding, lineEnding, adjustLineEndingOnSave, trimTrailingNewline }
+    const options = {
+      encoding,
+      lineEnding,
+      adjustLineEndingOnSave,
+      trimTrailingNewline
+    }
 
     // Create a new document and update few entires later.
-    const newFileState = getSingleFileState({ markdown, filename, pathname, options })
+    const newFileState = getSingleFileState({
+      markdown,
+      filename,
+      pathname,
+      options
+    })
 
-    const tab = tabs.find(t => isSamePathSync(t.pathname, pathname))
+    const tab = tabs.find((t) => isSamePathSync(t.pathname, pathname))
     if (!tab) {
       // The tab may be closed in the meanwhile.
       console.error('LOAD_CHANGE: Cannot find tab in tab list.')
       notice.notify({
         title: 'Error loading tab',
-        message: 'There was an error while loading the file change because the tab cannot be found.',
+        message:
+          'There was an error while loading the file change because the tab cannot be found.',
         type: 'error',
         time: 20000,
         showConfirm: false
@@ -166,7 +200,13 @@ const mutations = {
     if (pathname === currentFile.pathname) {
       state.currentFile = tab
       const { id, cursor, history } = tab
-      bus.$emit('file-changed', { id, markdown, cursor, renderCursor: true, history })
+      bus.$emit('file-changed', {
+        id,
+        markdown,
+        cursor,
+        renderCursor: true,
+        history
+      })
     }
   },
   // NOTE: Please call this function only from main process via "mt::set-pathname" and free resources before!
@@ -194,7 +234,7 @@ const mutations = {
     }
   },
   SET_SAVE_STATUS_WHEN_REMOVE (state, { pathname }) {
-    state.tabs.forEach(f => {
+    state.tabs.forEach((f) => {
       if (f.pathname === pathname) {
         f.isSaved = false
       }
@@ -251,8 +291,8 @@ const mutations = {
     if (!tabIdList || tabIdList.length === 0) return
 
     let tabIndex = 0
-    tabIdList.forEach(id => {
-      const index = state.tabs.findIndex(f => f.id === id)
+    tabIdList.forEach((id) => {
+      const index = state.tabs.findIndex((f) => f.id === id)
       const { pathname } = state.tabs[index]
 
       // Notify main process to remove the file from the window and free resources.
@@ -271,11 +311,18 @@ const mutations = {
     })
 
     if (!state.currentFile.id && state.tabs.length) {
-      state.currentFile = state.tabs[tabIndex] || state.tabs[tabIndex - 1] || state.tabs[0] || {}
+      state.currentFile =
+        state.tabs[tabIndex] || state.tabs[tabIndex - 1] || state.tabs[0] || {}
       if (typeof state.currentFile.markdown === 'string') {
         const { id, markdown, cursor, history, pathname } = state.currentFile
         window.DIRNAME = pathname ? path.dirname(pathname) : ''
-        bus.$emit('file-changed', { id, markdown, cursor, renderCursor: true, history })
+        bus.$emit('file-changed', {
+          id,
+          markdown,
+          cursor,
+          renderCursor: true,
+          history
+        })
       }
     }
 
@@ -287,7 +334,7 @@ const mutations = {
   },
   RENAME_IF_NEEDED (state, { src, dest }) {
     const { tabs } = state
-    tabs.forEach(f => {
+    tabs.forEach((f) => {
       if (f.pathname === src) {
         f.pathname = dest
         f.filename = path.basename(dest)
@@ -306,7 +353,7 @@ const mutations = {
     const exclusiveType = data.exclusiveType || ''
 
     const { tabs } = state
-    const tab = tabs.find(t => t.id === tabId)
+    const tab = tabs.find((t) => t.id === tabId)
     if (!tab) {
       console.error('PUSH_TAB_NOTIFICATION: Cannot find tab in tab list.')
       return
@@ -316,7 +363,9 @@ const mutations = {
 
     // Remove the old notification if only one should exist.
     if (exclusiveType) {
-      const index = notifications.findIndex(n => n.exclusiveType === exclusiveType)
+      const index = notifications.findIndex(
+        (n) => n.exclusiveType === exclusiveType
+      )
       if (index >= 0) {
         // Reorder current notification
         notifications.splice(index, 1)
@@ -340,7 +389,7 @@ const actions = {
   },
 
   LISTEN_SCREEN_SHOT ({ commit }) {
-    ipcRenderer.on('mt::screenshot-captured', e => {
+    ipcRenderer.on('mt::screenshot-captured', (e) => {
       bus.$emit('screenshot-captured')
     })
   },
@@ -369,12 +418,13 @@ const actions = {
   },
 
   SHOW_IMAGE_DELETION_URL ({ commit }, deletionUrl) {
-    notice.notify({
-      title: 'Image deletion URL',
-      message: `Click to copy the deletion URL of the uploaded image to the clipboard (${deletionUrl}).`,
-      showConfirm: true,
-      time: 20000
-    })
+    notice
+      .notify({
+        title: 'Image deletion URL',
+        message: `Click to copy the deletion URL of the uploaded image to the clipboard (${deletionUrl}).`,
+        showConfirm: true,
+        time: 20000
+      })
       .then(() => {
         clipboard.writeText(deletionUrl)
       })
@@ -398,7 +448,7 @@ const actions = {
   UPDATE_LINE_ENDING_MENU ({ state }) {
     const { lineEnding } = state.currentFile
     if (lineEnding) {
-      const { windowId } = global.marktext.env
+      const { windowId } = window.marktext.env
       ipcRenderer.send('mt::update-line-ending-menu', windowId, lineEnding)
     }
   },
@@ -408,7 +458,9 @@ const actions = {
     const options = getOptionsFromState(file)
 
     // Save the file content via main process and send a close tab response.
-    ipcRenderer.send('mt::save-and-close-tabs', [{ id, pathname, filename, markdown, options }])
+    ipcRenderer.send('mt::save-and-close-tabs', [
+      { id, pathname, filename, markdown, options }
+    ])
   },
 
   // need pass some data to main process when `save` menu item clicked
@@ -453,7 +505,7 @@ const actions = {
     ipcRenderer.on('mt::set-pathname', (e, fileInfo) => {
       const { tabs } = state
       const { pathname, id } = fileInfo
-      const tab = tabs.find(f => f.id === id)
+      const tab = tabs.find((f) => f.id === id)
       if (!tab) {
         console.err('[ERROR] Cannot change file path from unknown tab.')
         return
@@ -461,7 +513,9 @@ const actions = {
 
       // If a tab with the same file path already exists we need to close the tab.
       // The existing tab is overwritten by this tab.
-      const existingTab = tabs.find(t => t.id !== id && isSamePathSync(t.pathname, pathname))
+      const existingTab = tabs.find(
+        (t) => t.id !== id && isSamePathSync(t.pathname, pathname)
+      )
       if (existingTab) {
         dispatch('CLOSE_TAB', existingTab)
       }
@@ -470,7 +524,7 @@ const actions = {
 
     ipcRenderer.on('mt::tab-saved', (e, tabId) => {
       const { tabs } = state
-      const tab = tabs.find(f => f.id === tabId)
+      const tab = tabs.find((f) => f.id === tabId)
       if (tab) {
         Object.assign(tab, { isSaved: true })
       }
@@ -478,7 +532,7 @@ const actions = {
 
     ipcRenderer.on('mt::tab-save-failure', (e, tabId, msg) => {
       const { tabs } = state
-      const tab = tabs.find(t => t.id === tabId)
+      const tab = tabs.find((t) => t.id === tabId)
       if (!tab) {
         notice.notify({
           title: 'Save failure',
@@ -500,10 +554,10 @@ const actions = {
   },
 
   LISTEN_FOR_CLOSE ({ state }) {
-    ipcRenderer.on('mt::ask-for-close', e => {
+    ipcRenderer.on('mt::ask-for-close', (e) => {
       const unsavedFiles = state.tabs
-        .filter(file => !file.isSaved)
-        .map(file => {
+        .filter((file) => !file.isSaved)
+        .map((file) => {
           const { id, filename, pathname, markdown } = file
           const options = getOptionsFromState(file)
           return { id, filename, pathname, markdown, options }
@@ -528,8 +582,8 @@ const actions = {
   ASK_FOR_SAVE_ALL ({ commit, state }, closeTabs) {
     const { tabs } = state
     const unsavedFiles = tabs
-      .filter(file => !(file.isSaved && /[^\n]/.test(file.markdown)))
-      .map(file => {
+      .filter((file) => !(file.isSaved && /[^\n]/.test(file.markdown)))
+      .map((file) => {
         const { id, filename, pathname, markdown } = file
         const options = getOptionsFromState(file)
         return { id, filename, pathname, markdown, options }
@@ -537,10 +591,16 @@ const actions = {
 
     if (closeTabs) {
       if (unsavedFiles.length) {
-        commit('CLOSE_TABS', tabs.filter(f => f.isSaved).map(f => f.id))
+        commit(
+          'CLOSE_TABS',
+          tabs.filter((f) => f.isSaved).map((f) => f.id)
+        )
         ipcRenderer.send('mt::save-and-close-tabs', unsavedFiles)
       } else {
-        commit('CLOSE_TABS', tabs.map(f => f.id))
+        commit(
+          'CLOSE_TABS',
+          tabs.map((f) => f.id)
+        )
       }
     } else {
       ipcRenderer.send('mt::save-tabs', unsavedFiles)
@@ -608,7 +668,7 @@ const actions = {
   UPDATE_CURRENT_FILE ({ commit, state, dispatch }, currentFile) {
     commit('SET_CURRENT_FILE', currentFile)
     const { tabs } = state
-    if (!tabs.some(file => file.id === currentFile.id)) {
+    if (!tabs.some((file) => file.id === currentFile.id)) {
       commit('ADD_FILE_TO_TABS', currentFile)
     }
     dispatch('UPDATE_LINE_ENDING_MENU')
@@ -618,10 +678,19 @@ const actions = {
   LISTEN_FOR_BOOTSTRAP_WINDOW ({ commit, state, dispatch, rootState }) {
     // Delay load runtime commands and initialize commands.
     setTimeout(() => {
-      bus.$emit('cmd::register-command', new FileEncodingCommand(rootState.editor))
+      bus.$emit(
+        'cmd::register-command',
+        new FileEncodingCommand(rootState.editor)
+      )
       bus.$emit('cmd::register-command', new QuickOpenCommand(rootState))
-      bus.$emit('cmd::register-command', new LineEndingCommand(rootState.editor))
-      bus.$emit('cmd::register-command', new TrailingNewlineCommand(rootState.editor))
+      bus.$emit(
+        'cmd::register-command',
+        new LineEndingCommand(rootState.editor)
+      )
+      bus.$emit(
+        'cmd::register-command',
+        new TrailingNewlineCommand(rootState.editor)
+      )
 
       setTimeout(() => {
         ipcRenderer.send('mt::request-keybindings')
@@ -667,24 +736,34 @@ const actions = {
 
   // Open a new tab, optionally with content.
   LISTEN_FOR_NEW_TAB ({ dispatch }) {
-    ipcRenderer.on('mt::open-new-tab', (e, markdownDocument, options = {}, selected = true) => {
-      if (markdownDocument) {
-        // Create tab with content.
-        dispatch('NEW_TAB_WITH_CONTENT', { markdownDocument, options, selected })
-      } else {
-        // Fallback: create a blank tab and always select it
-        dispatch('NEW_UNTITLED_TAB', {})
+    ipcRenderer.on(
+      'mt::open-new-tab',
+      (e, markdownDocument, options = {}, selected = true) => {
+        if (markdownDocument) {
+          // Create tab with content.
+          dispatch('NEW_TAB_WITH_CONTENT', {
+            markdownDocument,
+            options,
+            selected
+          })
+        } else {
+          // Fallback: create a blank tab and always select it
+          dispatch('NEW_UNTITLED_TAB', {})
+        }
       }
-    })
+    )
 
-    ipcRenderer.on('mt::new-untitled-tab', (e, selected = true, markdown = '') => {
-      // Create a blank tab
-      dispatch('NEW_UNTITLED_TAB', { markdown, selected })
-    })
+    ipcRenderer.on(
+      'mt::new-untitled-tab',
+      (e, selected = true, markdown = '') => {
+        // Create a blank tab
+        dispatch('NEW_UNTITLED_TAB', { markdown, selected })
+      }
+    )
   },
 
   LISTEN_FOR_CLOSE_TAB ({ commit, state, dispatch }) {
-    ipcRenderer.on('mt::editor-close-tab', e => {
+    ipcRenderer.on('mt::editor-close-tab', (e) => {
       const file = state.currentFile
       if (!hasKeys(file)) return
       dispatch('CLOSE_TAB', file)
@@ -692,10 +771,10 @@ const actions = {
   },
 
   LISTEN_FOR_TAB_CYCLE ({ commit, state, dispatch }) {
-    ipcRenderer.on('mt::tabs-cycle-left', e => {
+    ipcRenderer.on('mt::tabs-cycle-left', (e) => {
       dispatch('CYCLE_TABS', false)
     })
-    ipcRenderer.on('mt::tabs-cycle-right', e => {
+    ipcRenderer.on('mt::tabs-cycle-right', (e) => {
       dispatch('CYCLE_TABS', true)
     })
   },
@@ -717,21 +796,25 @@ const actions = {
 
   CLOSE_OTHER_TABS ({ state, dispatch }, file) {
     const { tabs } = state
-    tabs.filter(f => f.id !== file.id).forEach(tab => {
-      dispatch('CLOSE_TAB', tab)
-    })
+    tabs
+      .filter((f) => f.id !== file.id)
+      .forEach((tab) => {
+        dispatch('CLOSE_TAB', tab)
+      })
   },
 
   CLOSE_SAVED_TABS ({ state, dispatch }) {
     const { tabs } = state
-    tabs.filter(f => f.isSaved).forEach(tab => {
-      dispatch('CLOSE_TAB', tab)
-    })
+    tabs
+      .filter((f) => f.isSaved)
+      .forEach((tab) => {
+        dispatch('CLOSE_TAB', tab)
+      })
   },
 
   CLOSE_ALL_TABS ({ state, dispatch }) {
     const { tabs } = state
-    tabs.slice().forEach(tab => {
+    tabs.slice().forEach((tab) => {
       dispatch('CLOSE_TAB', tab)
     })
   },
@@ -749,7 +832,7 @@ const actions = {
       return
     }
 
-    const currentIndex = tabs.findIndex(t => t.id === currentFile.id)
+    const currentIndex = tabs.findIndex((t) => t.id === currentFile.id)
     if (currentIndex === -1) {
       console.error('CYCLE_TABS: Cannot find current tab index.')
       return
@@ -766,7 +849,9 @@ const actions = {
 
     const nextTab = tabs[nextTabIndex]
     if (!nextTab || !nextTab.id) {
-      console.error(`CYCLE_TABS: Cannot find next tab (index="${nextTabIndex}").`)
+      console.error(
+        `CYCLE_TABS: Cannot find next tab (index="${nextTabIndex}").`
+      )
       return
     }
 
@@ -781,7 +866,7 @@ const actions = {
       return
     }
 
-    const currentIndex = tabs.findIndex(t => t.id === currentFile.id)
+    const currentIndex = tabs.findIndex((t) => t.id === currentFile.id)
     if (currentIndex === -1) {
       console.error('Cannot find current tab index.')
       return
@@ -804,7 +889,10 @@ const actions = {
    * @param {{markdown?: string, selected?: boolean}} obj Optional markdown string
    * and whether the tab should become the selected tab (true if not set).
    */
-  NEW_UNTITLED_TAB ({ commit, state, dispatch, rootState }, { markdown: markdownString, selected }) {
+  NEW_UNTITLED_TAB (
+    { commit, state, dispatch, rootState },
+    { markdown: markdownString, selected }
+  ) {
     // If not set select the tab.
     if (selected == null) {
       selected = true
@@ -814,7 +902,12 @@ const actions = {
 
     const { defaultEncoding, endOfLine } = rootState.preferences
     const { tabs } = state
-    const fileState = getBlankFileState(tabs, defaultEncoding, endOfLine, markdownString)
+    const fileState = getBlankFileState(
+      tabs,
+      defaultEncoding,
+      endOfLine,
+      markdownString
+    )
 
     if (selected) {
       const { id, markdown } = fileState
@@ -832,7 +925,10 @@ const actions = {
    * @param {{markdownDocument: IMarkdownDocumentRaw, selected?: boolean}} obj The markdown document
    * and optional whether the tab should become the selected tab (true if not set).
    */
-  NEW_TAB_WITH_CONTENT ({ commit, state, dispatch }, { markdownDocument, options = {}, selected }) {
+  NEW_TAB_WITH_CONTENT (
+    { commit, state, dispatch },
+    { markdownDocument, options = {}, selected }
+  ) {
     if (!markdownDocument) {
       console.warn('Cannot create a file tab without a markdown document!')
       dispatch('NEW_UNTITLED_TAB', {})
@@ -846,7 +942,7 @@ const actions = {
     // Check if tab already exist and always select existing tab if so.
     const { currentFile, tabs } = state
     const { pathname } = markdownDocument
-    const existingTab = tabs.find(t => isSamePathSync(t.pathname, pathname))
+    const existingTab = tabs.find((t) => isSamePathSync(t.pathname, pathname))
     if (existingTab) {
       dispatch('UPDATE_CURRENT_FILE', existingTab)
       return
@@ -867,7 +963,9 @@ const actions = {
     }
 
     const { markdown, isMixedLineEndings } = markdownDocument
-    const docState = createDocumentState(Object.assign(markdownDocument, options))
+    const docState = createDocumentState(
+      Object.assign(markdownDocument, options)
+    )
     const { id, cursor } = docState
 
     if (selected) {
@@ -896,7 +994,10 @@ const actions = {
 
   // Content change from realtime preview editor and source code editor
   // WORKAROUND: id is "muya" if changes come from muya and not source code editor! So we don't have to apply the workaround.
-  LISTEN_FOR_CONTENT_CHANGE ({ commit, dispatch, state, rootState }, { id, markdown, wordCount, cursor, history, toc }) {
+  LISTEN_FOR_CONTENT_CHANGE (
+    { commit, dispatch, state, rootState },
+    { id, markdown, wordCount, cursor, history, toc }
+  ) {
     const { autoSave } = rootState.preferences
     const {
       id: currentId,
@@ -917,7 +1018,10 @@ const actions = {
       // Update old tab or discard changes
       for (const tab of state.tabs) {
         if (tab.id && tab.id === id) {
-          tab.markdown = adjustTrailingNewlines(markdown, tab.trimTrailingNewline)
+          tab.markdown = adjustTrailingNewlines(
+            markdown,
+            tab.trimTrailingNewline
+          )
           // Set cursor
           if (cursor) {
             tab.cursor = cursor
@@ -936,7 +1040,11 @@ const actions = {
     commit('SET_MARKDOWN', markdown)
 
     // Ignore new line which is added if the editor text is empty (#422)
-    if (oldMarkdown.length === 0 && markdown.length === 1 && markdown[0] === '\n') {
+    if (
+      oldMarkdown.length === 0 &&
+      markdown.length === 1 &&
+      markdown[0] === '\n'
+    ) {
       return
     }
 
@@ -975,7 +1083,10 @@ const actions = {
     }
   },
 
-  HANDLE_AUTO_SAVE ({ commit, state, rootState }, { id, filename, pathname, markdown, options }) {
+  HANDLE_AUTO_SAVE (
+    { commit, state, rootState },
+    { id, filename, pathname, markdown, options }
+  ) {
     if (!id || !pathname) {
       throw new Error('HANDLE_AUTO_SAVE: Invalid tab.')
     }
@@ -995,7 +1106,7 @@ const actions = {
       // Validate that the tab still exists. A tab is unchanged until successfully saved
       // or force closed. The user decides whether to discard or save the tab when
       // gracefully closed. The automatically save event may fire meanwhile.
-      const tab = tabs.find(t => t.id === id)
+      const tab = tabs.find((t) => t.id === id)
       if (tab && !tab.isSaved) {
         const defaultPath = getRootFolderFromState(rootState)
 
@@ -1025,13 +1136,21 @@ const actions = {
       })
     }
 
-    const { windowId } = global.marktext.env
-    ipcRenderer.send('mt::editor-selection-changed', windowId, createApplicationMenuState(changes))
+    const { windowId } = window.marktext.env
+    ipcRenderer.send(
+      'mt::editor-selection-changed',
+      windowId,
+      createApplicationMenuState(changes)
+    )
   },
 
   SELECTION_FORMATS (_, formats) {
-    const { windowId } = global.marktext.env
-    ipcRenderer.send('mt::update-format-menu', windowId, createSelectionFormatState(formats))
+    const { windowId } = window.marktext.env
+    ipcRenderer.send(
+      'mt::update-format-menu',
+      windowId,
+      createSelectionFormatState(formats)
+    )
   },
 
   EXPORT ({ state }, { type, content, pageOptions }) {
@@ -1071,11 +1190,12 @@ const actions = {
 
   LINTEN_FOR_EXPORT_SUCCESS ({ commit }) {
     ipcRenderer.on('mt::export-success', (e, { type, filePath }) => {
-      notice.notify({
-        title: 'Exported successfully',
-        message: `Exported "${path.basename(filePath)}" successfully!`,
-        showConfirm: true
-      })
+      notice
+        .notify({
+          title: 'Exported successfully',
+          message: `Exported "${path.basename(filePath)}" successfully!`,
+          showConfirm: true
+        })
         .then(() => {
           shell.showItemInFolder(filePath)
         })
@@ -1087,7 +1207,7 @@ const actions = {
   },
 
   LINTEN_FOR_PRINT_SERVICE_CLEARUP ({ commit }) {
-    ipcRenderer.on('mt::print-service-clearup', e => {
+    ipcRenderer.on('mt::print-service-clearup', (e) => {
       bus.$emit('print-service-clearup')
     })
   },
@@ -1134,7 +1254,7 @@ const actions = {
 
       const { tabs } = state
       const { pathname } = change
-      const tab = tabs.find(t => isSamePathSync(t.pathname, pathname))
+      const tab = tabs.find((t) => isSamePathSync(t.pathname, pathname))
       if (tab) {
         const { id, isSaved, filename } = tab
         switch (type) {
@@ -1172,7 +1292,7 @@ const actions = {
               msg: `"${filename}" has been changed on disk. Do you want to reload it?`,
               showConfirm: true,
               exclusiveType: 'file_changed',
-              action: status => {
+              action: (status) => {
                 if (status) {
                   commit('LOAD_CHANGE', change)
                 }
@@ -1184,7 +1304,9 @@ const actions = {
             console.error(`LISTEN_FOR_FILE_CHANGE: Invalid type "${type}"`)
         }
       } else {
-        console.error(`LISTEN_FOR_FILE_CHANGE: Cannot find tab for path "${pathname}".`)
+        console.error(
+          `LISTEN_FOR_FILE_CHANGE: Cannot find tab for path "${pathname}".`
+        )
       }
     })
   },
@@ -1242,7 +1364,7 @@ const actions = {
  *
  * @param {*} rootState The root state.
  */
-const getRootFolderFromState = rootState => {
+const getRootFolderFromState = (rootState) => {
   const openedFolder = rootState.project.projectTree
   if (openedFolder) {
     return openedFolder.pathname
@@ -1299,7 +1421,7 @@ const adjustTrailingNewlines = (markdown, trimTrailingNewlineOption) => {
  *
  * @param {string} text The text to trim.
  */
-const trimTrailingNewlines = text => {
+const trimTrailingNewlines = (text) => {
   return text.replace(/[\r?\n]+$/, '')
 }
 
@@ -1330,7 +1452,8 @@ const createApplicationMenuState = ({ start, end, affiliation }) => {
 
   // Get code block information from selection.
   if (
-    (start.block.functionType === 'cellContent' && end.block.functionType === 'cellContent') ||
+    (start.block.functionType === 'cellContent' &&
+      end.block.functionType === 'cellContent') ||
     (start.type === 'span' && start.block.functionType === 'codeContent') ||
     (end.type === 'span' && end.block.functionType === 'codeContent')
   ) {
@@ -1338,7 +1461,10 @@ const createApplicationMenuState = ({ start, end, affiliation }) => {
     state.isCodeFences = true
 
     // A code block line is selected.
-    if (start.block.functionType === 'codeContent' || end.block.functionType === 'codeContent') {
+    if (
+      start.block.functionType === 'codeContent' ||
+      end.block.functionType === 'codeContent'
+    ) {
       state.isCodeContent = true
     }
   }
@@ -1383,7 +1509,10 @@ const createApplicationMenuState = ({ start, end, affiliation }) => {
   }
 
   // Clean up
-  if (Object.getOwnPropertyNames(state.affiliation).length >= 2 && state.affiliation.p) {
+  if (
+    Object.getOwnPropertyNames(state.affiliation).length >= 2 &&
+    state.affiliation.p
+  ) {
     delete state.affiliation.p
   }
   if ((state.affiliation.ul || state.affiliation.ol) && state.affiliation.li) {
@@ -1398,7 +1527,7 @@ const createApplicationMenuState = ({ start, end, affiliation }) => {
  * @param {*} selection The selection.
  * @returns A object that represents the formats menu state.
  */
-const createSelectionFormatState = formats => {
+const createSelectionFormatState = (formats) => {
   // NOTE: Normally only one format can be selected but the selection is
   // given as array by Muya.
   const state = {}

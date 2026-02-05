@@ -1,7 +1,7 @@
 <template>
-  <section class="pref-font-input-item" :class="{'ag-underdevelop': disable}">
+  <section class="pref-font-input-item" :class="{ 'ag-underdevelop': disable }">
     <div class="description">
-      <span>{{description}}:</span>
+      <span>{{ description }}:</span>
       <i class="el-icon-info" v-if="more" @click="handleMoreClick"></i>
     </div>
     <el-autocomplete
@@ -21,7 +21,7 @@
 </template>
 
 <script>
-import { shell } from 'electron'
+import { shell, ipcRenderer } from '../../../util/electron'
 
 // Example of fontmanager-redux objects:
 // {
@@ -80,9 +80,12 @@ export default {
   methods: {
     querySearch (queryString, callback) {
       const fontFamilies = this.fontFamilies
-      const results = queryString && this.defaultValue !== queryString
-        ? fontFamilies.filter(f => f.toLowerCase().indexOf(queryString.toLowerCase()) === 0)
-        : fontFamilies
+      const results =
+        queryString && this.defaultValue !== queryString
+          ? fontFamilies.filter(
+            (f) => f.toLowerCase().indexOf(queryString.toLowerCase()) === 0
+          )
+          : fontFamilies
       callback(results)
     },
 
@@ -99,14 +102,18 @@ export default {
       }
     }
   },
-  mounted () {
-    // Delay load native library because it's not needed for the editor and causes a delay.
-    const fontManager = require('fontmanager-redux')
+  async mounted () {
+    // Get fonts from main process via IPC (native module must run in main process with contextIsolation)
     const { onlyMonospace } = this
-    const buf = fontManager.getAvailableFontsSync()
-      .filter(f => f.family && (!onlyMonospace || (onlyMonospace && f.monospace)))
-      .map(f => f.family)
-    this.fontFamilies = [...new Set(buf)].sort((a, b) => a.localeCompare(b))
+    try {
+      this.fontFamilies = await ipcRenderer.invoke(
+        'mt::get-available-fonts',
+        onlyMonospace
+      )
+    } catch (err) {
+      console.error('Failed to get available fonts:', err)
+      this.fontFamilies = []
+    }
   }
 }
 </script>
@@ -116,16 +123,16 @@ export default {
   border: 1px solid var(--floatBorderColor);
   background-color: var(--floatBgColor);
 }
-.el-popper[x-placement^=top] .popper__arrow {
+.el-popper[x-placement^="top"] .popper__arrow {
   border-top-color: var(--floatBorderColor);
 }
-.el-popper[x-placement^=bottom] .popper__arrow {
+.el-popper[x-placement^="bottom"] .popper__arrow {
   border-bottom-color: var(--floatBorderColor);
 }
-.el-popper[x-placement^=top] .popper__arrow::after {
+.el-popper[x-placement^="top"] .popper__arrow::after {
   border-top-color: var(--floatBgColor);
 }
-.el-popper[x-placement^=bottom] .popper__arrow::after {
+.el-popper[x-placement^="bottom"] .popper__arrow::after {
   border-bottom-color: var(--floatBgColor);
 }
 

@@ -1,4 +1,4 @@
-import { ipcRenderer } from 'electron'
+import { ipcRenderer } from '../util/electron'
 import { isSamePathSync } from 'common/filesystem/paths'
 import bus from '../bus'
 
@@ -37,7 +37,9 @@ export const fileMixins = {
       const { range } = searchMatch
       const { filePath } = this.searchResult
 
-      const openedTab = this.tabs.find(file => isSamePathSync(file.pathname, filePath))
+      const openedTab = this.tabs.find((file) =>
+        isSamePathSync(file.pathname, filePath)
+      )
       const cursor = {
         isCollapsed: range[0][0] !== range[1][0],
         anchor: {
@@ -56,7 +58,13 @@ export const fileMixins = {
           this.$store.dispatch('UPDATE_CURRENT_FILE', openedTab)
         } else {
           const { id, markdown, cursor, history } = this.currentFile
-          bus.$emit('file-changed', { id, markdown, cursor, renderCursor: true, history })
+          bus.$emit('file-changed', {
+            id,
+            markdown,
+            cursor,
+            renderCursor: true,
+            history
+          })
         }
       } else {
         ipcRenderer.send('mt::open-file', filePath, {
@@ -67,7 +75,9 @@ export const fileMixins = {
     handleFileClick () {
       const { isMarkdown, pathname } = this.file
       if (!isMarkdown) return
-      const openedTab = this.tabs.find(file => isSamePathSync(file.pathname, pathname))
+      const openedTab = this.tabs.find((file) =>
+        isSamePathSync(file.pathname, pathname)
+      )
       if (openedTab) {
         if (this.currentFile === openedTab) {
           return

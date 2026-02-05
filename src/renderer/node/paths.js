@@ -1,8 +1,25 @@
-import { rgPath } from 'vscode-ripgrep'
 import EnvPaths from 'common/envPaths'
+import { processInfo, path } from '../util/electron'
 
-// // "vscode-ripgrep" is unpacked out of asar because of the binary.
-const rgDiskPath = rgPath.replace(/\bapp\.asar\b/, 'app.asar.unpacked')
+// 获取 ripgrep 路径
+// 在 contextIsolation 模式下，我们需要手动构建路径
+const getRgPath = () => {
+  const resourcesPath = processInfo.resourcesPath
+  if (resourcesPath) {
+    // 打包后的应用
+    const rgName = processInfo.platform === 'win32' ? 'rg.exe' : 'rg'
+    return path.join(
+      resourcesPath,
+      'app.asar.unpacked',
+      'node_modules',
+      'vscode-ripgrep',
+      'bin',
+      rgName
+    )
+  }
+  // 开发环境 - 返回空字符串，后面会尝试其他方式
+  return ''
+}
 
 class RendererPaths extends EnvPaths {
   /**
@@ -19,11 +36,12 @@ class RendererPaths extends EnvPaths {
     super(userDataPath)
 
     // Allow to use a local ripgrep binary (e.g. an optimized version).
-    if (process.env.MARKTEXT_RIPGREP_PATH) {
+    const env = processInfo.env || {}
+    if (env.MARKTEXT_RIPGREP_PATH) {
       // NOTE: Binary must be a compatible version, otherwise the searcher may fail.
-      this._ripgrepBinaryPath = process.env.MARKTEXT_RIPGREP_PATH
+      this._ripgrepBinaryPath = env.MARKTEXT_RIPGREP_PATH
     } else {
-      this._ripgrepBinaryPath = rgDiskPath
+      this._ripgrepBinaryPath = getRgPath()
     }
   }
 

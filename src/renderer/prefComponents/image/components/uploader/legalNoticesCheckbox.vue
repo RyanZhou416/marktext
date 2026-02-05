@@ -2,17 +2,24 @@
   <div class="pref-cb-legal-notices">
     <el-checkbox v-model="uploaderService.agreedToLegalNotices"></el-checkbox>
     <span>
-      By using {{ uploaderService.name }}, you agree to {{ uploaderService.name }}'s
-      <span class="link" @click="openUrl(uploaderService.privacyUrl)">Privacy Statement</span>
+      By using {{ uploaderService.name }}, you agree to
+      {{ uploaderService.name }}'s
+      <span class="link" @click="openUrl(uploaderService.privacyUrl)"
+        >Privacy Statement</span
+      >
       and
-      <span class="link" @click="openUrl(uploaderService.tosUrl)">Terms of Service</span>.
-      <span v-if="!uploaderService.isGdprCompliant">This service cannot be used in Europe due to GDPR issues.</span>
+      <span class="link" @click="openUrl(uploaderService.tosUrl)"
+        >Terms of Service</span
+      >.
+      <span v-if="!uploaderService.isGdprCompliant"
+        >This service cannot be used in Europe due to GDPR issues.</span
+      >
     </span>
   </div>
 </template>
 
 <script>
-import { shell } from 'electron'
+import { shell } from '../../../../util/electron'
 
 export default {
   data () {

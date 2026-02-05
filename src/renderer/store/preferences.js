@@ -1,4 +1,4 @@
-import { ipcRenderer } from 'electron'
+import { ipcRenderer } from '../util/electron'
 import bus from '../bus'
 
 // user preference
@@ -100,8 +100,11 @@ const getters = {}
 
 const mutations = {
   SET_USER_PREFERENCE (state, preference) {
-    Object.keys(preference).forEach(key => {
-      if (typeof preference[key] !== 'undefined' && typeof state[key] !== 'undefined') {
+    Object.keys(preference).forEach((key) => {
+      if (
+        typeof preference[key] !== 'undefined' &&
+        typeof state[key] !== 'undefined'
+      ) {
         state[key] = preference[key]
       }
     })
@@ -153,14 +156,14 @@ const actions = {
 
   // Toggle a view option and notify main process to toggle menu item.
   LISTEN_TOGGLE_VIEW ({ commit, dispatch, state }) {
-    bus.$on('view:toggle-view-entry', entryName => {
+    bus.$on('view:toggle-view-entry', (entryName) => {
       commit('TOGGLE_VIEW_MODE', entryName)
       dispatch('DISPATCH_EDITOR_VIEW_STATE', { [entryName]: state[entryName] })
     })
   },
 
   DISPATCH_EDITOR_VIEW_STATE (_, viewState) {
-    const { windowId } = global.marktext.env
+    const { windowId } = window.marktext.env
     ipcRenderer.send('mt::view-layout-changed', windowId, viewState)
   }
 }

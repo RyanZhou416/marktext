@@ -274,9 +274,13 @@ export const getImageInfo = (src, baseUrl = window.DIRNAME) => {
     } else {
       // Correct relative path on desktop. If we resolve a absolute path "path.resolve" doesn't do anything.
       // NOTE: We don't need to convert Windows styled path to UNIX style because Chromium handels this internal.
+      // 使用 electronAPI.path 在渲染进程中
+      const pathModule = (typeof window !== 'undefined' && window.electronAPI)
+        ? window.electronAPI.path
+        : require('path')
       return {
         isUnknownType: false,
-        src: 'file://' + require('path').resolve(baseUrl, src)
+        src: 'file://' + pathModule.resolve(baseUrl, src)
       }
     }
   } else if (isUrl && !imageExtension) {
