@@ -506,43 +506,106 @@ const whiteListedModules = ["vue", "snabbdom", "snabbdom-to-html"];
 
 ---
 
-## 阶段 5: Vue 生态升级准备
+## 阶段 5: Vue 生态升级准备 ✅ 已完成
 
 **目标**: 为 Vue 3 迁移做准备
 
 | 任务                     | 状态 | 说明                           |
 | ------------------------ | ---- | ------------------------------ |
-| 安装 Vue 2.7             | ⬜   | 桥接版本，支持 Composition API |
-| 逐步使用 Composition API | ⬜   | 新代码使用新语法               |
-| 审计 Element UI 使用     | ⬜   | 准备迁移到 Element Plus        |
-| 审计 Vuex 使用           | ⬜   | 准备迁移到 Pinia               |
+| 安装 Vue 2.7             | ✅   | 2.6.14 → 2.7.16                |
+| 审计 Element UI 使用     | ✅   | 26 个文件，78 处使用           |
+| 审计 Vuex 使用           | ✅   | 21 个文件，76 处调用           |
+| Composition API 试点     | ✅   | 2 个组件已重构                 |
 
-### Vue 2.7 迁移 (桥接阶段)
+### Vue 2.7 升级
 
 ```bash
-# 升级到 Vue 2.7
-yarn upgrade vue@^2.7 vue-template-compiler@^2.7
+# 已完成升级
+vue: 2.6.14 → 2.7.16
+vue-template-compiler: 2.6.14 → 2.7.16
 ```
 
-```javascript
-// 新组件可以使用 Composition API
-<script>
-import { ref, computed, onMounted } from 'vue'
+### Element UI 使用审计
 
-export default {
-  setup() {
-    const count = ref(0)
-    const doubled = computed(() => count.value * 2)
+**统计**: 26 个文件使用 Element UI，共 78 处组件引用
 
-    onMounted(() => {
-      console.log('mounted')
-    })
+| 组件 | 使用次数 | 使用文件 |
+| ---- | -------- | -------- |
+| el-dialog | 8 | import, commandPalette, editor, tweet, exportSettings, key-input-dialog, rename, about |
+| el-button | 8 | keybindings, spellchecker, search, uploader, folderSetting, theme, general |
+| el-input | 5 | textBox, uploader, exportSettings |
+| el-tooltip | 5 | bool, uploader, titleBar, image, search |
+| el-table/el-table-column | 4 | keybindings, spellchecker |
+| el-select/el-option | 3 | select, exportSettings |
+| el-form/el-form-item | 5 | editor |
+| el-input-number | 3 | editor, exportSettings |
+| el-slider | 1 | range |
+| el-switch | 1 | bool |
+| el-checkbox | 1 | legalNoticesCheckbox |
+| el-autocomplete | 2 | sideBar, fontTextBox |
+| el-radio/el-radio-group | 2 | general |
+| el-tabs/el-tab-pane | 2 | exportSettings |
+| el-tree | 1 | toc |
+| el-row/el-col | 2 | about |
+| el-upload | 1 | (registered but not used in templates) |
+| el-color-picker | 1 | (registered but not used in templates) |
 
-    return { count, doubled }
-  }
-}
-</script>
-```
+**迁移注意**: Element UI → Element Plus 时需要：
+- 组件名前缀变化: `el-` → `El` (大驼峰)
+- 图标需额外安装: `@element-plus/icons-vue`
+- 部分 API 变化（参考官方迁移指南）
+
+### Vuex 使用审计
+
+**统计**: 21 个文件使用 `$store`，共 76 处调用
+
+| 模块 | 行数 | State | Mutations | Actions | 迁移难度 |
+| ---- | ---- | ----- | --------- | ------- | -------- |
+| editor.js | 1540 | 4 | 23 | 51 | 高 |
+| project.js | 234 | 6 | 9 | 9 | 中 |
+| preferences.js | 173 | ~50 | 3 | 8 | 中 |
+| layout.js | 83 | 4 | 3 | 3 | 低 |
+| commandCenter.js | 76 | 1 | 2 | 1 | 低 |
+| autoUpdates.js | 55 | 0 | 0 | 1 | 低 |
+| listenForMain.js | 44 | 0 | 0 | 3 | 低 |
+| notification.js | 34 | 0 | 0 | 1 | 低 |
+| tweet.js | 20 | 0 | 0 | 1 | 低 |
+
+**迁移策略**: Vuex → Pinia
+- 移除 mutations（直接修改 state）
+- 从低复杂度模块开始迁移
+- `editor.js` 最后处理（核心模块）
+
+### Mixins 审计
+
+4 个 mixin 定义于 `src/renderer/mixins/index.js`：
+
+| Mixin | 使用文件数 | 说明 |
+| ----- | ---------- | ---- |
+| tabsMixins | 2 | tabs.vue, treeOpenedTab.vue |
+| loadingPageMixins | 2 | app.vue, preference.vue |
+| fileMixins | 2 | searchResultItem.vue, treeFile.vue |
+| createFileOrDirectoryMixins | 2 | treeFolder.vue, tree.vue |
+
+**迁移策略**: 重构为 Composition API composables
+
+### Composition API 试点
+
+已将 2 个简单组件重构为 Composition API：
+
+1. `src/renderer/prefComponents/common/bool/index.vue` - 布尔开关
+2. `src/renderer/prefComponents/common/range/index.vue` - 范围滑块
+
+### 验证清单
+
+- [x] Vue 2.7 升级成功
+- [x] 构建通过 (`scripts\build-win-portable.cmd`)
+- [x] 应用运行正常
+- [x] Element UI 审计完成
+- [x] Vuex 审计完成
+- [x] Composition API 试点完成
+
+验证时间: 2026-02-05
 
 ---
 
@@ -730,7 +793,7 @@ marktext-tauri-poc/
 | 阶段 3: Electron 小版本升级   | ✅ 完成   | 2026-02-04 | 2026-02-04 |
 | 阶段 4: Electron 大版本升级   | ✅ 完成   | 2026-02-04 | 2026-02-05 |
 | 阶段 4.5: 渲染进程现代化      | ✅ 完成   | 2026-02-04 | 2026-02-05 |
-| 阶段 5: Vue 生态升级准备      | ⬜ 待开始 | -          | -          |
+| 阶段 5: Vue 生态升级准备      | ✅ 完成   | 2026-02-05 | 2026-02-05 |
 | 阶段 6: Vue 3 迁移            | ⬜ 待开始 | -          | -          |
 | 阶段 7: TypeScript 迁移       | ⬜ 待开始 | -          | -          |
 | 阶段 8: Tauri 评估与 PoC      | ⬜ 待开始 | -          | -          |

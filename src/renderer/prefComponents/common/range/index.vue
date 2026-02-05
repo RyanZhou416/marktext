@@ -20,17 +20,13 @@
 </template>
 
 <script>
+import { ref, watch } from 'vue'
 import { shell } from '../../../util/electron'
 
 export default {
-  data () {
-    return {
-      selectValue: this.value
-    }
-  },
   props: {
     description: String,
-    value: String | Number,
+    value: [String, Number],
     min: Number,
     max: Number,
     onChange: Function,
@@ -42,21 +38,32 @@ export default {
       default: false
     }
   },
-  watch: {
-    value: function (value, oldValue) {
-      if (value !== oldValue) {
-        this.selectValue = value
+  setup (props) {
+    // Reactive state
+    const selectValue = ref(props.value)
+
+    // Watch for prop changes
+    watch(() => props.value, (newValue, oldValue) => {
+      if (newValue !== oldValue) {
+        selectValue.value = newValue
+      }
+    })
+
+    // Methods
+    const handleMoreClick = () => {
+      if (typeof props.more === 'string') {
+        shell.openExternal(props.more)
       }
     }
-  },
-  methods: {
-    handleMoreClick () {
-      if (typeof this.more === 'string') {
-        shell.openExternal(this.more)
-      }
-    },
-    select (value) {
-      this.onChange(value)
+
+    const select = (value) => {
+      props.onChange(value)
+    }
+
+    return {
+      selectValue,
+      handleMoreClick,
+      select
     }
   }
 }

@@ -1,7 +1,8 @@
 .DS_Store
 dist/
 */dist/*
-build/*
+build/
+out/
 static/themes/*
 src/muya/node_modules/
 coverage
@@ -15,6 +16,10 @@ thumbs.db
 .idea
 .env
 .eslintcache
+
+# Cursor files
+.cursor/
+terminals/
 
 # Temporary/debug files
 *.log

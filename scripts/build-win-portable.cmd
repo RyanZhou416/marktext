@@ -92,14 +92,39 @@ if "%NEED_REBUILD%"=="1" (
 
 echo.
 echo [步骤 5/5] 构建便携版...
-call node .electron-vue/build.js
+:: 使用 electron-vite 构建
+call yarn build
 if errorlevel 1 (
     echo [错误] 应用构建失败
     pause
     exit /b 1
 )
 
-call node node_modules/electron-builder/out/cli/cli.js --win zip -c.buildDependenciesFromSource=false
+:: 复制静态资源到输出目录
+echo   - 复制静态资源...
+:: 主进程需要访问 static 目录 (preference.json 等)
+if not exist "out\main\static" mkdir "out\main\static"
+xcopy /E /I /Y "static\*" "out\main\static\" >nul 2>&1
+
+:: 渲染进程也需要 static 目录
+if not exist "out\renderer\static" mkdir "out\renderer\static"
+xcopy /E /I /Y "static\*" "out\renderer\static\" >nul 2>&1
+
+:: 复制 muya themes 到输出目录
+if not exist "out\renderer\static\themes" mkdir "out\renderer\static\themes"
+xcopy /E /I /Y "src\muya\themes\*" "out\renderer\static\themes\" >nul 2>&1
+
+:: 复制 CodeMirror modes 到输出目录
+if not exist "out\renderer\codemirror\mode" mkdir "out\renderer\codemirror\mode"
+for /d %%d in ("node_modules\codemirror\mode\*") do (
+    if exist "%%d\%%~nxd.js" (
+        if not exist "out\renderer\codemirror\mode\%%~nxd" mkdir "out\renderer\codemirror\mode\%%~nxd"
+        copy /Y "%%d\%%~nxd.js" "out\renderer\codemirror\mode\%%~nxd\" >nul 2>&1
+    )
+)
+echo [OK] 静态资源已复制
+
+call node node_modules/electron-builder/out/cli/cli.js --win dir -c.buildDependenciesFromSource=false
 if errorlevel 1 (
     echo [错误] 打包失败
     pause
@@ -111,8 +136,8 @@ echo ═════════════════════════
 echo                    构建成功完成！
 echo ══════════════════════════════════════════════════════════
 echo.
-echo 构建产物位置: %CD%\build\
+echo 构建产物位置: %CD%\build\win-unpacked\
 echo.
-dir /b build\*.zip 2>nul
+echo 可直接运行: build\win-unpacked\MarkText.exe
 echo.
 pause

@@ -80,9 +80,20 @@ class BaseWindow extends EventEmitter {
     } = userPreference.getAll()
 
     /* eslint-disable */
-    const baseUrl = process.env.NODE_ENV === 'development'
-      ? 'http://localhost:9091'
-      : `file://${__dirname}/index.html`
+    let baseUrl
+    if (process.env.NODE_ENV === 'development') {
+      baseUrl = 'http://localhost:9091'
+    } else {
+      // electron-vite: renderer is in out/renderer, main is in out/main
+      // Legacy webpack: both are in dist/electron
+      const path = require('path')
+      const rendererPath = path.join(__dirname, '..', 'renderer', 'index.html')
+      const legacyPath = path.join(__dirname, 'index.html')
+      const fs = require('fs')
+      baseUrl = fs.existsSync(rendererPath)
+        ? `file://${rendererPath}`
+        : `file://${legacyPath}`
+    }
     /* eslint-enable */
 
     const url = new URL(baseUrl)

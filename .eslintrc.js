@@ -41,7 +41,11 @@ module.exports = {
     // TODO: fix these errors someday
     'prefer-const': 'off',
     'no-mixed-operators': 'off',
-    'no-prototype-builtins': 'off'
+    'no-prototype-builtins': 'off',
+    // Ignore Vite-specific import suffixes (?raw, ?inline, ?url, etc.)
+    'import/no-unresolved': ['error', {
+      ignore: ['\\?raw$', '\\?inline$', '\\?url$', '\\?worker$']
+    }]
   },
   settings: {
     'import/resolver': {
@@ -54,7 +58,14 @@ module.exports = {
         ],
         extensions: ['.js', '.vue', '.json', '.css', '.node']
       }
-    }
+    },
+    // Ignore Vite-specific import suffixes (?raw, ?inline, etc.)
+    'import/ignore': [
+      '\\?raw$',
+      '\\?inline$',
+      '\\?url$',
+      '\\?worker$'
+    ]
   },
   ignorePatterns: [
     'node_modules',

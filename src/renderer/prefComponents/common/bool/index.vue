@@ -21,14 +21,10 @@
 </template>
 
 <script>
+import { ref, watch } from 'vue'
 import { shell } from '../../../util/electron'
 
 export default {
-  data () {
-    return {
-      status: this.bool
-    }
-  },
   props: {
     description: String,
     notes: String,
@@ -41,21 +37,32 @@ export default {
       default: false
     }
   },
-  watch: {
-    bool: function (value, oldValue) {
-      if (value !== oldValue) {
-        this.status = value
+  setup (props) {
+    // Reactive state
+    const status = ref(props.bool)
+
+    // Watch for prop changes
+    watch(() => props.bool, (newValue, oldValue) => {
+      if (newValue !== oldValue) {
+        status.value = newValue
+      }
+    })
+
+    // Methods
+    const handleMoreClick = () => {
+      if (typeof props.more === 'string') {
+        shell.openExternal(props.more)
       }
     }
-  },
-  methods: {
-    handleMoreClick () {
-      if (typeof this.more === 'string') {
-        shell.openExternal(this.more)
-      }
-    },
-    handleSwitchChange (value) {
-      this.onChange(value)
+
+    const handleSwitchChange = (value) => {
+      props.onChange(value)
+    }
+
+    return {
+      status,
+      handleMoreClick,
+      handleSwitchChange
     }
   }
 }

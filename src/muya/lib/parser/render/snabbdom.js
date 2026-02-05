@@ -22,7 +22,8 @@ export const patch = init([
 export const h = sh
 export const toVNode = sToVNode
 
-export const toHTML = require('snabbdom-to-html') // helper function for convert vnode to HTML string
+import toHTML from 'snabbdom-to-html'
+export { toHTML } // helper function for convert vnode to HTML string
 export const htmlToVNode = html => { // helper function for convert html to vnode
   const wrapper = document.createElement('div')
   wrapper.innerHTML = html

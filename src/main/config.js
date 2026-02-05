@@ -7,11 +7,30 @@ export const isLinux = process.platform === 'linux'
 
 // Preload script path - works in both development and production
 const getPreloadPath = () => {
-  // In both development and production, preload.js is in dist/electron
+  // Support both electron-vite (out/) and legacy webpack (dist/electron/) builds
   // app.getAppPath() returns the correct path in both cases:
   // - Development: project root
   // - Production: resources/app.asar
-  return path.join(app.getAppPath(), 'dist', 'electron', 'preload.js')
+  const appPath = app.getAppPath()
+
+  // Check for electron-vite output structure first
+  const electronVitePath = path.join(appPath, 'out', 'preload', 'index.js')
+  const legacyPath = path.join(appPath, 'dist', 'electron', 'preload.js')
+
+  // In production, always use relative path based on main entry
+  // electron-vite uses out/main/index.js, so preload is at ../preload/index.js
+  if (app.isPackaged) {
+    // Use __dirname which points to out/main in production
+    return path.join(__dirname, '..', 'preload', 'index.js')
+  }
+
+  // In development, check which build system is being used
+  try {
+    require('fs').accessSync(electronVitePath)
+    return electronVitePath
+  } catch (e) {
+    return legacyPath
+  }
 }
 
 export const editorWinOptions = Object.freeze({
