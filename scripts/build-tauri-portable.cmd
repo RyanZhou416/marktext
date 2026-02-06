@@ -108,7 +108,7 @@ if "!BUILD_READY!"=="0" (
 
 :: ---------- Step 1: Install Dependencies ----------
 echo [Step 1/4] Installing JavaScript dependencies...
-call yarn install
+cmd /c "yarn install"
 if errorlevel 1 (
     echo [ERROR] Failed to install dependencies
     goto :ERROR_EXIT
@@ -117,8 +117,8 @@ echo [OK] Dependencies installed
 echo.
 
 :: ---------- Step 2: Build Frontend ----------
-echo [Step 2/4] Building frontend (electron-vite)...
-call npx electron-vite build
+echo [Step 2/4] Building frontend (vite)...
+cmd /c "npx vite build --config vite.config.mjs"
 if errorlevel 1 (
     echo [ERROR] Failed to build frontend
     goto :ERROR_EXIT
@@ -146,7 +146,7 @@ set "BUILD_DIR=src-tauri\target\release"
 set "BUNDLE_DIR=src-tauri\target\release\bundle"
 
 if exist "!BUILD_DIR!\marktext.exe" (
-    echo [OK] Tauri executable built successfully!
+    echo [OK] Tauri executable built successfully
     for %%A in ("!BUILD_DIR!\marktext.exe") do (
         set "SIZE_BYTES=%%~zA"
         set /a "SIZE_MB=!SIZE_BYTES! / 1048576"
@@ -158,7 +158,7 @@ if exist "!BUILD_DIR!\marktext.exe" (
     echo [ERROR] Tauri build failed - executable not found in !BUILD_DIR!
     echo.
     echo Common issues:
-    echo   - WebView2 not installed (required for Windows)
+    echo   - WebView2 not installed ^(required for Windows^)
     echo   - Visual Studio C++ build tools missing
     echo   - Cargo build errors in src-tauri
     echo.

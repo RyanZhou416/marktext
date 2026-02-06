@@ -1,31 +1,29 @@
-// 根据运行环境选择模块
-// 渲染进程使用 electronAPI，Tauri 使用 stub，主进程直接使用 Node.js
+// Tauri 渲染进程 - 使用 window.electronAPI (由 tauri.js 桥接层设置)
+// 或提供安全的 stub 实现
 let fs, fsPromises, path
 
 if (typeof window !== 'undefined' && window.electronAPI) {
-  // Electron 渲染进程 - 使用 electronAPI
+  // 使用 electronAPI (由 Tauri 桥接层提供)
   const api = window.electronAPI
   fs = {
-    existsSync: api.fs.existsSync,
-    lstatSync: api.fs.lstatSync,
-    readlinkSync: api.fs.readlinkSync,
-    mkdirSync: (p, opts) => api.fs.mkdirSync(p, opts),
-    // ensureDirSync 的简单实现
+    existsSync: api.fs.existsSync || (() => false),
+    lstatSync: api.fs.lstatSync || (() => ({ isDirectory: () => false, isFile: () => false, isSymbolicLink: () => false })),
+    readlinkSync: api.fs.readlinkSync || (() => ''),
+    mkdirSync: (p, opts) => api.fs.mkdirSync ? api.fs.mkdirSync(p, opts) : undefined,
     ensureDirSync: (dirPath) => {
       try {
-        api.fs.mkdirSync(dirPath, { recursive: true })
+        if (api.fs.mkdirSync) api.fs.mkdirSync(dirPath, { recursive: true })
       } catch (e) {
         if (e.code !== 'EEXIST') throw e
       }
     }
   }
   fsPromises = {
-    access: api.fs.access
+    access: api.fs.access || (() => Promise.reject(new Error('not available')))
   }
   path = api.path
-} else if (typeof window !== 'undefined' && window.__TAURI_INTERNALS__) {
-  // Tauri 渲染进程 - 提供 stub 实现
-  // 实际的文件系统操作应通过 Tauri commands 或 @tauri-apps/plugin-fs
+} else {
+  // 降级 stub - API 未初始化时使用
   const sep = typeof navigator !== 'undefined' && navigator.platform.startsWith('Win') ? '\\' : '/'
   fs = {
     existsSync: () => false,
@@ -35,7 +33,7 @@ if (typeof window !== 'undefined' && window.electronAPI) {
     ensureDirSync: () => {}
   }
   fsPromises = {
-    access: () => Promise.reject(new Error('fs.access not available in Tauri'))
+    access: () => Promise.reject(new Error('fs.access not available'))
   }
   path = {
     join: (...args) => args.filter(Boolean).join(sep).replace(/[/\\]+/g, sep),
@@ -65,11 +63,6 @@ if (typeof window !== 'undefined' && window.electronAPI) {
     },
     sep
   }
-} else {
-  // 主进程 - 直接使用 Node.js 模块
-  fs = require('fs-extra')
-  fsPromises = require('fs/promises')
-  path = require('path')
 }
 
 /**

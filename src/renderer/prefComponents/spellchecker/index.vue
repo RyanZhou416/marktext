@@ -69,7 +69,7 @@
 </template>
 
 <script>
-import { ipcRenderer } from '../../util/electron'
+import { ipcRenderer } from '../../util/tauri'
 import log from '../../util/logger'
 import { mapState } from 'vuex'
 import Compound from '../common/compound'

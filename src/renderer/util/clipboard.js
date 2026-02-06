@@ -1,6 +1,9 @@
 import { isLinux, isOsx, isWindows } from './index'
-import plist from 'plist'
-import { clipboard } from './electron'
+import { clipboard } from './tauri'
+
+// plist was used for macOS NSFilenamesPboardType clipboard parsing
+// In Tauri, clipboard.has() always returns false, so plist is not needed
+const plist = { parse: (data) => [] }
 
 const hasClipboardFiles = () => {
   return clipboard.has('NSFilenamesPboardType')

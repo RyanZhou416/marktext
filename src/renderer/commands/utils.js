@@ -1,4 +1,4 @@
-import { path, processInfo } from '../util/electron'
+import { path, processInfo } from '../util/tauri'
 import { isFile } from 'common/filesystem'
 
 /// Check whether the package is updatable at runtime.

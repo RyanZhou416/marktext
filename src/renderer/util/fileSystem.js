@@ -4,7 +4,7 @@ import {
   os,
   childProcess as cp,
   crypto
-} from './electron'
+} from './tauri'
 import dayjs from 'dayjs'
 import { Octokit } from '@octokit/rest'
 import { isImageFile } from 'common/filesystem/paths'

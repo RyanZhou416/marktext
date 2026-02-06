@@ -115,12 +115,13 @@
 </template>
 
 <script>
-import { shell } from '../../../../util/electron'
+import { shell } from '../../../../util/tauri'
 import services, { isValidService } from './services.js'
 import legalNoticesCheckbox from './legalNoticesCheckbox'
 import { isFileExecutableSync } from '@/util/fileSystem'
 import CurSelect from '@/prefComponents/common/select'
-import commandExists from 'command-exists'
+// commandExists was a Node.js module - in Tauri we use Rust backend
+const commandExists = { sync: () => false }
 import notice from '@/services/notification'
 
 export default {

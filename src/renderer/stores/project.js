@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
-import { ipcRenderer, shell, path, processInfo } from '../util/electron'
+import { ipcRenderer, shell, path, processInfo } from '../util/tauri'
 import { addFile, unlinkFile, addDirectory, unlinkDirectory } from '../store/treeCtrl'
 import bus from '../bus'
 import { create, paste, rename } from '../util/fileSystem'

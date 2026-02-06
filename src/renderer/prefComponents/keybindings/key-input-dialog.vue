@@ -39,11 +39,34 @@
 </template>
 
 <script>
-import {
-  isCompositionEvent,
-  isValidElectronAccelerator,
-  getAcceleratorFromKeyboardEvent
-} from '@hfelix/electron-localshortcut'
+// Pure JS replacements for @hfelix/electron-localshortcut (Electron-only module)
+const isCompositionEvent = (e) => e.isComposing || e.keyCode === 229
+const isValidElectronAccelerator = (accel) => {
+  if (!accel || typeof accel !== 'string') return false
+  // Basic validation: must contain at least one non-modifier key
+  const parts = accel.split('+').map(p => p.trim())
+  const modifiers = ['Ctrl', 'Alt', 'Shift', 'CmdOrCtrl', 'Cmd', 'Meta', 'Super']
+  const nonModifiers = parts.filter(p => !modifiers.includes(p))
+  return nonModifiers.length > 0
+}
+const getAcceleratorFromKeyboardEvent = (e) => {
+  const parts = []
+  if (e.ctrlKey || e.metaKey) parts.push('CmdOrCtrl')
+  if (e.altKey) parts.push('Alt')
+  if (e.shiftKey) parts.push('Shift')
+  const key = e.key
+  if (!['Control', 'Alt', 'Shift', 'Meta'].includes(key)) {
+    // Map common keys
+    const keyMap = {
+      ' ': 'Space', ArrowUp: 'Up', ArrowDown: 'Down',
+      ArrowLeft: 'Left', ArrowRight: 'Right', Escape: 'Escape',
+      Enter: 'Return', Backspace: 'Backspace', Delete: 'Delete',
+      Tab: 'Tab'
+    }
+    parts.push(keyMap[key] || (key.length === 1 ? key.toUpperCase() : key))
+  }
+  return parts.join('+')
+}
 
 export default {
   data () {

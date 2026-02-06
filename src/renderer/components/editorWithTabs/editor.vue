@@ -67,7 +67,7 @@
 </template>
 
 <script>
-import { shell, path, processInfo } from '../../util/electron'
+import { shell, path, processInfo } from '../../util/tauri'
 import log from '../../util/logger'
 import { mapState } from 'vuex'
 // import ViewImage from 'view-image'

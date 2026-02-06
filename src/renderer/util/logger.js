@@ -6,7 +6,7 @@
  * a simple console-based logger with the same API.
  */
 
-import { ipcRenderer } from './electron'
+import { ipcRenderer } from './tauri'
 
 // Create logger instance
 const log = {

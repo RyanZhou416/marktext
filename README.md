@@ -238,10 +238,35 @@ All binaries for Linux, macOS and Windows can be downloaded from the [release pa
 
 ## Development
 
-If you wish to build MarkText yourself, please check out our [build instructions](docs/dev/BUILD.md).
+MarkText is built with **Tauri 2.0** (Rust backend) and **Vue 3** (frontend).
+
+### Prerequisites
+
+- [Rust](https://rustup.rs/) (stable toolchain)
+- [Node.js](https://nodejs.org/) (v18+)
+- [Yarn](https://yarnpkg.com/) (v1.x)
+- Platform-specific requirements: [Tauri prerequisites](https://v2.tauri.app/start/prerequisites/)
+
+### Quick Start
+
+```bash
+# Install frontend dependencies
+yarn install
+
+# Run in development mode
+yarn tauri:dev
+
+# Build for production
+yarn tauri:build
+```
+
+### Windows Setup
+
+Run `scripts\setup-tauri-env.cmd` for automated environment setup.
 
 - [User documentation](docs/README.md)
 - [Developer documentation](docs/dev/README.md)
+- [Upgrade roadmap](docs/dev/UPGRADE_ROADMAP.md)
 
 If you have any questions regarding MarkText, you are welcome to write an issue. When doing so please use the default format found when opening an issue. Of course, if you submit a PR directly, it will be greatly appreciated.
 

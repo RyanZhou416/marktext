@@ -49,22 +49,284 @@ let tauriReady = loadTauriApis()
 // Event listener management for IPC emulation
 const eventListeners = new Map()
 
-// IPC Renderer emulation using Tauri invoke and events
+// ============================================================================
+// IPC Renderer emulation - maps Electron IPC channels to Tauri commands/events
+// ============================================================================
+
+// High-level IPC channel handlers that map to specific Tauri commands
+const ipcChannelHandlers = {
+  // File operations
+  'mt::response-file-save': async (args) => {
+    const [data] = args
+    if (!data) return
+    const { pathname, markdown, filename, defaultPath, options } = data
+    let savePath = pathname
+    if (!savePath) {
+      // New file - show save dialog
+      savePath = await tauriCore.invoke('save_file_dialog', {
+        defaultPath: defaultPath || null,
+        filename: filename || 'Untitled.md'
+      })
+      if (!savePath) return // User cancelled
+    }
+    const result = await tauriCore.invoke('save_markdown_file', {
+      filePath: savePath,
+      content: markdown,
+      encoding: options?.encoding || null
+    })
+    if (result.success) {
+      await tauriCore.invoke('add_recent_document', { filePath: result.path })
+    }
+    return result
+  },
+  'mt::response-file-save-as': async (args) => {
+    const [data] = args
+    if (!data) return
+    const { pathname, markdown, filename, options } = data
+    const dir = pathname ? pathPolyfill.dirname(pathname) : null
+    const savePath = await tauriCore.invoke('save_file_dialog', {
+      defaultPath: dir,
+      filename: filename || 'Untitled.md'
+    })
+    if (!savePath) return null
+    const result = await tauriCore.invoke('save_markdown_file', {
+      filePath: savePath,
+      content: markdown,
+      encoding: options?.encoding || null
+    })
+    if (result.success) {
+      await tauriCore.invoke('add_recent_document', { filePath: result.path })
+    }
+    return result
+  },
+  'mt::save-tabs': async (args) => {
+    const [unsavedFiles] = args
+    if (!unsavedFiles || !unsavedFiles.length) return
+    for (const file of unsavedFiles) {
+      if (file.pathname) {
+        await tauriCore.invoke('save_markdown_file', {
+          filePath: file.pathname,
+          content: file.markdown
+        })
+      }
+    }
+  },
+  'mt::save-and-close-tabs': async (args) => {
+    const [unsavedFiles] = args
+    if (!unsavedFiles) return
+    for (const file of unsavedFiles) {
+      if (file.pathname) {
+        await tauriCore.invoke('save_markdown_file', {
+          filePath: file.pathname,
+          content: file.markdown
+        })
+      }
+    }
+  },
+  // File open operations
+  'mt::cmd-open-file': async () => {
+    const paths = await tauriCore.invoke('open_file_dialog')
+    return paths
+  },
+  'mt::cmd-open-folder': async () => {
+    const folderPath = await tauriCore.invoke('open_folder_dialog')
+    return folderPath
+  },
+  // Window operations
+  'mt::cmd-new-editor-window': async () => {
+    return await tauriCore.invoke('create_editor_window', { filePath: null })
+  },
+  'mt::open-setting-window': async () => {
+    return await tauriCore.invoke('create_settings_window', { page: null })
+  },
+  'mt::cmd-close-window': async () => {
+    return await tauriCore.invoke('close_window')
+  },
+  // Move to trash
+  'mt::response-file-move-to': async (args) => {
+    const [data] = args
+    if (!data) return
+    const { pathname } = data
+    const dest = await tauriCore.invoke('save_file_dialog', {
+      defaultPath: pathPolyfill.dirname(pathname),
+      filename: pathPolyfill.basename(pathname)
+    })
+    if (!dest) return null
+    await tauriCore.invoke('rename', { old_path: pathname, new_path: dest })
+    return dest
+  },
+  // Export
+  'mt::response-export': async (args) => {
+    const [data] = args
+    if (!data) return
+    const { type, content, pathname, title } = data
+    const ext = type === 'pdf' ? '.pdf' : '.html'
+    const basename = pathname ? pathPolyfill.basename(pathname, '.md') : (title || 'Untitled')
+    const filePath = await tauriCore.invoke('export_file_dialog', {
+      exportType: type,
+      defaultPath: pathname ? pathPolyfill.dirname(pathname) : null,
+      filename: basename + ext
+    })
+    if (!filePath) return null
+    if (type === 'styledHtml' || type === 'html') {
+      await tauriCore.invoke('export_html', { filePath, content })
+    }
+    // PDF export is handled by window.print() on the frontend side
+    return filePath
+  },
+  // Preferences
+  'mt::ask-for-user-preference': async () => {
+    return await tauriCore.invoke('get_preferences')
+  },
+  'mt::set-user-preference': async (args) => {
+    const [data] = args
+    if (data && typeof data === 'object') {
+      await tauriCore.invoke('set_preferences', { preferences: data })
+    }
+  },
+  'mt::cmd-set-single-preference': async (args) => {
+    const [key, value] = args
+    await tauriCore.invoke('set_preference', { key, value })
+  },
+  // Recent documents
+  'mt::get-recent-documents': async () => {
+    return await tauriCore.invoke('get_recent_documents')
+  },
+  'mt::clear-recent-documents': async () => {
+    return await tauriCore.invoke('clear_recent_documents')
+  },
+  // Image
+  'mt::pick-image': async () => {
+    return await tauriCore.invoke('pick_image_dialog')
+  },
+  'mt::get-image-completions': async (args) => {
+    const [directory, query] = args
+    return await tauriCore.invoke('get_image_completions', { directory, query })
+  },
+  'mt::copy-image-to-folder': async (args) => {
+    const [source, destDir] = args
+    return await tauriCore.invoke('copy_image_to_folder', { source, destDir })
+  },
+  // File watcher
+  'mt::watch-file': async (args) => {
+    const [filePath] = args
+    return await tauriCore.invoke('watch_file', { filePath })
+  },
+  'mt::watch-directory': async (args) => {
+    const [dirPath] = args
+    return await tauriCore.invoke('watch_directory', { dirPath })
+  },
+  'mt::unwatch': async (args) => {
+    const [watchPath] = args
+    return await tauriCore.invoke('unwatch', { watchPath })
+  },
+  'mt::unwatch-all': async () => {
+    return await tauriCore.invoke('unwatch_all')
+  },
+  // Keybindings
+  'mt::get-keybindings': async () => {
+    return await tauriCore.invoke('get_keybindings')
+  },
+  'mt::save-keybindings': async (args) => {
+    const [keybindings] = args
+    return await tauriCore.invoke('save_user_keybindings', { keybindings })
+  },
+  // Pandoc
+  'mt::check-pandoc': async () => {
+    return await tauriCore.invoke('check_pandoc')
+  },
+  'mt::import-with-pandoc': async (args) => {
+    const [filePath] = args
+    return await tauriCore.invoke('import_with_pandoc', { filePath })
+  },
+  // Spellcheck
+  'mt::get-custom-dictionary': async () => {
+    return await tauriCore.invoke('get_custom_dictionary')
+  },
+  'mt::add-to-dictionary': async (args) => {
+    const [word] = args
+    return await tauriCore.invoke('add_to_dictionary', { word })
+  },
+  'mt::remove-from-dictionary': async (args) => {
+    const [word] = args
+    return await tauriCore.invoke('remove_from_dictionary', { word })
+  },
+  // Trash
+  'mt::response-file-trash': async (args) => {
+    const [data] = args
+    if (!data) return
+    const { pathname } = data
+    return await tauriCore.invoke('trash_file', { filePath: pathname })
+  },
+  // Window state
+  'mt::window-minimize': async () => {
+    return await tauriCore.invoke('minimize_window')
+  },
+  'mt::window-maximize': async () => {
+    return await tauriCore.invoke('maximize_window')
+  },
+  'mt::window-close': async () => {
+    return await tauriCore.invoke('close_window')
+  },
+  'mt::window-toggle-fullscreen': async () => {
+    const state = await tauriCore.invoke('get_window_state')
+    return await tauriCore.invoke('set_fullscreen', { fullscreen: !state.isFullscreen })
+  },
+  'mt::window-toggle-always-on-top': async (args) => {
+    const [alwaysOnTop] = args
+    return await tauriCore.invoke('set_always_on_top', { alwaysOnTop: !!alwaysOnTop })
+  },
+  // No-op handlers for channels that don't need backend interaction
+  'mt::set-title': async () => {},
+  'mt::send-initialized': async () => {},
+  'mt::editor-ready': async () => {},
+  'mt::update-line-ending-menu': async () => {},
+  'mt::update-text-direction-menu': async () => {}
+}
+
+// Convert mt:: channel names to Tauri command names (fallback)
+function channelToCommand (channel) {
+  return channel.replace(/^mt::/, '').replace(/-/g, '_')
+}
+
+function channelToEvent (channel) {
+  return channel
+}
+
 export const ipcRenderer = {
   send: async (channel, ...args) => {
     if (!isTauri()) return
     await tauriReady
-    // Convert IPC channel to Tauri command
+    // Check for specific handler first
+    if (ipcChannelHandlers[channel]) {
+      try {
+        await ipcChannelHandlers[channel](args)
+      } catch (e) {
+        console.error(`Tauri handler error for ${channel}:`, e)
+      }
+      return
+    }
+    // Fallback: convert channel to command
     const command = channelToCommand(channel)
     try {
       await tauriCore.invoke(command, { args })
     } catch (e) {
-      console.error(`Tauri invoke error for ${channel}:`, e)
+      console.warn(`Tauri invoke fallback for ${channel} (${command}):`, e.message || e)
     }
   },
   invoke: async (channel, ...args) => {
     if (!isTauri()) return Promise.reject(new Error('Tauri API not available'))
     await tauriReady
+    // Check for specific handler first
+    if (ipcChannelHandlers[channel]) {
+      try {
+        return await ipcChannelHandlers[channel](args)
+      } catch (e) {
+        console.error(`Tauri handler error for ${channel}:`, e)
+        throw e
+      }
+    }
+    // Fallback
     const command = channelToCommand(channel)
     try {
       return await tauriCore.invoke(command, { args })
@@ -74,7 +336,6 @@ export const ipcRenderer = {
     }
   },
   sendSync: (channel, ...args) => {
-    // Tauri doesn't support sync IPC - return null
     console.warn('sendSync not supported in Tauri, returning null for:', channel)
     return null
   },
@@ -83,11 +344,9 @@ export const ipcRenderer = {
     const unlisten = tauriReady.then(async () => {
       const eventName = channelToEvent(channel)
       const unsubscribe = await tauriEvent.listen(eventName, (event) => {
-        // Emulate Electron's event object
         const fakeEvent = { sender: null }
         callback(fakeEvent, event.payload)
       })
-      // Store for cleanup
       if (!eventListeners.has(channel)) {
         eventListeners.set(channel, [])
       }
@@ -120,20 +379,10 @@ export const ipcRenderer = {
   }
 }
 
-// Convert mt:: channel names to Tauri command names
-function channelToCommand (channel) {
-  // mt::get-available-fonts -> get_available_fonts
-  return channel
-    .replace(/^mt::/, '')
-    .replace(/-/g, '_')
-}
-
-function channelToEvent (channel) {
-  // Keep original format for events
-  return channel
-}
-
+// ============================================================================
 // Shell API using Tauri shell plugin
+// ============================================================================
+
 export const shell = {
   openExternal: async (url, options) => {
     if (!isTauri()) return Promise.reject(new Error('Tauri API not available'))
@@ -159,16 +408,15 @@ export const shell = {
   showItemInFolder: async (fullPath) => {
     if (!isTauri()) return
     await tauriReady
-    // Use Tauri's reveal in file manager
     try {
-      // This requires the shell plugin with proper permissions
-      await tauriShell.open(fullPath)
+      // Reveal parent folder and select the item
+      const dir = pathPolyfill.dirname(fullPath)
+      await tauriShell.open(dir)
     } catch (e) {
       console.error('Failed to show item in folder:', e)
     }
   },
   beep: () => {
-    // Use web audio API for beep
     try {
       const audioContext = new (window.AudioContext || window.webkitAudioContext)()
       const oscillator = audioContext.createOscillator()
@@ -183,7 +431,10 @@ export const shell = {
   }
 }
 
+// ============================================================================
 // Clipboard API using Tauri clipboard plugin
+// ============================================================================
+
 export const clipboard = {
   readText: async (type) => {
     if (!isTauri()) return ''
@@ -204,14 +455,8 @@ export const clipboard = {
       console.error('Failed to write clipboard:', e)
     }
   },
-  readHTML: async (type) => {
-    // Tauri clipboard plugin doesn't support HTML directly
-    // Return empty for now
-    return ''
-  },
+  readHTML: async (type) => '',
   writeHTML: async (markup, type) => {
-    // Tauri clipboard plugin doesn't support HTML directly
-    // Write as text instead
     if (!isTauri()) return
     await tauriReady
     try {
@@ -243,7 +488,10 @@ export const clipboard = {
   write: (data, type) => {}
 }
 
+// ============================================================================
 // Native Image API - limited support in Tauri
+// ============================================================================
+
 export const nativeImage = {
   createEmpty: () => null,
   createFromPath: (path) => null,
@@ -251,7 +499,10 @@ export const nativeImage = {
   createFromDataURL: (dataURL) => null
 }
 
-// WebFrame API - limited support, use CSS zoom instead
+// ============================================================================
+// WebFrame API - use CSS zoom
+// ============================================================================
+
 export const webFrame = {
   setZoomFactor: (factor) => {
     document.body.style.zoom = factor
@@ -260,7 +511,6 @@ export const webFrame = {
     return parseFloat(document.body.style.zoom) || 1
   },
   setZoomLevel: (level) => {
-    // Convert zoom level to factor: factor = 1.2^level
     const factor = Math.pow(1.2, level)
     document.body.style.zoom = factor
   },
@@ -270,16 +520,20 @@ export const webFrame = {
   }
 }
 
+// ============================================================================
 // WebUtils API - for drag & drop file path access
+// ============================================================================
+
 export const webUtils = {
   getPathForFile: (file) => {
-    // In Tauri, we can use the file's path property if available
-    // or fall back to the name
     return file.path || file.name || ''
   }
 }
 
-// File System API using Tauri fs plugin
+// ============================================================================
+// File System API using Tauri fs plugin + Rust commands
+// ============================================================================
+
 export const fs = {
   readFile: async (filePath, options) => {
     if (!isTauri()) return Promise.reject(new Error('Tauri API not available'))
@@ -332,7 +586,6 @@ export const fs = {
     return null
   },
   lstat: async (filePath, options) => {
-    // Same as stat for now
     return fs.stat(filePath, options)
   },
   lstatSync: (filePath) => null,
@@ -351,10 +604,7 @@ export const fs = {
     console.warn('existsSync not supported in Tauri')
     return false
   },
-  realpath: async (filePath, options) => {
-    // Return the path as-is for now
-    return filePath
-  },
+  realpath: async (filePath, options) => filePath,
   realpathSync: (filePath, options) => filePath,
   readlink: async (filePath, options) => filePath,
   readlinkSync: (filePath, options) => null,
@@ -452,19 +702,56 @@ export const fs = {
   watchFile: (filename, options, listener) => {},
   unwatchFile: (filename, listener) => {},
   get constants () {
-    return {
-      F_OK: 0,
-      R_OK: 4,
-      W_OK: 2,
-      X_OK: 1
-    }
+    return { F_OK: 0, R_OK: 4, W_OK: 2, X_OK: 1 }
   }
 }
 
+// ============================================================================
+// Ensure fs-extra compatibility (ensureDir, pathExists, etc.)
+// ============================================================================
+
+fs.ensureDir = async (dirPath) => {
+  return fs.mkdir(dirPath, { recursive: true })
+}
+fs.ensureDirSync = (dirPath) => {
+  console.warn('ensureDirSync not supported in Tauri')
+}
+fs.pathExists = async (filePath) => {
+  try {
+    await tauriReady
+    return await tauriCore.invoke('exists', { path: filePath })
+  } catch {
+    return false
+  }
+}
+fs.pathExistsSync = (filePath) => false
+fs.outputFile = async (filePath, data, options) => {
+  const dir = pathPolyfill.dirname(filePath)
+  await fs.ensureDir(dir)
+  return fs.writeFile(filePath, data, options)
+}
+fs.readJson = async (filePath) => {
+  const content = await fs.readFile(filePath)
+  return JSON.parse(content)
+}
+fs.writeJson = async (filePath, data, options) => {
+  const content = JSON.stringify(data, null, options?.spaces || 2)
+  return fs.writeFile(filePath, content)
+}
+fs.remove = async (filePath) => {
+  try {
+    await tauriReady
+    await tauriCore.invoke('remove', { path: filePath, recursive: true })
+  } catch (e) {
+    // ignore if not found
+  }
+}
+
+// ============================================================================
 // Path API - Use pure JS polyfill for synchronous operations (required by Muya)
-// This ensures compatibility without async calls
+// ============================================================================
+
 export const path = {
-  // Synchronous operations using pure JS polyfill
   join: (...args) => pathPolyfill.join(...args),
   resolve: (...args) => pathPolyfill.resolve(...args),
   dirname: (filePath) => pathPolyfill.dirname(filePath),
@@ -475,48 +762,31 @@ export const path = {
   normalize: (filePath) => pathPolyfill.normalize(filePath),
   isAbsolute: (filePath) => pathPolyfill.isAbsolute(filePath),
   relative: (from, to) => pathPolyfill.relative(from, to),
-  get sep () {
-    return pathPolyfill.sep
-  },
-  get delimiter () {
-    return pathPolyfill.delimiter
-  },
-  get posix () {
-    return null
-  },
-  get win32 () {
-    return null
-  }
+  get sep () { return pathPolyfill.sep },
+  get delimiter () { return pathPolyfill.delimiter },
+  get posix () { return null },
+  get win32 () { return null }
 }
 
+// ============================================================================
 // OS API using Tauri os plugin
+// ============================================================================
+
 export const os = {
   homedir: async () => {
     if (!isTauri()) return ''
     await tauriReady
-    try {
-      return await tauriCore.invoke('get_homedir')
-    } catch (e) {
-      return ''
-    }
+    try { return await tauriCore.invoke('get_homedir') } catch (e) { return '' }
   },
   tmpdir: async () => {
     if (!isTauri()) return ''
     await tauriReady
-    try {
-      return await tauriCore.invoke('get_tmpdir')
-    } catch (e) {
-      return ''
-    }
+    try { return await tauriCore.invoke('get_tmpdir') } catch (e) { return '' }
   },
   platform: async () => {
     if (!isTauri()) return ''
     await tauriReady
-    try {
-      return await tauriCore.invoke('get_platform')
-    } catch (e) {
-      return ''
-    }
+    try { return await tauriCore.invoke('get_platform') } catch (e) { return '' }
   },
   type: async () => {
     if (!isTauri()) return ''
@@ -529,28 +799,18 @@ export const os = {
         case 'linux': return 'Linux'
         default: return platform
       }
-    } catch (e) {
-      return ''
-    }
+    } catch (e) { return '' }
   },
   arch: async () => {
     if (!isTauri()) return ''
     await tauriReady
-    try {
-      return await tauriCore.invoke('get_arch')
-    } catch (e) {
-      return ''
-    }
+    try { return await tauriCore.invoke('get_arch') } catch (e) { return '' }
   },
   release: () => '',
   hostname: async () => {
     if (!isTauri()) return ''
     await tauriReady
-    try {
-      return await tauriCore.invoke('get_hostname')
-    } catch (e) {
-      return ''
-    }
+    try { return await tauriCore.invoke('get_hostname') } catch (e) { return '' }
   },
   cpus: () => [],
   totalmem: () => 0,
@@ -560,7 +820,10 @@ export const os = {
   }
 }
 
+// ============================================================================
 // Process info
+// ============================================================================
+
 export const processInfo = {
   get platform () {
     const userAgent = navigator.userAgent.toLowerCase()
@@ -572,34 +835,22 @@ export const processInfo = {
   get arch () {
     return navigator.userAgent.includes('x64') ? 'x64' : 'x86'
   },
-  get versions () {
-    return {}
-  },
-  get env () {
-    return {}
-  },
+  get versions () { return {} },
+  get env () { return {} },
   cwd: () => '',
-  get argv () {
-    return []
-  },
-  get execPath () {
-    return ''
-  },
-  get pid () {
-    return 0
-  },
-  get ppid () {
-    return 0
-  },
-  get resourcesPath () {
-    return ''
-  }
+  get argv () { return [] },
+  get execPath () { return '' },
+  get pid () { return 0 },
+  get ppid () { return 0 },
+  get resourcesPath () { return '' }
 }
 
+// ============================================================================
 // Crypto API - use Web Crypto API
+// ============================================================================
+
 export const crypto = {
   createHash: (algorithm) => {
-    // Return a hash-like object using Web Crypto API
     let data = new Uint8Array()
     return {
       update: function (input) {
@@ -634,7 +885,10 @@ export const crypto = {
   }
 }
 
+// ============================================================================
 // Child Process API - limited support via Tauri shell
+// ============================================================================
+
 export const childProcess = {
   spawn: (command, args, options) => {
     console.warn('spawn not fully supported in Tauri')
@@ -648,9 +902,7 @@ export const childProcess = {
     await tauriReady
     try {
       const result = await tauriShell.Command.create('cmd', ['/c', command]).execute()
-      if (callback) {
-        callback(null, result.stdout, result.stderr)
-      }
+      if (callback) callback(null, result.stdout, result.stderr)
       return result
     } catch (e) {
       if (callback) callback(e)
@@ -676,14 +928,17 @@ export const childProcess = {
   }
 }
 
+// ============================================================================
 // Platform detection
+// ============================================================================
+
 const detectPlatform = () => {
   const userAgent = navigator.userAgent.toLowerCase()
   return {
     isOsx: userAgent.includes('mac'),
     isWindows: userAgent.includes('win'),
     isLinux: userAgent.includes('linux'),
-    isMas: false // Mac App Store - not applicable for Tauri
+    isMas: false
   }
 }
 
@@ -694,7 +949,135 @@ export const isWindows = platformInfo.isWindows
 export const isLinux = platformInfo.isLinux
 export const isMas = platformInfo.isMas
 
-// Static path - will be set by Tauri
+// ============================================================================
+// Menu event handler - listens for Tauri menu events and dispatches them
+// ============================================================================
+
+let menuEventInitialized = false
+export function initMenuEvents (store) {
+  if (menuEventInitialized || !isTauri()) return
+  menuEventInitialized = true
+
+  tauriReady.then(async () => {
+    await tauriEvent.listen('menu-event', (event) => {
+      const menuId = event.payload
+      handleMenuAction(menuId, store)
+    })
+  })
+}
+
+function handleMenuAction (menuId, store) {
+  // Map menu IDs to Vuex store actions / mutations
+  const menuActions = {
+    // File
+    'file.new-tab': () => store.dispatch('NEW_UNTITLED_TAB'),
+    'file.new-window': () => ipcRenderer.send('mt::cmd-new-editor-window'),
+    'file.open-file': () => handleOpenFile(store),
+    'file.open-folder': () => handleOpenFolder(store),
+    'file.save': () => store.dispatch('SAVE_FILE'),
+    'file.save-as': () => store.dispatch('SAVE_FILE_AS'),
+    'file.close-tab': () => store.dispatch('CLOSE_TAB'),
+    'file.close-window': () => ipcRenderer.send('mt::cmd-close-window'),
+    'file.preferences': () => ipcRenderer.send('mt::open-setting-window'),
+    // Edit
+    'edit.find': () => store.dispatch('SEARCH', { type: 'find' }),
+    'edit.replace': () => store.dispatch('SEARCH', { type: 'replace' }),
+    'edit.find-in-folder': () => store.dispatch('SEARCH', { type: 'folder' }),
+    // Paragraph
+    'paragraph.heading-1': () => store.dispatch('FORMAT', { type: 'heading', level: 1 }),
+    'paragraph.heading-2': () => store.dispatch('FORMAT', { type: 'heading', level: 2 }),
+    'paragraph.heading-3': () => store.dispatch('FORMAT', { type: 'heading', level: 3 }),
+    'paragraph.heading-4': () => store.dispatch('FORMAT', { type: 'heading', level: 4 }),
+    'paragraph.heading-5': () => store.dispatch('FORMAT', { type: 'heading', level: 5 }),
+    'paragraph.heading-6': () => store.dispatch('FORMAT', { type: 'heading', level: 6 }),
+    'paragraph.paragraph': () => store.dispatch('FORMAT', { type: 'paragraph' }),
+    'paragraph.order-list': () => store.dispatch('FORMAT', { type: 'order-list' }),
+    'paragraph.bullet-list': () => store.dispatch('FORMAT', { type: 'bullet-list' }),
+    'paragraph.task-list': () => store.dispatch('FORMAT', { type: 'task-list' }),
+    'paragraph.code-fence': () => store.dispatch('FORMAT', { type: 'pre' }),
+    'paragraph.quote-block': () => store.dispatch('FORMAT', { type: 'blockquote' }),
+    'paragraph.math-formula': () => store.dispatch('FORMAT', { type: 'mathblock' }),
+    'paragraph.html-block': () => store.dispatch('FORMAT', { type: 'html' }),
+    'paragraph.table': () => store.dispatch('FORMAT', { type: 'table' }),
+    'paragraph.horizontal-line': () => store.dispatch('FORMAT', { type: 'hr' }),
+    // Format
+    'format.strong': () => store.dispatch('FORMAT', { type: 'strong' }),
+    'format.emphasis': () => store.dispatch('FORMAT', { type: 'em' }),
+    'format.underline': () => store.dispatch('FORMAT', { type: 'u' }),
+    'format.superscript': () => store.dispatch('FORMAT', { type: 'sup' }),
+    'format.subscript': () => store.dispatch('FORMAT', { type: 'sub' }),
+    'format.highlight': () => store.dispatch('FORMAT', { type: 'mark' }),
+    'format.inline-code': () => store.dispatch('FORMAT', { type: 'inline_code' }),
+    'format.inline-math': () => store.dispatch('FORMAT', { type: 'inline_math' }),
+    'format.strike': () => store.dispatch('FORMAT', { type: 'del' }),
+    'format.hyperlink': () => store.dispatch('FORMAT', { type: 'link' }),
+    'format.image': () => store.dispatch('FORMAT', { type: 'image' }),
+    'format.clear-format': () => store.dispatch('FORMAT', { type: 'clear' }),
+    // View
+    'view.source-code-mode': () => store.dispatch('TOGGLE_VIEW_MODE'),
+    'view.toggle-sidebar': () => store.commit('SET_LAYOUT', { showSideBar: !store.state.layout.showSideBar }),
+    'view.toggle-tabbar': () => store.commit('SET_LAYOUT', { showTabBar: !store.state.layout.showTabBar }),
+    'view.command-palette': () => store.commit('SET_LAYOUT', { showCommandPalette: true }),
+    'view.zoom-in': () => {
+      const current = webFrame.getZoomFactor()
+      webFrame.setZoomFactor(Math.min(current + 0.1, 2.0))
+    },
+    'view.zoom-out': () => {
+      const current = webFrame.getZoomFactor()
+      webFrame.setZoomFactor(Math.max(current - 0.1, 0.5))
+    },
+    // Window
+    'window.toggle-always-on-top': () => ipcRenderer.send('mt::window-toggle-always-on-top', true),
+    // Help
+    'help.quick-start': () => shell.openExternal('https://github.com/marktext/marktext/blob/develop/docs/QUICKSTART.md'),
+    'help.markdown-reference': () => shell.openExternal('https://github.com/marktext/marktext/blob/develop/docs/MARKDOWN_SYNTAX.md'),
+    'help.changelog': () => shell.openExternal('https://github.com/marktext/marktext/blob/develop/.github/CHANGELOG.md'),
+    'help.about': () => {
+      // Show about info via notification or dialog
+      tauriReady.then(async () => {
+        const version = await tauriCore.invoke('get_app_version')
+        alert(`MarkText v${version}\n\nA simple and elegant markdown editor.`)
+      })
+    }
+  }
+
+  const action = menuActions[menuId]
+  if (action) {
+    action()
+  } else {
+    console.warn('Unknown menu action:', menuId)
+  }
+}
+
+async function handleOpenFile (store) {
+  await tauriReady
+  const paths = await tauriCore.invoke('open_file_dialog')
+  if (paths && paths.length > 0) {
+    for (const filePath of paths) {
+      const doc = await tauriCore.invoke('read_markdown_file', { filePath })
+      store.dispatch('NEW_TAB_WITH_CONTENT', {
+        markdown: doc.markdown,
+        filename: doc.filename,
+        pathname: doc.pathname,
+        options: {}
+      })
+      await tauriCore.invoke('add_recent_document', { filePath })
+    }
+  }
+}
+
+async function handleOpenFolder (store) {
+  await tauriReady
+  const folderPath = await tauriCore.invoke('open_folder_dialog')
+  if (folderPath) {
+    store.dispatch('OPEN_FOLDER', folderPath)
+  }
+}
+
+// ============================================================================
+// Static path / App path
+// ============================================================================
+
 export const getStaticPath = async () => {
   if (!isTauri()) return null
   await tauriReady
@@ -705,10 +1088,12 @@ export const getStaticPath = async () => {
   }
 }
 
-// Check if Tauri is available
 export const isTauriAvailable = isTauri
 
+// ============================================================================
 // Tauri API object matching Electron's window.electronAPI interface
+// ============================================================================
+
 const tauriApiObject = {
   ipcRenderer,
   shell,
@@ -726,18 +1111,15 @@ const tauriApiObject = {
   isWindows,
   isLinux,
   isMas,
-  staticPath: null // Will be set during init
+  staticPath: null
 }
 
 /**
  * Initialize Tauri API bridge
- * Sets up window.electronAPI for Muya and other components that expect it
  */
 export function initTauriApi () {
   if (!isTauri()) return false
 
-  // Set up window.electronAPI for compatibility with Muya and other components
-  // This allows Muya to use path and webUtils without knowing about Tauri
   if (typeof window !== 'undefined' && !window.electronAPI) {
     window.electronAPI = tauriApiObject
     window.__TAURI_API_INITIALIZED__ = true
@@ -749,7 +1131,6 @@ export function initTauriApi () {
 
 // Auto-initialize when loaded in Tauri context
 if (isTauri()) {
-  // Wait for DOM to be ready before initializing
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', initTauriApi)
   } else {
@@ -777,5 +1158,6 @@ export default {
   isMas,
   getStaticPath,
   isTauriAvailable,
-  initTauriApi
+  initTauriApi,
+  initMenuEvents
 }

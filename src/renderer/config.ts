@@ -1,4 +1,4 @@
-import { path } from './util/electron'
+import { path } from './util/tauri'
 
 export const PATH_SEPARATOR = path.sep
 

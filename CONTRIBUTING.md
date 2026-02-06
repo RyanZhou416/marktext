@@ -76,7 +76,25 @@ If there are conflicts or you want to update your local branch, please do the fo
 
 ### Build Instructions
 
-🔗 [Build Instructions](docs/dev/BUILD.md)
+MarkText uses **Tauri 2.0** with a Rust backend and Vue 3 frontend.
+
+Prerequisites:
+- [Rust](https://rustup.rs/) (stable toolchain)
+- [Node.js](https://nodejs.org/) (v18+)
+- [Yarn](https://yarnpkg.com/) (v1.x)
+
+```bash
+# Install dependencies
+yarn install
+
+# Development
+yarn tauri:dev
+
+# Production build
+yarn tauri:build
+```
+
+For detailed instructions, see [Build Instructions](docs/dev/BUILD.md).
 
 ### Style Guide
 

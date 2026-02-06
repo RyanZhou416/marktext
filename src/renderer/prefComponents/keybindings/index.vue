@@ -64,9 +64,11 @@
 </template>
 
 <script>
-import { ipcRenderer, shell } from '../../util/electron'
+import { ipcRenderer, shell } from '../../util/tauri'
 import log from '../../util/logger'
-import { setKeyboardLayout } from '@hfelix/electron-localshortcut'
+// setKeyboardLayout was from @hfelix/electron-localshortcut (Electron-only)
+// In Tauri, keyboard layout is handled by the OS/WebView natively
+const setKeyboardLayout = () => {}
 import Compound from '../common/compound'
 import Separator from '../common/separator'
 import KeyInputDialog from './key-input-dialog.vue'

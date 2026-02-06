@@ -35,7 +35,7 @@
 
 <script>
 import bus from '@/bus'
-import { ipcRenderer, webUtils } from '../../util/electron'
+import { ipcRenderer, webUtils } from '../../util/tauri'
 import importIcon from '@/assets/icons/import_file.svg'
 
 export default {

@@ -23,6 +23,8 @@ tauri-plugin-fs = "2"
 tauri-plugin-window-state = "2"
 tauri-plugin-process = "2"
 tauri-plugin-os = "2"
+tauri-plugin-single-instance = "2"
+tauri-plugin-updater = "2"
 
 # Font enumeration
 font-kit = "0.14"
@@ -47,6 +49,15 @@ dirs = "5"
 
 # URL encoding
 urlencoding = "2"
+
+# Trash / recycle bin
+trash = "5"
+
+# CLI argument parsing
+clap = { version = "4", features = ["derive"] }
+
+# Secure credential storage
+keyring = "3"
 
 # Logging
 log = "0.4"

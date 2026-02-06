@@ -1,5 +1,5 @@
 import { createStore } from 'vuex'
-import { ipcRenderer, processInfo } from '../util/electron'
+import { ipcRenderer, processInfo } from '../util/tauri'
 
 import listenForMain from './listenForMain'
 import project from './project'

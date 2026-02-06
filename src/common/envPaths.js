@@ -25,7 +25,26 @@ if (typeof window !== 'undefined' && window.electronAPI) {
     sep
   }
 } else {
-  path = require('path')
+  // Fallback: inline path polyfill (no Node.js require)
+  const sep = typeof navigator !== 'undefined' && navigator.platform.startsWith('Win') ? '\\' : '/'
+  path = {
+    join: (...args) => args.filter(Boolean).join(sep).replace(/[/\\]+/g, sep),
+    resolve: (...args) => args.filter(Boolean).join(sep).replace(/[/\\]+/g, sep),
+    dirname: (p) => p ? p.substring(0, Math.max(p.lastIndexOf('/'), p.lastIndexOf('\\'))) || sep : '.',
+    basename: (p, ext) => {
+      if (!p) return ''
+      let base = p.substring(Math.max(p.lastIndexOf('/'), p.lastIndexOf('\\')) + 1)
+      if (ext && base.endsWith(ext)) base = base.slice(0, -ext.length)
+      return base
+    },
+    extname: (p) => {
+      if (!p) return ''
+      const base = p.substring(Math.max(p.lastIndexOf('/'), p.lastIndexOf('\\')) + 1)
+      const dotIdx = base.lastIndexOf('.')
+      return dotIdx > 0 ? base.slice(dotIdx) : ''
+    },
+    sep
+  }
 }
 
 class EnvPaths {

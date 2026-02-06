@@ -23,7 +23,7 @@
 </template>
 
 <script>
-import { shell, ipcRenderer } from '../../../util/electron'
+import { shell, ipcRenderer } from '../../../util/tauri'
 
 // Example of fontmanager-redux objects:
 // {

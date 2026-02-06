@@ -1,5 +1,5 @@
 import EnvPaths from 'common/envPaths'
-import { processInfo, path } from '../util/electron'
+import { processInfo, path } from '../util/tauri'
 
 // 获取 ripgrep 路径
 // 在 contextIsolation 模式下，我们需要手动构建路径

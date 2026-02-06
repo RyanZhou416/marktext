@@ -46,7 +46,7 @@
 
 <script>
 import { mapState } from 'vuex'
-import { shell } from '../../../../util/electron'
+import { shell } from '../../../../util/tauri'
 import Bool from '@/prefComponents/common/bool'
 import Compound from '@/prefComponents/common/compound'
 import TextBox from '@/prefComponents/common/textBox'

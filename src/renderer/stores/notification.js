@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia'
-import { ipcRenderer, shell } from '../util/electron'
+import { ipcRenderer, shell } from '../util/tauri'
 import notice from '../services/notification'
 
 export const useNotificationStore = defineStore('notification', () => {

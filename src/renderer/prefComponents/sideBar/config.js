@@ -6,7 +6,7 @@ import ImageIcon from '@/assets/icons/pref_image.svg'
 import SpellIcon from '@/assets/icons/pref_spellcheck.svg'
 import KeyBindingIcon from '@/assets/icons/pref_key_binding.svg'
 
-import preferences from '../../../main/preferences/schema'
+import preferences from 'common/preferences-schema.json'
 
 export const category = [{
   name: 'General',

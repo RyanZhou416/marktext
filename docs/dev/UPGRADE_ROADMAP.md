@@ -793,19 +793,68 @@ scripts\build-tauri-portable.cmd
 
 ---
 
-## 阶段 9: Tauri 迁移
+## 阶段 9: Tauri 完整迁移
 
-**目标**: 将 MarkText 迁移到 Tauri 2.0
+**目标**: 完全从 Electron 迁移到 Tauri 2.0，删除所有 Electron 代码
 
-| 任务                | 状态 | 说明                  |
-| ------------------- | ---- | --------------------- |
-| 创建 Tauri 项目结构 | ⬜   | -                     |
-| 迁移前端代码        | ⬜   | Vue 组件              |
-| 实现 Rust 后端      | ⬜   | 替代 Node.js 主进程   |
-| 实现文件系统功能    | ⬜   | 打开、保存、监听      |
-| 实现系统功能        | ⬜   | 字体列表、键盘布局等  |
-| 实现自动更新        | ⬜   | Tauri updater         |
-| 测试所有平台        | ⬜   | Windows, macOS, Linux |
+| 任务                       | 状态    | 说明                                              |
+| -------------------------- | ------- | ------------------------------------------------- |
+| 9.1 核心文件操作           | ✅ 完成 | 打开/保存/另存为对话框、拖放、重命名/移动/回收站   |
+| 9.2 偏好设置与数据中心     | ✅ 完成 | preference.json 读写、user-data、安全凭据存储      |
+| 9.3 窗口管理               | ✅ 完成 | 多窗口创建/切换、关闭确认、单实例                  |
+| 9.4 菜单系统               | ✅ 完成 | 7 大类原生菜单 + 最近文件列表 + 前端事件联动       |
+| 9.5 文件监视器             | ✅ 完成 | notify crate 实现，防抖、fs-change 事件推送前端    |
+| 9.6 快捷键系统             | ✅ 完成 | 平台默认 + 用户自定义 keybindings.json             |
+| 9.7 上下文菜单             | ✅ 完成 | 编辑器/侧边栏/Tab 右键菜单 Rust 命令              |
+| 9.8 导出/打印/导入         | ✅ 完成 | HTML 导出、Pandoc 集成、markdown_to_html           |
+| 9.9 图片管理               | ✅ 完成 | 图片选择对话框、路径自动补全、复制到文件夹         |
+| 9.10 拼写检查              | ✅ 完成 | WebView 内置 + 自定义词典管理                      |
+| 9.11 自动更新              | ✅ 完成 | tauri-plugin-updater + GitHub Releases             |
+| 9.12 CLI 与启动环境        | ✅ 完成 | 命令行参数、便携模式、文件关联 .md/.markdown       |
+| 9.13 构建系统迁移          | ✅ 完成 | electron-vite → 纯 Vite + Tauri bundler            |
+| 9.14 清理 Electron 代码    | ✅ 完成 | 删除 src/main/、.electron-vue/、迁移所有 import    |
+| 9.15 测试与文档            | ✅ 完成 | 文档更新、README 更新                              |
+
+### Rust 后端模块
+
+```
+src-tauri/src/
+├── lib.rs                  # 主入口：CLI解析、便携模式、插件/状态注册
+├── menu.rs                 # 原生菜单系统（7类：File/Edit/Paragraph/Format/View/Window/Help）
+├── watcher.rs              # 文件监视器（notify crate + 防抖）
+└── commands/
+    ├── mod.rs              # 模块注册
+    ├── app.rs              # 应用信息
+    ├── context_menu.rs     # 上下文菜单
+    ├── export.rs           # 导出/Pandoc
+    ├── file_ops.rs         # 高级文件操作（对话框、保存、回收站）
+    ├── fonts.rs            # 字体枚举
+    ├── fs.rs               # 基础文件系统
+    ├── image.rs            # 图片管理
+    ├── keybindings.rs      # 快捷键配置
+    ├── path.rs             # 路径操作
+    ├── preferences.rs      # 偏好设置 + 数据中心 + 最近文档
+    ├── spellcheck.rs       # 自定义词典
+    ├── system.rs           # 系统信息
+    └── window.rs           # 窗口管理
+```
+
+### 已删除的 Electron 代码
+
+- `src/main/` — Electron 主进程（~5000+ 行 TypeScript/JavaScript）
+- `src/preload/` — Electron preload 脚本
+- `.electron-vue/` — 旧 Webpack 配置（12 个文件）
+- `electron.vite.config.mjs` — electron-vite 配置
+- `electron-builder.yml` — Electron 打包配置
+- `src/renderer/util/electron.js` — Electron API 桥接
+- `src/renderer/util/backend.js` — 双后端切换层
+- Electron 构建脚本：build-win-portable.cmd、build-win-installer.cmd 等
+
+### 已移除的依赖
+
+运行时：`@electron/remote`、`electron-log`、`electron-store`、`electron-window-state`、`fontmanager-redux`、`native-keymap`、`chokidar`、`fs-extra`、`source-map-support`、`command-exists`、`arg`、`chardet`、`plist`、`minizlib`、`vscode-ripgrep`
+
+开发时：`electron`、`electron-builder`、`electron-vite`、`@electron/rebuild`、`electron-updater`、`electron-devtools-installer`、`node-gyp`、所有 Webpack 相关、所有 Babel 插件（仅保留 eslint parser）、所有 Karma 测试框架
 
 ---
 
@@ -847,8 +896,8 @@ scripts\build-tauri-portable.cmd
 | 阶段 5: Vue 生态升级准备      | ✅ 完成   | 2026-02-05 | 2026-02-05 |
 | 阶段 6: Vue 3 迁移            | ⬜ 待开始 | -          | -          |
 | 阶段 7: TypeScript 迁移       | ⬜ 待开始 | -          | -          |
-| 阶段 8: Tauri 评估与 PoC      | 🔄 进行中 | 2026-02-05 | -          |
-| 阶段 9: Tauri 迁移            | ⬜ 待开始 | -          | -          |
+| 阶段 8: Tauri 评估与 PoC      | ✅ 完成   | 2026-02-05 | 2026-02-05 |
+| 阶段 9: Tauri 完整迁移        | ✅ 完成   | 2026-02-05 | 2026-02-05 |
 | 阶段 10: 编辑器引擎现代化     | ⬜ 待开始 | -          | -          |
 
 ---

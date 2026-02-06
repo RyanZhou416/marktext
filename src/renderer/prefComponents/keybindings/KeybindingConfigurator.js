@@ -1,4 +1,4 @@
-import { ipcRenderer } from '../../util/electron'
+import { ipcRenderer } from '../../util/tauri'
 import { isEqualAccelerator } from 'common/keybinding'
 import getCommandDescriptionById from '@/commands/descriptions'
 import { isOsx } from '@/util'

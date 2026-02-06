@@ -1,5 +1,5 @@
 // List of all static commands that are loaded into command center.
-import { ipcRenderer, shell } from '../util/electron'
+import { ipcRenderer, shell } from '../util/tauri'
 import bus from '../bus'
 import { delay, isOsx } from '@/util'
 import { isUpdatable } from './utils'

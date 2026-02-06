@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia'
-import { ipcRenderer } from '../util/electron'
+import { ipcRenderer } from '../util/tauri'
 import notice from '../services/notification'
 
 export const useAutoUpdatesStore = defineStore('autoUpdates', () => {

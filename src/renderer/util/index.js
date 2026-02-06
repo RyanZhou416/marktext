@@ -1,4 +1,4 @@
-import { processInfo } from './electron'
+import { processInfo } from './tauri'
 
 export const delay = (time) => {
   let timerId

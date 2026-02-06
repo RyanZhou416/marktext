@@ -268,7 +268,7 @@
 
 <script>
 import { mapState } from 'vuex'
-import { fs, path } from '../../util/electron'
+import { fs, path } from '../../util/tauri'
 import { isDirectory, isFile } from 'common/filesystem'
 import bus from '../../bus'
 import Bool from '@/prefComponents/common/bool'

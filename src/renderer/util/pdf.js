@@ -1,4 +1,4 @@
-import { fs, path } from './electron'
+import { fs, path } from './tauri'
 import Slugger from 'muya/lib/parser/marked/slugger'
 import { isFile } from 'common/filesystem'
 import { escapeHTML, unescapeHTML } from 'muya/lib/utils'

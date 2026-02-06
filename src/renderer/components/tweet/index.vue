@@ -68,7 +68,7 @@
 </template>
 
 <script>
-import { shell } from '../../util/electron'
+import { shell } from '../../util/tauri'
 import bus from '../../bus'
 
 export default {

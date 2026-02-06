@@ -4,8 +4,9 @@
   "version": "0.17.1",
   "identifier": "com.github.marktext",
   "build": {
-    "beforeDevCommand": "",
-    "beforeBuildCommand": "",
+    "beforeDevCommand": "yarn vite:dev",
+    "beforeBuildCommand": "yarn vite:build",
+    "devUrl": "http://localhost:5173",
     "frontendDist": "../out/renderer"
   },
   "app": {
@@ -43,11 +44,30 @@
       "../static/*",
       "../src/muya/themes/*"
     ],
+    "fileAssociations": [
+      {
+        "ext": ["md", "markdown", "mdown", "mkdn", "mkd", "mdwn", "mdtxt", "mdtext"],
+        "mimeType": "text/markdown",
+        "description": "Markdown Document"
+      },
+      {
+        "ext": ["txt"],
+        "mimeType": "text/plain",
+        "description": "Text Document"
+      }
+    ],
     "windows": {
       "nsis": {
         "installMode": "currentUser"
       }
     }
   },
-  "plugins": {}
+  "plugins": {
+    "updater": {
+      "endpoints": [
+        "https://github.com/marktext/marktext/releases/latest/download/latest.json"
+      ],
+      "pubkey": ""
+    }
+  }
 }

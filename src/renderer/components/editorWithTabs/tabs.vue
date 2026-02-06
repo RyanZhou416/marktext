@@ -36,7 +36,7 @@
 </template>
 
 <script>
-import { shell, clipboard } from '../../util/electron'
+import { shell, clipboard } from '../../util/tauri'
 import { mapState } from 'vuex'
 import autoScroll from 'dom-autoscroller'
 import dragula from 'dragula'

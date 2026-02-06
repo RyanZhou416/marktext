@@ -1,4 +1,4 @@
-import { childProcess } from '../util/electron'
+import { childProcess } from '../util/tauri'
 import RipgrepDirectorySearcher from './ripgrepSearcher'
 
 const { spawn } = childProcess

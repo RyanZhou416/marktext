@@ -1,4 +1,4 @@
-import { ipcRenderer, path } from '../util/electron'
+import { ipcRenderer, path } from '../util/tauri'
 import {
   isChildOfDirectory,
   hasMarkdownExtension,

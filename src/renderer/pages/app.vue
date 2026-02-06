@@ -48,7 +48,7 @@ import { loadingPageMixins } from '@/mixins'
 import { mapState } from 'vuex'
 import bus from '@/bus'
 import { DEFAULT_STYLE } from '@/config'
-import { ipcRenderer } from '../util/electron'
+import { ipcRenderer } from '../util/tauri'
 
 export default {
   name: 'marktext',

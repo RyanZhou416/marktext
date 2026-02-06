@@ -1,4 +1,4 @@
-import { path } from '../util/electron'
+import { path } from '../util/tauri'
 import { getUniqueId } from '../util'
 import { PATH_SEPARATOR } from '../config'
 

@@ -1,20 +1,19 @@
 import { isFile, isFile2, isSymbolicLink } from './index'
 
-// 根据运行环境选择模块
+// Tauri 渲染进程 - 使用 window.electronAPI (由 tauri.js 桥接层设置)
 let fs, path, isOsx, processInfo
 
 if (typeof window !== 'undefined' && window.electronAPI) {
-  // Electron 渲染进程 - 使用 electronAPI
   const api = window.electronAPI
   fs = {
-    readlinkSync: api.fs.readlinkSync,
-    statSync: api.fs.statSync
+    readlinkSync: api.fs.readlinkSync || (() => ''),
+    statSync: api.fs.statSync || (() => ({ ino: 0, isFile: () => false, isDirectory: () => false, isSymbolicLink: () => false }))
   }
   path = api.path
-  isOsx = api.isOsx
-  processInfo = api.process
-} else if (typeof window !== 'undefined' && window.__TAURI_INTERNALS__) {
-  // Tauri 渲染进程 - 提供 stub 实现
+  isOsx = api.isOsx || false
+  processInfo = api.process || { platform: 'unknown', resourcesPath: '', env: {} }
+} else {
+  // 降级 stub
   const sep = typeof navigator !== 'undefined' && navigator.platform.startsWith('Win') ? '\\' : '/'
   fs = {
     readlinkSync: () => '',
@@ -56,12 +55,6 @@ if (typeof window !== 'undefined' && window.electronAPI) {
     resourcesPath: '',
     env: {}
   }
-} else {
-  // 主进程 - 直接使用 Node.js 模块
-  fs = require('fs')
-  path = require('path')
-  isOsx = process.platform === 'darwin'
-  processInfo = process
 }
 
 export const MARKDOWN_EXTENSIONS = Object.freeze([

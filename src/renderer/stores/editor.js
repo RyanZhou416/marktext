@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
-import { ipcRenderer, path } from '../util/electron'
+import { ipcRenderer, path } from '../util/tauri'
 import equal from 'fast-deep-equal'
 import { isSamePathSync } from 'common/filesystem/paths'
 import bus from '../bus'

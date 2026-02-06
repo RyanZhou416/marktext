@@ -1,4 +1,4 @@
-import { ipcRenderer } from '../../util/electron'
+import { ipcRenderer } from '../../util/tauri'
 import * as contextMenu from './actions'
 
 // Menu item definitions (serializable)

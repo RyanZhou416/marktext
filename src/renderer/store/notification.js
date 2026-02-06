@@ -1,4 +1,4 @@
-import { ipcRenderer, shell } from '../util/electron'
+import { ipcRenderer, shell } from '../util/tauri'
 import notice from '../services/notification'
 
 const state = {}

@@ -22,7 +22,7 @@
 
 <script>
 import { ref, watch } from 'vue'
-import { shell } from '../../../util/electron'
+import { shell } from '../../../util/tauri'
 
 export default {
   props: {

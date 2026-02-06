@@ -14,7 +14,7 @@
 </template>
 
 <script>
-import { ipcRenderer } from '../../util/electron'
+import { ipcRenderer } from '../../util/tauri'
 import { closePath } from '../../assets/window-controls.js'
 
 export default {

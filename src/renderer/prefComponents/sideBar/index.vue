@@ -36,7 +36,7 @@
   </div>
 </template>
 <script>
-import { ipcRenderer } from '../../util/electron'
+import { ipcRenderer } from '../../util/tauri'
 import { category, searchContent } from './config'
 
 export default {

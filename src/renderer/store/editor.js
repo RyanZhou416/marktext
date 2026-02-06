@@ -4,7 +4,7 @@ import {
   shell,
   webFrame,
   path
-} from '../util/electron'
+} from '../util/tauri'
 import equal from 'fast-deep-equal'
 import { isSamePathSync } from 'common/filesystem/paths'
 import bus from '../bus'

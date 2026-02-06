@@ -59,7 +59,7 @@
 </template>
 
 <script>
-import { path } from '../../util/electron'
+import { path } from '../../util/tauri'
 import { mapState } from 'vuex'
 import { fileMixins } from '../../mixins'
 import { PATH_SEPARATOR } from '../../config'

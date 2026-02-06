@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
-import { ipcRenderer } from '../util/electron'
+import { ipcRenderer } from '../util/tauri'
 import bus from '../bus'
 
 const width = localStorage.getItem('side-bar-width')
