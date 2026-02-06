@@ -1,8 +1,29 @@
 // 根据运行环境选择 path 模块
-// 渲染进程使用 electronAPI，主进程直接使用 Node.js
+// 渲染进程使用 electronAPI 或 Tauri path polyfill，主进程直接使用 Node.js
 let path
 if (typeof window !== 'undefined' && window.electronAPI) {
   path = window.electronAPI.path
+} else if (typeof window !== 'undefined' && window.__TAURI_INTERNALS__) {
+  // Tauri environment: use a simple path polyfill
+  const sep = navigator.platform.startsWith('Win') ? '\\' : '/'
+  path = {
+    join: (...args) => args.filter(Boolean).join(sep).replace(/[/\\]+/g, sep),
+    resolve: (...args) => args.filter(Boolean).join(sep).replace(/[/\\]+/g, sep),
+    dirname: (p) => p ? p.substring(0, Math.max(p.lastIndexOf('/'), p.lastIndexOf('\\'))) || sep : '.',
+    basename: (p, ext) => {
+      if (!p) return ''
+      let base = p.substring(Math.max(p.lastIndexOf('/'), p.lastIndexOf('\\')) + 1)
+      if (ext && base.endsWith(ext)) base = base.slice(0, -ext.length)
+      return base
+    },
+    extname: (p) => {
+      if (!p) return ''
+      const base = p.substring(Math.max(p.lastIndexOf('/'), p.lastIndexOf('\\')) + 1)
+      const dotIdx = base.lastIndexOf('.')
+      return dotIdx > 0 ? base.slice(dotIdx) : ''
+    },
+    sep
+  }
 } else {
   path = require('path')
 }

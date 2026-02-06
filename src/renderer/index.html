@@ -69,11 +69,17 @@
       if (typeof window.require === 'undefined') {
         window.require = function(moduleName) {
           console.warn('Runtime require called for:', moduleName);
-          // Return empty object for Node.js built-ins to prevent crash
-          if (['fs', 'path', 'os', 'child_process', 'electron'].includes(moduleName)) {
+          // Return empty object for Node.js built-ins and common modules to prevent crash
+          var safeModules = [
+            'fs', 'fs-extra', 'fs/promises', 'path', 'os', 'child_process',
+            'electron', 'electron-log', 'encoding', 'crypto', 'stream', 'util',
+            'buffer', 'events', 'net', 'http', 'https', 'url', 'querystring',
+            'assert', 'zlib'
+          ];
+          if (safeModules.includes(moduleName)) {
             return {};
           }
-          throw new Error(`Cannot find module '${moduleName}'`);
+          throw new Error("Cannot find module '" + moduleName + "'");
         }
       }
     </script>

@@ -158,6 +158,23 @@ export default {
     // module: notification
     dispatch('LISTEN_FOR_NOTIFICATION')
 
+    // Tauri auto-initialization: Electron sends mt::bootstrap-editor from main process,
+    // but in Tauri we need to self-initialize since there's no Electron main process.
+    if (typeof window !== 'undefined' && window.__TAURI_INTERNALS__) {
+      this.$nextTick(() => {
+        // Set initialized flag (renders editor area)
+        dispatch('SEND_INITIALIZED')
+        // Set default layout
+        commit('SET_LAYOUT', {
+          rightColumn: 'files',
+          showSideBar: false,
+          showTabBar: false
+        })
+        // Create a blank editor tab
+        dispatch('NEW_UNTITLED_TAB', {})
+      })
+    }
+
     // prevent Chromium's default behavior and try to open the first file
     window.addEventListener(
       'dragover',

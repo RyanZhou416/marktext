@@ -30,7 +30,10 @@
     "rebuild": "node node_modules/@electron/rebuild/lib/cli.js -f",
     "gen-third-party": "node tools/generateThirdPartyLicense.js",
     "validate-licenses": "node tools/validateLicenses.js",
-    "deobfuscateStackTrace": "node tools/deobfuscateStackTrace.js"
+    "deobfuscateStackTrace": "node tools/deobfuscateStackTrace.js",
+    "tauri:dev": "tauri dev",
+    "tauri:build": "tauri build",
+    "tauri:info": "tauri info"
   },
   "dependencies": {
     "@electron/remote": "^2.1.2",
@@ -87,7 +90,15 @@
     "vue": "^3.4.0",
     "vue-router": "^4.2.0",
     "vuex": "^4.1.0",
-    "webfontloader": "^1.6.28"
+    "webfontloader": "^1.6.28",
+    "@tauri-apps/api": "^2.0.0",
+    "@tauri-apps/plugin-clipboard-manager": "^2.0.0",
+    "@tauri-apps/plugin-dialog": "^2.0.0",
+    "@tauri-apps/plugin-fs": "^2.0.0",
+    "@tauri-apps/plugin-os": "^2.0.0",
+    "@tauri-apps/plugin-process": "^2.0.0",
+    "@tauri-apps/plugin-shell": "^2.0.0",
+    "@tauri-apps/plugin-window-state": "^2.0.0"
   },
   "devDependencies": {
     "@babel/core": "^7.17.9",
@@ -170,6 +181,7 @@
     "svgo": "^2.8.0",
     "svgo-loader": "^3.0.0",
     "to-string-loader": "^1.2.0",
+    "@tauri-apps/cli": "^2.0.0",
     "typescript": "^5.9.3",
     "url-loader": "^4.1.1",
     "vite": "^5.4.0",

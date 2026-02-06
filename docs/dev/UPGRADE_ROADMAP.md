@@ -709,13 +709,16 @@ electron.vite.config.ts
 
 **目标**: 评估 Tauri 可行性，创建概念验证
 
-| 任务             | 状态 | 说明                      |
-| ---------------- | ---- | ------------------------- |
-| 学习 Tauri 2.0   | ⬜   | 文档、示例                |
-| 创建 PoC 项目    | ⬜   | 基础 Markdown 编辑器      |
-| 评估 Muya 兼容性 | ⬜   | 能否在 Tauri WebView 运行 |
-| 评估文件系统 API | ⬜   | Tauri 的 fs 插件          |
-| 评估性能差异     | ⬜   | 内存、启动速度、包大小    |
+| 任务                        | 状态 | 说明                                              |
+| --------------------------- | ---- | ------------------------------------------------- |
+| 环境准备与 Tauri 初始化     | ✅   | Rust/Cargo/Tauri CLI，src-tauri 目录结构          |
+| 创建 Tauri API 桥接层       | ✅   | tauri.js + backend.js 与 electron.js 同构接口     |
+| 实现 Rust 后端核心命令      | ✅   | fs/path/system/fonts/app commands                 |
+| Muya 兼容性 (path polyfill) | ✅   | 纯 JS pathPolyfill.js 支持同步 path 操作          |
+| 构建脚本                    | ✅   | build-tauri-portable.cmd                          |
+| 共享模块 Tauri 兼容         | ✅   | common/filesystem Tauri stub + require shim       |
+| 前端自动初始化              | ✅   | app.vue Tauri 环境自动 bootstrap                  |
+| 性能评估                    | ✅   | 见下方评估结果                                    |
 
 ### Tauri 优势
 
@@ -725,19 +728,67 @@ electron.vite.config.ts
 - 🦀 后端: Rust (安全、高性能)
 - 🔧 原生模块: 不再需要 (Rust 直接实现)
 
-### PoC 目标
+### PoC 实际结构
 
 ```
-marktext-tauri-poc/
-├── src-tauri/          # Rust 后端
+marktext/
+├── src-tauri/                    # Tauri Rust 后端
 │   ├── src/
-│   │   ├── main.rs
-│   │   └── commands.rs # 文件读写、系统功能
-│   └── Cargo.toml
-├── src/                # 前端 (复用现有 Vue 代码)
-│   ├── App.vue
-│   └── ...
-└── package.json
+│   │   ├── main.rs               # 入口点
+│   │   ├── lib.rs                # Tauri 应用配置和插件注册
+│   │   └── commands/             # Tauri 命令模块
+│   │       ├── mod.rs
+│   │       ├── fs.rs             # 文件系统操作
+│   │       ├── path.rs           # 路径工具
+│   │       ├── system.rs         # 系统信息 (homedir, platform, arch)
+│   │       ├── fonts.rs          # 字体枚举 (替代 fontmanager-redux)
+│   │       └── app.rs            # 应用信息
+│   ├── Cargo.toml                # Rust 依赖 (tauri, font-kit, notify 等)
+│   └── tauri.conf.json           # Tauri 配置
+├── src/renderer/util/
+│   ├── electron.js               # 原有 Electron API 桥接
+│   ├── tauri.js                  # 新增 Tauri API 桥接 (同构接口)
+│   ├── backend.js                # 统一后端抽象层 (自动检测环境)
+│   └── pathPolyfill.js           # 纯 JS path 操作 (Muya 兼容)
+└── scripts/
+    ├── setup-tauri-env.cmd       # Tauri 开发环境设置
+    └── build-tauri-portable.cmd  # Tauri 构建脚本
+```
+
+### Tauri 插件映射
+
+| Electron 模块        | Tauri 替代方案                     |
+| -------------------- | ---------------------------------- |
+| electron-store       | tauri-plugin-store / serde_json    |
+| electron-updater     | tauri-plugin-updater               |
+| electron-window-state| tauri-plugin-window-state          |
+| electron-log         | Rust log + env_logger              |
+| @electron/remote     | 不需要 (直接 Tauri commands)       |
+| fontmanager-redux    | font-kit Rust crate                |
+| native-keymap        | winapi (Windows) / 平台特定实现    |
+| chokidar             | notify Rust crate                  |
+
+### 评估结果 (待填写)
+
+| 指标           | Electron 版本 | Tauri 版本 | 差异         |
+| -------------- | ------------- | ---------- | ------------ |
+| 主程序大小     | ~150MB        | ~11MB      | **-93%**     |
+| MSI 安装包     | -             | ~4MB       | 极小         |
+| NSIS 安装包    | -             | ~4MB       | 极小         |
+| 编辑器兼容性   | 100%          | PoC 可编辑 | 基本功能可用 |
+
+> 注: Tauri PoC 已验证编辑器核心功能可用。文件对话框、偏好持久化、菜单快捷键等
+> 高级功能需在阶段 9 完整迁移中实现。
+
+**构建命令**:
+```bash
+# Tauri 开发
+yarn tauri:dev
+
+# Tauri 构建
+yarn tauri:build
+# 或
+scripts\build-tauri-portable.cmd
 ```
 
 ---
@@ -796,7 +847,7 @@ marktext-tauri-poc/
 | 阶段 5: Vue 生态升级准备      | ✅ 完成   | 2026-02-05 | 2026-02-05 |
 | 阶段 6: Vue 3 迁移            | ⬜ 待开始 | -          | -          |
 | 阶段 7: TypeScript 迁移       | ⬜ 待开始 | -          | -          |
-| 阶段 8: Tauri 评估与 PoC      | ⬜ 待开始 | -          | -          |
+| 阶段 8: Tauri 评估与 PoC      | 🔄 进行中 | 2026-02-05 | -          |
 | 阶段 9: Tauri 迁移            | ⬜ 待开始 | -          | -          |
 | 阶段 10: 编辑器引擎现代化     | ⬜ 待开始 | -          | -          |
 

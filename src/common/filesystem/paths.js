@@ -4,7 +4,7 @@ import { isFile, isFile2, isSymbolicLink } from './index'
 let fs, path, isOsx, processInfo
 
 if (typeof window !== 'undefined' && window.electronAPI) {
-  // 渲染进程 - 使用 electronAPI
+  // Electron 渲染进程 - 使用 electronAPI
   const api = window.electronAPI
   fs = {
     readlinkSync: api.fs.readlinkSync,
@@ -13,6 +13,49 @@ if (typeof window !== 'undefined' && window.electronAPI) {
   path = api.path
   isOsx = api.isOsx
   processInfo = api.process
+} else if (typeof window !== 'undefined' && window.__TAURI_INTERNALS__) {
+  // Tauri 渲染进程 - 提供 stub 实现
+  const sep = typeof navigator !== 'undefined' && navigator.platform.startsWith('Win') ? '\\' : '/'
+  fs = {
+    readlinkSync: () => '',
+    statSync: () => ({ ino: 0, isFile: () => false, isDirectory: () => false, isSymbolicLink: () => false })
+  }
+  path = {
+    join: (...args) => args.filter(Boolean).join(sep).replace(/[/\\]+/g, sep),
+    resolve: (...args) => args.filter(Boolean).join(sep).replace(/[/\\]+/g, sep),
+    dirname: (p) => p ? p.substring(0, Math.max(p.lastIndexOf('/'), p.lastIndexOf('\\'))) || sep : '.',
+    basename: (p, ext) => {
+      if (!p) return ''
+      let base = p.substring(Math.max(p.lastIndexOf('/'), p.lastIndexOf('\\')) + 1)
+      if (ext && base.endsWith(ext)) base = base.slice(0, -ext.length)
+      return base
+    },
+    extname: (p) => {
+      if (!p) return ''
+      const base = p.substring(Math.max(p.lastIndexOf('/'), p.lastIndexOf('\\')) + 1)
+      const dotIdx = base.lastIndexOf('.')
+      return dotIdx > 0 ? base.slice(dotIdx) : ''
+    },
+    normalize: (p) => p ? p.replace(/[/\\]+/g, sep) : '.',
+    isAbsolute: (p) => {
+      if (!p) return false
+      if (sep === '\\') return /^[A-Za-z]:[/\\]/.test(p)
+      return p.startsWith('/')
+    },
+    relative: (from, to) => {
+      if (!from || !to) return ''
+      return to
+    },
+    sep
+  }
+  isOsx = typeof navigator !== 'undefined' && navigator.platform.startsWith('Mac')
+  processInfo = {
+    platform: typeof navigator !== 'undefined'
+      ? (navigator.platform.startsWith('Win') ? 'win32' : navigator.platform.startsWith('Mac') ? 'darwin' : 'linux')
+      : 'linux',
+    resourcesPath: '',
+    env: {}
+  }
 } else {
   // 主进程 - 直接使用 Node.js 模块
   fs = require('fs')

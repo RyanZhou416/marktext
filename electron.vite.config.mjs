@@ -155,6 +155,12 @@ export default defineConfig({
       }
     },
     // Allow importing raw CSS as strings using ?inline suffix
-    assetsInclude: ['**/*.md']
+    assetsInclude: ['**/*.md'],
+    // Exclude Tauri directory from watching to prevent conflicts
+    server: {
+      watch: {
+        ignored: ['**/src-tauri/**']
+      }
+    }
   }
 })

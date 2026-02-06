@@ -233,6 +233,17 @@ if errorlevel 1 (
     echo     [OK] !GIT_VER!
 )
 
+:: ---------- Check Rust (optional, for Tauri development) ----------
+echo   Checking Rust (optional, for Tauri)...
+where rustc >nul 2>&1
+if errorlevel 1 (
+    echo     [INFO] Rust not installed (only needed for Tauri development)
+    echo            Run setup-tauri-env.cmd if you want to build the Tauri version
+) else (
+    for /f "tokens=*" %%v in ('rustc --version 2^>nul') do set "RUST_VER=%%v"
+    echo     [OK] !RUST_VER! (for Tauri development)
+)
+
 echo.
 
 :: ==============================================================

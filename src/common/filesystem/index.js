@@ -1,9 +1,9 @@
 // 根据运行环境选择模块
-// 渲染进程使用 electronAPI，主进程直接使用 Node.js
+// 渲染进程使用 electronAPI，Tauri 使用 stub，主进程直接使用 Node.js
 let fs, fsPromises, path
 
 if (typeof window !== 'undefined' && window.electronAPI) {
-  // 渲染进程 - 使用 electronAPI
+  // Electron 渲染进程 - 使用 electronAPI
   const api = window.electronAPI
   fs = {
     existsSync: api.fs.existsSync,
@@ -23,6 +23,48 @@ if (typeof window !== 'undefined' && window.electronAPI) {
     access: api.fs.access
   }
   path = api.path
+} else if (typeof window !== 'undefined' && window.__TAURI_INTERNALS__) {
+  // Tauri 渲染进程 - 提供 stub 实现
+  // 实际的文件系统操作应通过 Tauri commands 或 @tauri-apps/plugin-fs
+  const sep = typeof navigator !== 'undefined' && navigator.platform.startsWith('Win') ? '\\' : '/'
+  fs = {
+    existsSync: () => false,
+    lstatSync: () => ({ isDirectory: () => false, isFile: () => false, isSymbolicLink: () => false }),
+    readlinkSync: () => '',
+    mkdirSync: () => {},
+    ensureDirSync: () => {}
+  }
+  fsPromises = {
+    access: () => Promise.reject(new Error('fs.access not available in Tauri'))
+  }
+  path = {
+    join: (...args) => args.filter(Boolean).join(sep).replace(/[/\\]+/g, sep),
+    resolve: (...args) => args.filter(Boolean).join(sep).replace(/[/\\]+/g, sep),
+    dirname: (p) => p ? p.substring(0, Math.max(p.lastIndexOf('/'), p.lastIndexOf('\\'))) || sep : '.',
+    basename: (p, ext) => {
+      if (!p) return ''
+      let base = p.substring(Math.max(p.lastIndexOf('/'), p.lastIndexOf('\\')) + 1)
+      if (ext && base.endsWith(ext)) base = base.slice(0, -ext.length)
+      return base
+    },
+    extname: (p) => {
+      if (!p) return ''
+      const base = p.substring(Math.max(p.lastIndexOf('/'), p.lastIndexOf('\\')) + 1)
+      const dotIdx = base.lastIndexOf('.')
+      return dotIdx > 0 ? base.slice(dotIdx) : ''
+    },
+    normalize: (p) => p ? p.replace(/[/\\]+/g, sep) : '.',
+    isAbsolute: (p) => {
+      if (!p) return false
+      if (sep === '\\') return /^[A-Za-z]:[/\\]/.test(p)
+      return p.startsWith('/')
+    },
+    relative: (from, to) => {
+      if (!from || !to) return ''
+      return to
+    },
+    sep
+  }
 } else {
   // 主进程 - 直接使用 Node.js 模块
   fs = require('fs-extra')
