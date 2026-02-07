@@ -112,10 +112,11 @@
   </div>
 </template>
 
-<script>
+<script lang="ts">
 import Compound from '../common/compound'
 import Separator from '../common/separator'
-import { mapState } from 'vuex'
+import { mapState } from 'pinia'
+import { usePreferencesStore } from '@/stores/preferences'
 import Bool from '../common/bool'
 import CurSelect from '../common/select'
 import {
@@ -144,23 +145,24 @@ export default {
     return {}
   },
   computed: {
-    ...mapState({
-      preferLooseListItem: state => state.preferences.preferLooseListItem,
-      bulletListMarker: state => state.preferences.bulletListMarker,
-      orderListDelimiter: state => state.preferences.orderListDelimiter,
-      preferHeadingStyle: state => state.preferences.preferHeadingStyle,
-      listIndentation: state => state.preferences.listIndentation,
-      frontmatterType: state => state.preferences.frontmatterType,
-      superSubScript: state => state.preferences.superSubScript,
-      footnote: state => state.preferences.footnote,
-      isHtmlEnabled: state => state.preferences.isHtmlEnabled,
-      isGitlabCompatibilityEnabled: state => state.preferences.isGitlabCompatibilityEnabled,
-      sequenceTheme: state => state.preferences.sequenceTheme
-    })
+    ...mapState(usePreferencesStore, [
+      'preferLooseListItem',
+      'bulletListMarker',
+      'orderListDelimiter',
+      'preferHeadingStyle',
+      'listIndentation',
+      'frontmatterType',
+      'superSubScript',
+      'footnote',
+      'isHtmlEnabled',
+      'isGitlabCompatibilityEnabled',
+      'sequenceTheme'
+    ])
   },
   methods: {
     onSelectChange (type, value) {
-      this.$store.dispatch('SET_SINGLE_PREFERENCE', { type, value })
+      const preferencesStore = usePreferencesStore()
+      preferencesStore.SET_SINGLE_PREFERENCE({ type, value })
     }
   }
 }

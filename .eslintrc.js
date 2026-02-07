@@ -67,6 +67,25 @@ module.exports = {
       '\\?worker$'
     ]
   },
+  overrides: [
+    {
+      files: ['*.ts', '*.tsx'],
+      parser: '@typescript-eslint/parser',
+      plugins: ['@typescript-eslint'],
+      extends: [
+        'plugin:@typescript-eslint/recommended'
+      ],
+      rules: {
+        // Gradual adoption - relax some strict rules initially
+        '@typescript-eslint/no-explicit-any': 'off',
+        '@typescript-eslint/no-unused-vars': ['warn', { argsIgnorePattern: '^_' }],
+        '@typescript-eslint/ban-ts-comment': 'off',
+        // Disable base rules that conflict with TS versions
+        'no-unused-vars': 'off',
+        'no-undef': 'off'
+      }
+    }
+  ],
   ignorePatterns: [
     'node_modules',
     'src/muya/dist/**/*',

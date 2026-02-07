@@ -20,7 +20,7 @@
   </section>
 </template>
 
-<script>
+<script lang="ts">
 import { shell } from '../../../util/tauri'
 
 export default {

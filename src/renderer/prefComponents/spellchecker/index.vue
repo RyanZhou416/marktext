@@ -68,10 +68,11 @@
   </div>
 </template>
 
-<script>
+<script lang="ts">
 import { ipcRenderer } from '../../util/tauri'
 import log from '../../util/logger'
-import { mapState } from 'vuex'
+import { mapState } from 'pinia'
+import { usePreferencesStore } from '@/stores/preferences'
 import Compound from '../common/compound'
 import CurSelect from '../common/select'
 import Bool from '../common/bool'
@@ -97,12 +98,11 @@ export default {
     }
   },
   computed: {
-    ...mapState({
-      spellcheckerEnabled: (state) => state.preferences.spellcheckerEnabled,
-      spellcheckerNoUnderline: (state) =>
-        state.preferences.spellcheckerNoUnderline,
-      spellcheckerLanguage: (state) => state.preferences.spellcheckerLanguage
-    })
+    ...mapState(usePreferencesStore, [
+      'spellcheckerEnabled',
+      'spellcheckerNoUnderline',
+      'spellcheckerLanguage'
+    ])
   },
   mounted () {
     if (!isOsx) {
@@ -154,7 +154,8 @@ export default {
       this.onSelectChange('spellcheckerEnabled', isEnabled)
     },
     onSelectChange (type, value) {
-      this.$store.dispatch('SET_SINGLE_PREFERENCE', { type, value })
+      const preferencesStore = usePreferencesStore()
+      preferencesStore.SET_SINGLE_PREFERENCE({ type, value })
     },
     handleDeleteClick (selectedItem) {
       if (selectedItem && typeof selectedItem.word === 'string') {

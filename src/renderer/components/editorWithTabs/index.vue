@@ -22,8 +22,9 @@
     </div>
 </template>
 
-<script>
-import { mapState } from 'vuex'
+<script lang="ts">
+import { mapState } from 'pinia'
+import { useLayoutStore } from '@/stores/layout'
 import Tabs from './tabs.vue'
 import Editor from './editor.vue'
 import SourceCode from './sourceCode.vue'
@@ -65,10 +66,7 @@ export default {
     TabNotifications
   },
   computed: {
-    ...mapState({
-      showSideBar: state => state.layout.showSideBar,
-      sideBarWidth: state => state.layout.sideBarWidth
-    })
+    ...mapState(useLayoutStore, ['showSideBar', 'sideBarWidth'])
   }
 }
 </script>

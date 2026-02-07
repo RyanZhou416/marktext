@@ -3,7 +3,7 @@
     :title="file.pathname"
     class="side-bar-file"
     :style="{'padding-left': `${(depth * 20) + 20}px`, 'opacity': file.isMarkdown ? 1 : 0.75 }"
-    @click="handleFileClick()"
+    @click="handleFileClick(file)"
     :class="[{'current': currentFile.pathname === file.pathname, 'active': file.id === activeItem.id }]"
     ref="file"
   >
@@ -23,15 +23,20 @@
   </div>
 </template>
 
-<script>
+<script lang="ts">
 import FileIcon from './icon.vue'
-import { mapState } from 'vuex'
-import { fileMixins } from '../../mixins'
+import { mapState } from 'pinia'
+import { useProjectStore } from '@/stores/project'
+import { useEditorStore } from '@/stores/editor'
+import { useFile } from '../../composables/useFile'
 import { showContextMenu } from '../../contextMenu/sideBar'
 import bus from '../../bus'
 
 export default {
-  mixins: [fileMixins],
+  setup () {
+    const { handleSearchResultClick, handleFileClick } = useFile()
+    return { handleSearchResultClick, handleFileClick }
+  },
   name: 'file',
   data () {
     return {
@@ -52,19 +57,15 @@ export default {
     FileIcon
   },
   computed: {
-    ...mapState({
-      renameCache: state => state.project.renameCache,
-      activeItem: state => state.project.activeItem,
-      clipboard: state => state.project.clipboard,
-      currentFile: state => state.editor.currentFile,
-      tabs: state => state.editor.tabs
-    })
+    ...mapState(useProjectStore, ['renameCache', 'activeItem', 'clipboard']),
+    ...mapState(useEditorStore, ['currentFile', 'tabs'])
   },
   created () {
     this.$nextTick(() => {
       this.$refs.file.addEventListener('contextmenu', event => {
         event.preventDefault()
-        this.$store.dispatch('CHANGE_ACTIVE_ITEM', this.file)
+        const projectStore = useProjectStore()
+        projectStore.CHANGE_ACTIVE_ITEM(this.file)
         showContextMenu(event, !!this.clipboard)
       })
 
@@ -84,7 +85,8 @@ export default {
     rename () {
       const { newName } = this
       if (newName) {
-        this.$store.dispatch('RENAME_IN_SIDEBAR', newName)
+        const projectStore = useProjectStore()
+        projectStore.RENAME_IN_SIDEBAR(newName)
       }
     }
   }

@@ -83,8 +83,12 @@
   </div>
 </template>
 
-<script>
-import { mapState } from 'vuex'
+<script lang="ts">
+import { mapState } from 'pinia'
+import { useLayoutStore } from '@/stores/layout'
+import { useEditorStore } from '@/stores/editor'
+import { useProjectStore } from '@/stores/project'
+import { usePreferencesStore } from '@/stores/preferences'
 import bus from '../../bus'
 import log from '../../util/logger'
 import SearchResultItem from './searchResultItem.vue'
@@ -139,17 +143,12 @@ export default {
     })
   },
   computed: {
-    ...mapState({
-      rightColumn: (state) => state.layout.rightColumn,
-      showSideBar: (state) => state.layout.showSideBar,
-      searchMatches: (state) => state.editor.currentFile.searchMatches,
-      projectTree: (state) => state.project.projectTree,
-      searchExclusions: (state) => state.preferences.searchExclusions,
-      searchMaxFileSize: (state) => state.preferences.searchMaxFileSize,
-      searchIncludeHidden: (state) => state.preferences.searchIncludeHidden,
-      searchNoIgnore: (state) => state.preferences.searchNoIgnore,
-      searchFollowSymlinks: (state) => state.preferences.searchFollowSymlinks
+    ...mapState(useLayoutStore, ['rightColumn', 'showSideBar']),
+    ...mapState(useEditorStore, {
+      searchMatches: (store) => store.currentFile.searchMatches
     }),
+    ...mapState(useProjectStore, ['projectTree']),
+    ...mapState(usePreferencesStore, ['searchExclusions', 'searchMaxFileSize', 'searchIncludeHidden', 'searchNoIgnore', 'searchFollowSymlinks']),
     searchResultInfo () {
       const fileCount = this.searchResult.length
       const matchCount = this.searchResult.reduce((acc, item) => {
@@ -319,7 +318,8 @@ export default {
       this.search()
     },
     openFolder () {
-      this.$store.dispatch('ASK_FOR_OPEN_PROJECT')
+      const projectStore = useProjectStore()
+      projectStore.ASK_FOR_OPEN_PROJECT()
     },
     handleFindInFolder () {
       this.keyword = this.searchMatches.value

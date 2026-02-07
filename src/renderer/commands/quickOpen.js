@@ -12,7 +12,7 @@ const SPECIAL_CHARS = /[\[\]\\^$.\|\?\*\+\(\)\/]{1}/g // eslint-disable-line no-
 
 // The quick open command
 class QuickOpenCommand {
-  constructor (rootState) {
+  constructor (stores) {
     this.id = 'file.quick-open'
     this.description = 'File: Quick Open'
     this.placeholder = 'Search file to open'
@@ -21,9 +21,9 @@ class QuickOpenCommand {
     this.subcommands = []
     this.subcommandSelectedIndex = -1
 
-    // Reference to folder and editor and project state.
-    this._editorState = rootState.editor
-    this._folderState = rootState.project
+    // Reference to Pinia store instances (editor and project).
+    this._editorState = stores.editor
+    this._folderState = stores.project
 
     this._directorySearcher = new FileSearcher()
     this._cancelFn = null

@@ -67,7 +67,7 @@
   </div>
 </template>
 
-<script>
+<script lang="ts">
 import { shell } from '../../util/tauri'
 import bus from '../../bus'
 

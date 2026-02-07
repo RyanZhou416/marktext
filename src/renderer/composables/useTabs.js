@@ -9,16 +9,16 @@ export function useTabs () {
 
   function selectFile (file) {
     if (file.id !== editorStore.currentFile.id) {
-      editorStore.updateCurrentFile(file)
+      editorStore.UPDATE_CURRENT_FILE(file)
     }
   }
 
   function removeFileInTab (file) {
     const { isSaved } = file
     if (isSaved) {
-      editorStore.forceCloseTab(file)
+      editorStore.FORCE_CLOSE_TAB(file)
     } else {
-      editorStore.closeUnsavedTab(file)
+      editorStore.CLOSE_UNSAVED_TAB(file)
     }
   }
 

@@ -31,8 +31,9 @@
   </div>
 </template>
 
-<script>
-import { mapState } from 'vuex'
+<script lang="ts">
+import { mapState } from 'pinia'
+import { usePreferencesStore } from '@/stores/preferences'
 import themeMd from './theme.md'
 import { autoSwitchThemeOptions, themes } from './config'
 import markdownToHtml from '@/util/markdownToHtml'
@@ -51,10 +52,7 @@ export default {
     }
   },
   computed: {
-    ...mapState({
-      autoSwitchTheme: state => state.preferences.autoSwitchTheme,
-      theme: state => state.preferences.theme
-    })
+    ...mapState(usePreferencesStore, ['autoSwitchTheme', 'theme'])
   },
   created () {
     this.$nextTick(async () => {
@@ -72,7 +70,8 @@ export default {
   },
   methods: {
     onSelectChange (type, value) {
-      this.$store.dispatch('SET_SINGLE_PREFERENCE', { type, value })
+      const preferencesStore = usePreferencesStore()
+      preferencesStore.SET_SINGLE_PREFERENCE({ type, value })
     }
   }
 }

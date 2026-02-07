@@ -1,22 +1,32 @@
 // 根据运行环境选择 path 模块
 // 渲染进程使用 electronAPI 或 Tauri path polyfill，主进程直接使用 Node.js
-let path
-if (typeof window !== 'undefined' && window.electronAPI) {
-  path = window.electronAPI.path
-} else if (typeof window !== 'undefined' && window.__TAURI_INTERNALS__) {
+
+interface PathModule {
+  join: (...args: string[]) => string
+  resolve: (...args: string[]) => string
+  dirname: (p: string) => string
+  basename: (p: string, ext?: string) => string
+  extname: (p: string) => string
+  sep: string
+}
+
+let path: PathModule
+if (typeof window !== 'undefined' && (window as any).electronAPI) {
+  path = (window as any).electronAPI.path
+} else if (typeof window !== 'undefined' && (window as any).__TAURI_INTERNALS__) {
   // Tauri environment: use a simple path polyfill
-  const sep = navigator.platform.startsWith('Win') ? '\\' : '/'
+  const sep: string = navigator.platform.startsWith('Win') ? '\\' : '/'
   path = {
-    join: (...args) => args.filter(Boolean).join(sep).replace(/[/\\]+/g, sep),
-    resolve: (...args) => args.filter(Boolean).join(sep).replace(/[/\\]+/g, sep),
-    dirname: (p) => p ? p.substring(0, Math.max(p.lastIndexOf('/'), p.lastIndexOf('\\'))) || sep : '.',
-    basename: (p, ext) => {
+    join: (...args: string[]): string => args.filter(Boolean).join(sep).replace(/[/\\]+/g, sep),
+    resolve: (...args: string[]): string => args.filter(Boolean).join(sep).replace(/[/\\]+/g, sep),
+    dirname: (p: string): string => p ? p.substring(0, Math.max(p.lastIndexOf('/'), p.lastIndexOf('\\'))) || sep : '.',
+    basename: (p: string, ext?: string): string => {
       if (!p) return ''
       let base = p.substring(Math.max(p.lastIndexOf('/'), p.lastIndexOf('\\')) + 1)
       if (ext && base.endsWith(ext)) base = base.slice(0, -ext.length)
       return base
     },
-    extname: (p) => {
+    extname: (p: string): string => {
       if (!p) return ''
       const base = p.substring(Math.max(p.lastIndexOf('/'), p.lastIndexOf('\\')) + 1)
       const dotIdx = base.lastIndexOf('.')
@@ -26,18 +36,18 @@ if (typeof window !== 'undefined' && window.electronAPI) {
   }
 } else {
   // Fallback: inline path polyfill (no Node.js require)
-  const sep = typeof navigator !== 'undefined' && navigator.platform.startsWith('Win') ? '\\' : '/'
+  const sep: string = typeof navigator !== 'undefined' && navigator.platform.startsWith('Win') ? '\\' : '/'
   path = {
-    join: (...args) => args.filter(Boolean).join(sep).replace(/[/\\]+/g, sep),
-    resolve: (...args) => args.filter(Boolean).join(sep).replace(/[/\\]+/g, sep),
-    dirname: (p) => p ? p.substring(0, Math.max(p.lastIndexOf('/'), p.lastIndexOf('\\'))) || sep : '.',
-    basename: (p, ext) => {
+    join: (...args: string[]): string => args.filter(Boolean).join(sep).replace(/[/\\]+/g, sep),
+    resolve: (...args: string[]): string => args.filter(Boolean).join(sep).replace(/[/\\]+/g, sep),
+    dirname: (p: string): string => p ? p.substring(0, Math.max(p.lastIndexOf('/'), p.lastIndexOf('\\'))) || sep : '.',
+    basename: (p: string, ext?: string): string => {
       if (!p) return ''
       let base = p.substring(Math.max(p.lastIndexOf('/'), p.lastIndexOf('\\')) + 1)
       if (ext && base.endsWith(ext)) base = base.slice(0, -ext.length)
       return base
     },
-    extname: (p) => {
+    extname: (p: string): string => {
       if (!p) return ''
       const base = p.substring(Math.max(p.lastIndexOf('/'), p.lastIndexOf('\\')) + 1)
       const dotIdx = base.lastIndexOf('.')
@@ -48,11 +58,17 @@ if (typeof window !== 'undefined' && window.electronAPI) {
 }
 
 class EnvPaths {
+  private _electronUserDataPath: string
+  private _userDataPath: string
+  private _logPath: string
+  private _preferencesPath: string
+  private _dataCenterPath: string
+  private _preferencesFilePath: string
+
   /**
-   * @param {string} userDataPath The user data path.
-   * @returns
+   * @param userDataPath The user data path.
    */
-  constructor (userDataPath) {
+  constructor (userDataPath: string) {
     const currentDate = new Date()
     if (!userDataPath) {
       throw new Error('"userDataPath" is not set.')
@@ -80,28 +96,28 @@ class EnvPaths {
     // this._sessionsPath = path.join(this._userDataPath, 'sessions')
   }
 
-  get electronUserDataPath () {
+  get electronUserDataPath (): string {
     // This path is identical to app.getPath('userData') but userDataPath must not necessarily be the same path.
     return this._electronUserDataPath
   }
 
-  get userDataPath () {
+  get userDataPath (): string {
     return this._userDataPath
   }
 
-  get logPath () {
+  get logPath (): string {
     return this._logPath
   }
 
-  get preferencesPath () {
+  get preferencesPath (): string {
     return this._preferencesPath
   }
 
-  get dataCenterPath () {
+  get dataCenterPath (): string {
     return this._dataCenterPath
   }
 
-  get preferencesFilePath () {
+  get preferencesFilePath (): string {
     return this._preferencesFilePath
   }
 }

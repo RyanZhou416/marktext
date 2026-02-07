@@ -13,7 +13,7 @@
   </div>
 </template>
 
-<script>
+<script lang="ts">
 import { ipcRenderer } from '../../util/tauri'
 import { closePath } from '../../assets/window-controls.js'
 

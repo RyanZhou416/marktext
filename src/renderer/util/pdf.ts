@@ -7,7 +7,32 @@ import liberTheme from '@/assets/themes/export/liber.theme.css?inline'
 import { cloneObj } from '../util'
 import { sanitize, EXPORT_DOMPURIFY_CONFIG } from '../util/dompurify'
 
-export const getCssForOptions = (options) => {
+interface ExportOptions {
+  type: string
+  pageMarginTop: number
+  pageMarginRight: number
+  pageMarginBottom: number
+  pageMarginLeft: number
+  fontFamily?: string
+  fontSize?: number
+  lineHeight?: number
+  autoNumberingHeadings?: boolean
+  showFrontMatter?: boolean
+  theme?: string
+  headerFooterFontSize?: number
+}
+
+interface TocItem {
+  content: string
+  lvl: number
+}
+
+interface TocOptions {
+  tocIncludeTopHeading?: boolean
+  tocTitle?: string
+}
+
+export const getCssForOptions = (options: ExportOptions): string => {
   const {
     type,
     pageMarginTop,
@@ -61,11 +86,11 @@ export const getCssForOptions = (options) => {
       output += liberTheme
     } else {
       // Read theme from disk
-      const { userDataPath } = window.marktext.paths
+      const { userDataPath } = window.marktext!.paths
       const themePath = path.join(userDataPath, 'themes/export', theme)
       if (isFile(themePath)) {
         try {
-          const themeCSS = fs.readFileSync(themePath, 'utf8')
+          const themeCSS: string | null = fs.readFileSync(themePath, 'utf8')
           output += themeCSS
         } catch (_) {
           // No-op
@@ -89,7 +114,12 @@ export const getCssForOptions = (options) => {
   return unescapeHTML(sanitize(escapeHTML(output), EXPORT_DOMPURIFY_CONFIG))
 }
 
-const generateHtmlToc = (tocList, slugger, currentLevel, options) => {
+const generateHtmlToc = (
+  tocList: TocItem[],
+  slugger: any,
+  currentLevel: number,
+  options: TocOptions
+): string => {
   if (!tocList || tocList.length === 0) {
     return ''
   }
@@ -102,8 +132,8 @@ const generateHtmlToc = (tocList, slugger, currentLevel, options) => {
     return ''
   }
 
-  const { content, lvl } = tocList.shift()
-  const slug = slugger.slug(content)
+  const { content, lvl } = tocList.shift()!
+  const slug: string = slugger.slug(content)
 
   let html = `<li><span><a class="toc-h${lvl}" href="#${slug}">${content}</a><span class="dots"></span></span>`
 
@@ -116,10 +146,10 @@ const generateHtmlToc = (tocList, slugger, currentLevel, options) => {
   return html
 }
 
-export const getHtmlToc = (toc, options = {}) => {
-  const list = cloneObj(toc)
+export const getHtmlToc = (toc: TocItem[], options: TocOptions = {}): string => {
+  const list: TocItem[] = cloneObj(toc)
   const slugger = new Slugger()
-  const tocList = generateHtmlToc(list, slugger, 0, options)
+  const tocList: string = generateHtmlToc(list, slugger, 0, options)
   if (!tocList) {
     return ''
   }
@@ -130,10 +160,10 @@ export const getHtmlToc = (toc, options = {}) => {
 }
 
 // Don't use "Noto Color Emoji" because it will result in PDF files with multiple MB and weird looking emojis.
-const FALLBACK_FONT_FAMILIES =
+const FALLBACK_FONT_FAMILIES: string =
   '"Open Sans","Segoe UI","Helvetica Neue",Helvetica,Arial,sans-serif,"Apple Color Emoji","Segoe UI Emoji"'
 
-const autoNumberingHeadingsCss = `body {counter-reset: h2}
+const autoNumberingHeadingsCss: string = `body {counter-reset: h2}
 h2 {counter-reset: h3}
 h3 {counter-reset: h4}
 h4 {counter-reset: h5}

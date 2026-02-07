@@ -11,29 +11,45 @@ import { isImageFile } from 'common/filesystem/paths'
 import { isWindows } from './index'
 
 const { statSync, constants } = electronFs
-const tmpdir = () => os.tmpdir()
+const tmpdir = (): Promise<string> => os.tmpdir()
 
 // fs-extra 功能的简单实现
 // 在 contextIsolation 模式下，我们通过 electronAPI 使用基础 fs 功能
-const fse = {
-  ensureDir: async (dirPath) => {
+
+interface MoveOptions {
+  overwrite?: boolean
+}
+
+interface FseModule {
+  ensureDir: (dirPath: string) => Promise<void>
+  outputFile: (filepath: string, data: string) => Promise<void>
+  move: (src: string, dest: string, options?: MoveOptions) => Promise<void>
+  copy: (src: string, dest: string) => Promise<void>
+  writeFile: (filepath: string, data: string, encoding?: string) => Promise<void>
+  unlink: (filepath: string) => Promise<void>
+  stat: (filepath: string) => Promise<any>
+  readFile: (filepath: string) => Promise<string>
+}
+
+const fse: FseModule = {
+  ensureDir: async (dirPath: string): Promise<void> => {
     try {
       await electronFs.mkdir(dirPath, { recursive: true })
-    } catch (e) {
+    } catch (e: any) {
       if (e.code !== 'EEXIST') throw e
     }
   },
-  outputFile: async (filepath, data) => {
+  outputFile: async (filepath: string, data: string): Promise<void> => {
     const dir = path.dirname(filepath)
     await fse.ensureDir(dir)
     await electronFs.writeFile(filepath, data)
   },
-  move: async (src, dest, options = {}) => {
+  move: async (src: string, dest: string, _options: MoveOptions = {}): Promise<void> => {
     // 简单实现：复制后删除
     await fse.copy(src, dest)
     await electronFs.rm(src, { recursive: true, force: true })
   },
-  copy: async (src, dest) => {
+  copy: async (src: string, dest: string): Promise<void> => {
     const stat = await electronFs.stat(src)
     if (stat.isDirectory()) {
       await fse.ensureDir(dest)
@@ -51,49 +67,49 @@ const fse = {
       await electronFs.copyFile(src, dest)
     }
   },
-  writeFile: (filepath, data, encoding) => electronFs.writeFile(filepath, data, { encoding }),
-  unlink: (filepath) => electronFs.unlink(filepath),
-  stat: (filepath) => electronFs.stat(filepath),
-  readFile: (filepath) => electronFs.readFile(filepath)
+  writeFile: (filepath: string, data: string, encoding?: string): Promise<void> => electronFs.writeFile(filepath, data, { encoding }),
+  unlink: (filepath: string): Promise<void> => electronFs.unlink(filepath),
+  stat: (filepath: string): Promise<any> => electronFs.stat(filepath),
+  readFile: (filepath: string): Promise<string> => electronFs.readFile(filepath)
 }
 
-export const create = async (pathname, type) => {
+export const create = async (pathname: string, type: string): Promise<void> => {
   return type === 'directory'
     ? fse.ensureDir(pathname)
     : fse.outputFile(pathname, '')
 }
 
-export const paste = async ({ src, dest, type }) => {
+export const paste = async ({ src, dest, type }: { src: string; dest: string; type: string }): Promise<void> => {
   return type === 'cut' ? fse.move(src, dest) : fse.copy(src, dest)
 }
 
-export const rename = async (src, dest) => {
+export const rename = async (src: string, dest: string): Promise<void> => {
   return fse.move(src, dest)
 }
 
-export const getHash = (content, encoding, type) => {
+export const getHash = (content: string, encoding: string, type: string): any => {
   return crypto.createHash(type).update(content, encoding).digest('hex')
 }
 
-export const getContentHash = (content) => {
+export const getContentHash = (content: string): any => {
   return getHash(content, 'utf8', 'sha1')
 }
 
 /**
  * Moves an image to a relative position.
  *
- * @param {String} cwd The relative base path (project root or full folder path of opened file).
- * @param {String} relativeName The relative directory name.
- * @param {String} filePath The full path to the opened file in editor.
- * @param {String} imagePath The image to move.
- * @returns {String} The relative path the the image from given `filePath`.
+ * @param cwd The relative base path (project root or full folder path of opened file).
+ * @param relativeName The relative directory name.
+ * @param filePath The full path to the opened file in editor.
+ * @param imagePath The image to move.
+ * @returns The relative path the the image from given `filePath`.
  */
 export const moveToRelativeFolder = async (
-  cwd,
-  relativeName,
-  filePath,
-  imagePath
-) => {
+  cwd: string,
+  relativeName: string,
+  filePath: string,
+  imagePath: string
+): Promise<string> => {
   if (!relativeName) {
     // Use fallback name according settings description
     relativeName = 'assets'
@@ -119,12 +135,16 @@ export const moveToRelativeFolder = async (
   return dstRelPath
 }
 
-export const moveImageToFolder = async (pathname, image, outputDir) => {
+export const moveImageToFolder = async (
+  pathname: string,
+  image: string | File,
+  outputDir: string
+): Promise<string> => {
   await fse.ensureDir(outputDir)
   const isPath = typeof image === 'string'
   if (isPath) {
     const dirname = path.dirname(pathname)
-    const imagePath = path.resolve(dirname, image)
+    const imagePath = path.resolve(dirname, image as string)
     const isImage = isImageFile(imagePath)
     if (isImage) {
       const filename = path.basename(imagePath)
@@ -139,29 +159,51 @@ export const moveImageToFolder = async (pathname, image, outputDir) => {
       await fse.copy(imagePath, hashFilePath)
       return hashFilePath
     } else {
-      return Promise.resolve(image)
+      return Promise.resolve(image as string)
     }
   } else {
+    const file = image as File
     const imagePath = path.join(
       outputDir,
-      `${dayjs().format('YYYY-MM-DD-HH-mm-ss')}-${image.name}`
+      `${dayjs().format('YYYY-MM-DD-HH-mm-ss')}-${file.name}`
     )
-    const binaryString = await new Promise((resolve, reject) => {
+    const binaryString: string = await new Promise((resolve, reject) => {
       const fileReader = new FileReader()
       fileReader.onload = () => {
-        resolve(fileReader.result)
+        resolve(fileReader.result as string)
       }
-      fileReader.readAsBinaryString(image)
+      fileReader.readAsBinaryString(file)
     })
     await fse.writeFile(imagePath, binaryString, 'binary')
     return imagePath
   }
 }
 
+interface ImageBedGithub {
+  owner: string
+  repo: string
+  branch: string
+}
+
+interface ImageBed {
+  github: ImageBedGithub
+}
+
+interface UploadPreferences {
+  currentUploader: string
+  imageBed: ImageBed
+  githubToken: string
+  cliScript: string
+}
+
 /**
  * @jocs todo, rewrite it use class
  */
-export const uploadImage = async (pathname, image, preferences) => {
+export const uploadImage = async (
+  pathname: string,
+  image: string | File,
+  preferences: UploadPreferences
+): Promise<string> => {
   const {
     currentUploader,
     imageBed,
@@ -171,18 +213,18 @@ export const uploadImage = async (pathname, image, preferences) => {
   const { owner, repo, branch } = imageBed.github
   const isPath = typeof image === 'string'
   const MAX_SIZE = 5 * 1024 * 1024
-  let re
-  let rj
-  const promise = new Promise((resolve, reject) => {
+  let re: (value: string) => void
+  let rj: (reason?: any) => void
+  const promise = new Promise<string>((resolve, reject) => {
     re = resolve
     rj = reject
   })
 
   if (currentUploader === 'none') {
-    rj('No image uploader provided.')
+    rj!('No image uploader provided.')
   }
 
-  const uploadByGithub = (content, filename) => {
+  const uploadByGithub = (content: string, filename: string): void => {
     const octokit = new Octokit({
       auth
     })
@@ -192,7 +234,7 @@ export const uploadImage = async (pathname, image, preferences) => {
     const message = `Upload by MarkText at ${dayjs().format(
       'YYYY-MM-DD HH:mm:ss'
     )}`
-    const payload = {
+    const payload: Record<string, any> = {
       owner,
       repo,
       path,
@@ -204,60 +246,60 @@ export const uploadImage = async (pathname, image, preferences) => {
       delete payload.branch
     }
     octokit.repos
-      .createOrUpdateFileContents(payload)
-      .then((result) => {
-        re(result.data.content.download_url)
+      .createOrUpdateFileContents(payload as any)
+      .then((result: any) => {
+        re!(result.data.content.download_url)
       })
-      .catch((_) => {
-        rj('Upload failed, the image will be copied to the image folder')
+      .catch((_: any) => {
+        rj!('Upload failed, the image will be copied to the image folder')
       })
   }
 
-  const uploadByCommand = async (uploader, filepath) => {
+  const uploadByCommand = async (uploader: string, filepath: string | ArrayBuffer): Promise<void> => {
     let isPath = true
     if (typeof filepath !== 'string') {
       isPath = false
       const data = new Uint8Array(filepath)
-      filepath = path.join(tmpdir(), +new Date())
-      await fse.writeFile(filepath, data)
+      filepath = path.join(await tmpdir(), String(+new Date()))
+      await fse.writeFile(filepath as string, data as any)
     }
     if (uploader === 'picgo') {
-      cp.exec(`picgo u "${filepath}"`, async (err, data) => {
+      cp.exec(`picgo u "${filepath}"`, async (err: Error | null, data?: string) => {
         if (!isPath) {
-          await fse.unlink(filepath)
+          await fse.unlink(filepath as string)
         }
         if (err) {
-          return rj(err)
+          return rj!(err)
         }
-        const parts = data.split('[PicGo SUCCESS]:')
+        const parts = (data as string).split('[PicGo SUCCESS]:')
         if (parts.length === 2) {
-          re(parts[1].trim())
+          re!(parts[1].trim())
         } else {
-          rj('PicGo upload error')
+          rj!('PicGo upload error')
         }
       })
     } else {
-      cp.execFile(cliScript, [filepath], async (err, data) => {
+      cp.execFile(cliScript, [filepath as string], async (err: Error | null, data?: string) => {
         if (!isPath) {
-          await fse.unlink(filepath)
+          await fse.unlink(filepath as string)
         }
         if (err) {
-          return rj(err)
+          return rj!(err)
         }
-        re(data.trim())
+        re!((data as string).trim())
       })
     }
   }
 
-  const notification = () => {
-    rj(
+  const notification = (): void => {
+    rj!(
       'Cannot upload more than 5M image, the image will be copied to the image folder'
     )
   }
 
   if (isPath) {
     const dirname = path.dirname(pathname)
-    const imagePath = path.resolve(dirname, image)
+    const imagePath = path.resolve(dirname, image as string)
     const isImage = isImageFile(imagePath)
     if (isImage) {
       const { size } = await fse.stat(imagePath)
@@ -278,10 +320,11 @@ export const uploadImage = async (pathname, image, preferences) => {
         }
       }
     } else {
-      re(image)
+      re!(image as string)
     }
   } else {
-    const { size } = image
+    const file = image as File
+    const { size } = file
     if (size > MAX_SIZE) {
       notification()
     } else {
@@ -290,22 +333,22 @@ export const uploadImage = async (pathname, image, preferences) => {
         switch (currentUploader) {
           case 'picgo':
           case 'cliScript':
-            uploadByCommand(currentUploader, reader.result)
+            uploadByCommand(currentUploader, reader.result as ArrayBuffer)
             break
           default:
-            uploadByGithub(reader.result, image.name)
+            uploadByGithub(reader.result as string, file.name)
         }
       }
 
-      const readerFunction =
+      const readerFunction: 'readAsArrayBuffer' | 'readAsDataURL' =
         currentUploader !== 'github' ? 'readAsArrayBuffer' : 'readAsDataURL'
-      reader[readerFunction](image)
+      reader[readerFunction](file)
     }
   }
   return promise
 }
 
-export const isFileExecutableSync = (filepath) => {
+export const isFileExecutableSync = (filepath: string): boolean => {
   try {
     const stat = statSync(filepath)
     return (

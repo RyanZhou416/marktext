@@ -80,25 +80,31 @@
   </div>
 </template>
 
-<script>
+<script lang="ts">
 import Folder from './treeFolder.vue'
 import File from './treeFile.vue'
 import OpenedFile from './treeOpenedTab.vue'
-import { mapState } from 'vuex'
+import { mapState } from 'pinia'
+import { useProjectStore } from '@/stores/project'
+import { useEditorStore } from '@/stores/editor'
 import bus from '../../bus'
-import { createFileOrDirectoryMixins } from '../../mixins'
+import { ref } from 'vue'
+import { useCreateFileOrDirectory } from '../../composables/useCreateFileOrDirectory'
 import FolderIcon from '@/assets/icons/undraw_folder.svg'
 
 export default {
-  mixins: [createFileOrDirectoryMixins],
+  setup () {
+    const inputRef = ref(null)
+    const { createName, handleInputFocus, handleInputEnter } = useCreateFileOrDirectory(inputRef, ref(null))
+    return { createName, handleInputFocus, handleInputEnter, input: inputRef }
+  },
   data () {
     this.depth = 0
     this.FolderIcon = FolderIcon
     return {
       showDirectories: true,
       showNewInput: false,
-      showOpenedFiles: true,
-      createName: ''
+      showOpenedFiles: true
     }
   },
   props: {
@@ -117,9 +123,7 @@ export default {
     OpenedFile
   },
   computed: {
-    ...mapState({
-      createCache: state => state.project.createCache
-    })
+    ...mapState(useProjectStore, ['createCache'])
   },
   created () {
     this.$nextTick(() => {
@@ -128,35 +132,41 @@ export default {
       document.addEventListener('click', event => {
         const target = event.target
         if (target.tagName !== 'INPUT') {
-          this.$store.dispatch('CHANGE_ACTIVE_ITEM', {})
-          this.$store.commit('CREATE_PATH', {})
-          this.$store.commit('SET_RENAME_CACHE', null)
+          const projectStore = useProjectStore()
+          projectStore.CHANGE_ACTIVE_ITEM({})
+          projectStore.CREATE_PATH({})
+          projectStore.SET_RENAME_CACHE(null)
         }
       })
       document.addEventListener('contextmenu', event => {
         const target = event.target
         if (target.tagName !== 'INPUT') {
-          this.$store.commit('CREATE_PATH', {})
-          this.$store.commit('SET_RENAME_CACHE', null)
+          const projectStore = useProjectStore()
+          projectStore.CREATE_PATH({})
+          projectStore.SET_RENAME_CACHE(null)
         }
       })
       document.addEventListener('keydown', event => {
         if (event.key === 'Escape') {
-          this.$store.commit('CREATE_PATH', {})
-          this.$store.commit('SET_RENAME_CACHE', null)
+          const projectStore = useProjectStore()
+          projectStore.CREATE_PATH({})
+          projectStore.SET_RENAME_CACHE(null)
         }
       })
     })
   },
   methods: {
     openFolder () {
-      this.$store.dispatch('ASK_FOR_OPEN_PROJECT')
+      const projectStore = useProjectStore()
+      projectStore.ASK_FOR_OPEN_PROJECT()
     },
     saveAll (isClose) {
-      this.$store.dispatch('ASK_FOR_SAVE_ALL', isClose)
+      const editorStore = useEditorStore()
+      editorStore.ASK_FOR_SAVE_ALL(isClose)
     },
     createFile () {
-      this.$store.dispatch('CHANGE_ACTIVE_ITEM', this.projectTree)
+      const projectStore = useProjectStore()
+      projectStore.CHANGE_ACTIVE_ITEM(this.projectTree)
       bus.$emit('SIDEBAR::new', 'file')
     },
     toggleOpenedFiles () {

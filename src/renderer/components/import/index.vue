@@ -33,7 +33,7 @@
   </div>
 </template>
 
-<script>
+<script lang="ts">
 import bus from '@/bus'
 import { ipcRenderer, webUtils } from '../../util/tauri'
 import importIcon from '@/assets/icons/import_file.svg'

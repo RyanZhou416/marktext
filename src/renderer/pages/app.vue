@@ -32,7 +32,7 @@
   </div>
 </template>
 
-<script>
+<script lang="ts">
 import { addStyles, addThemeStyle } from '@/util/theme'
 import Recent from '@/components/recent'
 import EditorWithTabs from '@/components/editorWithTabs'
@@ -44,8 +44,18 @@ import ExportSettingDialog from '@/components/exportSettings'
 import Rename from '@/components/rename'
 import Tweet from '@/components/tweet'
 import ImportModal from '@/components/import'
-import { loadingPageMixins } from '@/mixins'
-import { mapState } from 'vuex'
+import { useLoadingPage } from '@/composables/useLoadingPage'
+import { mapState } from 'pinia'
+import { useAppStore } from '@/stores/app'
+import { useEditorStore } from '@/stores/editor'
+import { usePreferencesStore } from '@/stores/preferences'
+import { useProjectStore } from '@/stores/project'
+import { useLayoutStore } from '@/stores/layout'
+import { useCommandCenterStore } from '@/stores/commandCenter'
+import { useListenForMainStore } from '@/stores/listenForMain'
+import { useTweetStore } from '@/stores/tweet'
+import { useAutoUpdatesStore } from '@/stores/autoUpdates'
+import { useNotificationStore } from '@/stores/notification'
 import bus from '@/bus'
 import { DEFAULT_STYLE } from '@/config'
 import { ipcRenderer } from '../util/tauri'
@@ -64,30 +74,26 @@ export default {
     ImportModal,
     CommandPalette
   },
-  mixins: [loadingPageMixins],
+  setup () {
+    const { hideLoadingPage } = useLoadingPage()
+    return { hideLoadingPage }
+  },
   data () {
     return {}
   },
   computed: {
-    ...mapState({
-      showTabBar: (state) => state.layout.showTabBar,
-      sourceCode: (state) => state.preferences.sourceCode,
-      theme: (state) => state.preferences.theme,
-      textDirection: (state) => state.preferences.textDirection
+    ...mapState(useLayoutStore, ['showTabBar']),
+    ...mapState(usePreferencesStore, ['sourceCode', 'theme', 'textDirection', 'zoom']),
+    ...mapState(useProjectStore, ['projectTree']),
+    ...mapState(useEditorStore, {
+      pathname: (store) => store.currentFile.pathname,
+      filename: (store) => store.currentFile.filename,
+      isSaved: (store) => store.currentFile.isSaved,
+      markdown: (store) => store.currentFile.markdown,
+      cursor: (store) => store.currentFile.cursor,
+      wordCount: (store) => store.currentFile.wordCount
     }),
-    ...mapState({
-      zoom: (state) => state.preferences.zoom
-    }),
-    ...mapState({
-      projectTree: (state) => state.project.projectTree,
-      pathname: (state) => state.editor.currentFile.pathname,
-      filename: (state) => state.editor.currentFile.filename,
-      isSaved: (state) => state.editor.currentFile.isSaved,
-      markdown: (state) => state.editor.currentFile.markdown,
-      cursor: (state) => state.editor.currentFile.cursor,
-      wordCount: (state) => state.editor.currentFile.wordCount
-    }),
-    ...mapState(['windowActive', 'platform', 'init']),
+    ...mapState(useAppStore, ['windowActive', 'platform', 'init']),
     hasCurrentFile () {
       return this.markdown !== undefined
     }
@@ -103,75 +109,84 @@ export default {
     }
   },
   created () {
-    const { commit, dispatch } = this.$store
+    const preferencesStore = usePreferencesStore()
+    const appStore = useAppStore()
+    const commandCenterStore = useCommandCenterStore()
+    const tweetStore = useTweetStore()
+    const layoutStore = useLayoutStore()
+    const listenForMainStore = useListenForMainStore()
+    const projectStore = useProjectStore()
+    const autoUpdatesStore = useAutoUpdatesStore()
+    const editorStore = useEditorStore()
+    const notificationStore = useNotificationStore()
 
     // Apply initial state (theme and titleBarStyle) and delay load other values.
     if (window.marktext.initialState) {
-      commit('SET_USER_PREFERENCE', window.marktext.initialState)
+      preferencesStore.SET_USER_PREFERENCE(window.marktext.initialState)
     }
 
     // store/index.js
-    dispatch('LINTEN_WIN_STATUS')
+    appStore.LINTEN_WIN_STATUS()
     // module: command center
-    dispatch('LISTEN_COMMAND_CENTER_BUS')
+    commandCenterStore.LISTEN_COMMAND_CENTER_BUS()
     // module: tweet
-    dispatch('LISTEN_FOR_TWEET')
+    tweetStore.LISTEN_FOR_TWEET()
     // module: layout
-    dispatch('LISTEN_FOR_LAYOUT')
+    layoutStore.LISTEN_FOR_LAYOUT()
     // module: listenForMain
-    dispatch('LISTEN_FOR_EDIT')
-    dispatch('LISTEN_FOR_VIEW')
-    dispatch('LISTEN_FOR_SHOW_DIALOG')
-    dispatch('LISTEN_FOR_PARAGRAPH_INLINE_STYLE')
+    listenForMainStore.LISTEN_FOR_EDIT()
+    preferencesStore.LISTEN_FOR_VIEW()
+    listenForMainStore.LISTEN_FOR_SHOW_DIALOG()
+    listenForMainStore.LISTEN_FOR_PARAGRAPH_INLINE_STYLE()
     // module: project
-    dispatch('LISTEN_FOR_UPDATE_PROJECT')
-    dispatch('LISTEN_FOR_LOAD_PROJECT')
-    dispatch('LISTEN_FOR_SIDEBAR_CONTEXT_MENU')
+    projectStore.LISTEN_FOR_UPDATE_PROJECT()
+    projectStore.LISTEN_FOR_LOAD_PROJECT()
+    projectStore.LISTEN_FOR_SIDEBAR_CONTEXT_MENU()
     // module: autoUpdates
-    dispatch('LISTEN_FOR_UPDATE')
+    autoUpdatesStore.LISTEN_FOR_UPDATE()
     // module: editor
-    dispatch('LISTEN_SCREEN_SHOT')
-    dispatch('ASK_FOR_USER_PREFERENCE')
-    dispatch('LISTEN_TOGGLE_VIEW')
-    dispatch('LISTEN_FOR_CLOSE')
-    dispatch('LISTEN_FOR_SAVE_AS')
-    dispatch('LISTEN_FOR_MOVE_TO')
-    dispatch('LISTEN_FOR_SAVE')
-    dispatch('LISTEN_FOR_SET_PATHNAME')
-    dispatch('LISTEN_FOR_BOOTSTRAP_WINDOW')
-    dispatch('LISTEN_FOR_SAVE_CLOSE')
-    dispatch('LISTEN_FOR_RENAME')
-    dispatch('LINTEN_FOR_SET_LINE_ENDING')
-    dispatch('LINTEN_FOR_SET_ENCODING')
-    dispatch('LINTEN_FOR_SET_FINAL_NEWLINE')
-    dispatch('LISTEN_FOR_NEW_TAB')
-    dispatch('LISTEN_FOR_CLOSE_TAB')
-    dispatch('LISTEN_FOR_TAB_CYCLE')
-    dispatch('LISTEN_FOR_SWITCH_TABS')
-    dispatch('LINTEN_FOR_PRINT_SERVICE_CLEARUP')
-    dispatch('LINTEN_FOR_EXPORT_SUCCESS')
-    dispatch('LISTEN_FOR_FILE_CHANGE')
-    dispatch('LISTEN_WINDOW_ZOOM')
-    dispatch('LISTEN_FOR_RELOAD_IMAGES')
-    dispatch('LISTEN_FOR_CONTEXT_MENU')
+    editorStore.LISTEN_SCREEN_SHOT()
+    preferencesStore.ASK_FOR_USER_PREFERENCE()
+    preferencesStore.LISTEN_TOGGLE_VIEW()
+    editorStore.LISTEN_FOR_CLOSE()
+    editorStore.LISTEN_FOR_SAVE_AS()
+    editorStore.LISTEN_FOR_MOVE_TO()
+    editorStore.LISTEN_FOR_SAVE()
+    editorStore.LISTEN_FOR_SET_PATHNAME()
+    editorStore.LISTEN_FOR_BOOTSTRAP_WINDOW()
+    editorStore.LISTEN_FOR_SAVE_CLOSE()
+    editorStore.LISTEN_FOR_RENAME()
+    editorStore.LINTEN_FOR_SET_LINE_ENDING()
+    editorStore.LINTEN_FOR_SET_ENCODING()
+    editorStore.LINTEN_FOR_SET_FINAL_NEWLINE()
+    editorStore.LISTEN_FOR_NEW_TAB()
+    editorStore.LISTEN_FOR_CLOSE_TAB()
+    editorStore.LISTEN_FOR_TAB_CYCLE()
+    editorStore.LISTEN_FOR_SWITCH_TABS()
+    editorStore.LINTEN_FOR_PRINT_SERVICE_CLEARUP()
+    editorStore.LINTEN_FOR_EXPORT_SUCCESS()
+    editorStore.LISTEN_FOR_FILE_CHANGE()
+    editorStore.LISTEN_WINDOW_ZOOM()
+    editorStore.LISTEN_FOR_RELOAD_IMAGES()
+    editorStore.LISTEN_FOR_CONTEXT_MENU()
 
     // module: notification
-    dispatch('LISTEN_FOR_NOTIFICATION')
+    notificationStore.LISTEN_FOR_NOTIFICATION()
 
     // Tauri auto-initialization: Electron sends mt::bootstrap-editor from main process,
     // but in Tauri we need to self-initialize since there's no Electron main process.
     if (typeof window !== 'undefined' && window.__TAURI_INTERNALS__) {
       this.$nextTick(() => {
         // Set initialized flag (renders editor area)
-        dispatch('SEND_INITIALIZED')
+        appStore.SEND_INITIALIZED()
         // Set default layout
-        commit('SET_LAYOUT', {
+        layoutStore.SET_LAYOUT({
           rightColumn: 'files',
           showSideBar: false,
           showTabBar: false
         })
         // Create a blank editor tab
-        dispatch('NEW_UNTITLED_TAB', {})
+        editorStore.NEW_UNTITLED_TAB({})
       })
     }
 

@@ -30,19 +30,18 @@
   </div>
 </template>
 
-<script>
-import { mapState } from 'vuex'
+<script lang="ts">
+import { mapState } from 'pinia'
+import { useEditorStore } from '@/stores/editor'
+import { useLayoutStore } from '@/stores/layout'
 
 export default {
   data () {
     return {}
   },
   computed: {
-    ...mapState({
-      currentFile: state => state.editor.currentFile,
-      showSideBar: state => state.layout.showSideBar,
-      sideBarWidth: state => state.layout.sideBarWidth
-    }),
+    ...mapState(useEditorStore, ['currentFile']),
+    ...mapState(useLayoutStore, ['showSideBar', 'sideBarWidth']),
     currentNotification () {
       const notifications = this.currentFile.notifications
       if (!notifications || notifications.length === 0) {

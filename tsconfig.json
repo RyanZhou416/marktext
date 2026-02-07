@@ -3,7 +3,7 @@
     "target": "ES2022",
     "module": "ESNext",
     "moduleResolution": "bundler",
-    "strict": false,
+    "strict": true,
     "allowJs": true,
     "checkJs": false,
     "esModuleInterop": true,
@@ -15,14 +15,16 @@
     "baseUrl": ".",
     "paths": {
       "@/*": ["src/renderer/*"],
-      "@main/*": ["src/main/*"]
+      "common/*": ["src/common/*"]
     },
-    "types": ["node"]
+    "types": ["node"],
+    "jsx": "preserve"
   },
   "include": [
     "src/**/*.ts",
     "src/**/*.d.ts",
-    "src/**/*.vue"
+    "src/**/*.vue",
+    "src/**/*.js"
   ],
   "exclude": [
     "node_modules",

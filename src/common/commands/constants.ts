@@ -105,6 +105,6 @@ const COMMANDS = Object.freeze({
   WINDOW_TOGGLE_FULL_SCREEN: 'window.toggle-full-screen',
   WINDOW_ZOOM_IN: 'window.zoom-in',
   WINDOW_ZOOM_OUT: 'window.zoom-out'
-})
+} as const)
 
 export default COMMANDS

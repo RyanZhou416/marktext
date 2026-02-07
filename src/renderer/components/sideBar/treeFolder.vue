@@ -49,18 +49,24 @@
   </div>
 </template>
 
-<script>
-import { mapState } from 'vuex'
+<script lang="ts">
+import { mapState } from 'pinia'
+import { useProjectStore } from '@/stores/project'
 import { showContextMenu } from '../../contextMenu/sideBar'
 import bus from '../../bus'
-import { createFileOrDirectoryMixins } from '../../mixins'
+import { ref, toRef } from 'vue'
+import { useCreateFileOrDirectory } from '../../composables/useCreateFileOrDirectory'
 
 export default {
-  mixins: [createFileOrDirectoryMixins],
+  setup (props) {
+    const inputRef = ref(null)
+    const folderRef = toRef(props, 'folder')
+    const { createName, handleInputFocus, handleInputEnter } = useCreateFileOrDirectory(inputRef, folderRef)
+    return { createName, handleInputFocus, handleInputEnter, input: inputRef }
+  },
   name: 'folder',
   data () {
     return {
-      createName: '',
       newName: ''
     }
   },
@@ -78,18 +84,14 @@ export default {
     File: () => import('./treeFile.vue')
   },
   computed: {
-    ...mapState({
-      renameCache: state => state.project.renameCache,
-      createCache: state => state.project.createCache,
-      activeItem: state => state.project.activeItem,
-      clipboard: state => state.project.clipboard
-    })
+    ...mapState(useProjectStore, ['renameCache', 'createCache', 'activeItem', 'clipboard'])
   },
   created () {
     this.$nextTick(() => {
       this.$refs.folder.addEventListener('contextmenu', event => {
         event.preventDefault()
-        this.$store.dispatch('CHANGE_ACTIVE_ITEM', this.folder)
+        const projectStore = useProjectStore()
+        projectStore.CHANGE_ACTIVE_ITEM(this.folder)
         showContextMenu(event, !!this.clipboard)
       })
       bus.$on('SIDEBAR::show-new-input', this.handleInputFocus)
@@ -112,7 +114,8 @@ export default {
     rename () {
       const { newName } = this
       if (newName) {
-        this.$store.dispatch('RENAME_IN_SIDEBAR', newName)
+        const projectStore = useProjectStore()
+        projectStore.RENAME_IN_SIDEBAR(newName)
       }
     }
   }

@@ -19,7 +19,7 @@
   </section>
 </template>
 
-<script>
+<script lang="ts">
 import { ref, watch } from 'vue'
 import { shell } from '../../../util/tauri'
 

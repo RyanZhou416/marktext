@@ -12,11 +12,12 @@
   </div>
 </template>
 
-<script>
-import { mapState } from 'vuex'
+<script lang="ts">
+import { mapState } from 'pinia'
+import { usePreferencesStore } from '@/stores/preferences'
 import TitleBar from '@/prefComponents/common/titlebar'
 import SideBar from '@/prefComponents/sideBar'
-import { loadingPageMixins } from '@/mixins'
+import { useLoadingPage } from '@/composables/useLoadingPage'
 import { addThemeStyle } from '@/util/theme'
 import { DEFAULT_STYLE } from '@/config'
 import { isOsx } from '@/util'
@@ -26,16 +27,16 @@ export default {
     this.isOsx = isOsx
     return {}
   },
-  mixins: [loadingPageMixins],
+  setup () {
+    const { hideLoadingPage } = useLoadingPage()
+    return { hideLoadingPage }
+  },
   components: {
     TitleBar,
     SideBar
   },
   computed: {
-    ...mapState({
-      theme: (state) => state.preferences.theme,
-      titleBarStyle: (state) => state.preferences.titleBarStyle
-    }),
+    ...mapState(usePreferencesStore, ['theme', 'titleBarStyle']),
     showCustomTitleBar () {
       return this.titleBarStyle === 'custom' && !this.isOsx
     }
@@ -52,7 +53,7 @@ export default {
       const state = window.marktext.initialState || DEFAULT_STYLE
       addThemeStyle(state.theme)
 
-      this.$store.dispatch('ASK_FOR_USER_PREFERENCE')
+      usePreferencesStore().ASK_FOR_USER_PREFERENCE()
       this.hideLoadingPage()
     })
   }

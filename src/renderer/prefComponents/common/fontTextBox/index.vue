@@ -22,7 +22,7 @@
   </section>
 </template>
 
-<script>
+<script lang="ts">
 import { shell, ipcRenderer } from '../../../util/tauri'
 
 // Example of fontmanager-redux objects:

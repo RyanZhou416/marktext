@@ -164,8 +164,9 @@
   </div>
 </template>
 
-<script>
-import { mapState } from 'vuex'
+<script lang="ts">
+import { mapState } from 'pinia'
+import { usePreferencesStore } from '@/stores/preferences'
 import Compound from '../common/compound'
 import FontTextBox from '../common/fontTextBox'
 import Range from '../common/range'
@@ -200,32 +201,33 @@ export default {
     return {}
   },
   computed: {
-    ...mapState({
-      fontSize: state => state.preferences.fontSize,
-      editorFontFamily: state => state.preferences.editorFontFamily,
-      lineHeight: state => state.preferences.lineHeight,
-      autoPairBracket: state => state.preferences.autoPairBracket,
-      autoPairMarkdownSyntax: state => state.preferences.autoPairMarkdownSyntax,
-      autoPairQuote: state => state.preferences.autoPairQuote,
-      tabSize: state => state.preferences.tabSize,
-      endOfLine: state => state.preferences.endOfLine,
-      textDirection: state => state.preferences.textDirection,
-      codeFontSize: state => state.preferences.codeFontSize,
-      codeFontFamily: state => state.preferences.codeFontFamily,
-      codeBlockLineNumbers: state => state.preferences.codeBlockLineNumbers,
-      trimUnnecessaryCodeBlockEmptyLines: state => state.preferences.trimUnnecessaryCodeBlockEmptyLines,
-      hideQuickInsertHint: state => state.preferences.hideQuickInsertHint,
-      hideLinkPopup: state => state.preferences.hideLinkPopup,
-      autoCheck: state => state.preferences.autoCheck,
-      editorLineWidth: state => state.preferences.editorLineWidth,
-      defaultEncoding: state => state.preferences.defaultEncoding,
-      autoGuessEncoding: state => state.preferences.autoGuessEncoding,
-      trimTrailingNewline: state => state.preferences.trimTrailingNewline
-    })
+    ...mapState(usePreferencesStore, [
+      'fontSize',
+      'editorFontFamily',
+      'lineHeight',
+      'autoPairBracket',
+      'autoPairMarkdownSyntax',
+      'autoPairQuote',
+      'tabSize',
+      'endOfLine',
+      'textDirection',
+      'codeFontSize',
+      'codeFontFamily',
+      'codeBlockLineNumbers',
+      'trimUnnecessaryCodeBlockEmptyLines',
+      'hideQuickInsertHint',
+      'hideLinkPopup',
+      'autoCheck',
+      'editorLineWidth',
+      'defaultEncoding',
+      'autoGuessEncoding',
+      'trimTrailingNewline'
+    ])
   },
   methods: {
     onSelectChange (type, value) {
-      this.$store.dispatch('SET_SINGLE_PREFERENCE', { type, value })
+      const preferencesStore = usePreferencesStore()
+      preferencesStore.SET_SINGLE_PREFERENCE({ type, value })
     }
   }
 }

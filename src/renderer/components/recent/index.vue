@@ -13,8 +13,9 @@
     </div>
 </template>
 
-<script>
+<script lang="ts">
 import ContentIcon from '@/assets/icons/undraw_content.svg'
+import { useEditorStore } from '@/stores/editor'
 
 export default {
   data () {
@@ -23,7 +24,8 @@ export default {
   },
   methods: {
     newFile () {
-      this.$store.dispatch('NEW_UNTITLED_TAB', {})
+      const editorStore = useEditorStore()
+      editorStore.NEW_UNTITLED_TAB({})
     }
   }
 }

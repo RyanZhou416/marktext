@@ -32,7 +32,7 @@ export function useFile () {
     if (openedTab) {
       openedTab.cursor = cursor
       if (editorStore.currentFile !== openedTab) {
-        editorStore.updateCurrentFile(openedTab)
+        editorStore.UPDATE_CURRENT_FILE(openedTab)
       } else {
         const { id, markdown, cursor, history } = editorStore.currentFile
         bus.$emit('file-changed', {
@@ -60,7 +60,7 @@ export function useFile () {
       if (editorStore.currentFile === openedTab) {
         return
       }
-      editorStore.updateCurrentFile(openedTab)
+      editorStore.UPDATE_CURRENT_FILE(openedTab)
     } else {
       ipcRenderer.send('mt::open-file', pathname, {})
     }

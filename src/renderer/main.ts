@@ -1,13 +1,10 @@
 import { createApp, h } from 'vue'
-// vue-electron 移除 - 不兼容 contextIsolation，使用 util/electron.js 替代
-// source-map-support 移除 - 需要 Node.js fs/path 模块
 import bootstrapRenderer from './bootstrap'
 import { createRouter, createWebHashHistory, RouterView } from 'vue-router'
 import { createPinia } from 'pinia'
 import ElementPlus from 'element-plus'
 import 'element-plus/dist/index.css'
 import axios from './axios'
-import store from './store' // Vuex store (临时保留，逐步迁移到 Pinia)
 import './assets/symbolIcon'
 import services from './services'
 import routes from './router'
@@ -18,9 +15,7 @@ import './assets/styles/printService.css'
 
 // -----------------------------------------------
 
-// source-map-support 已移除 - 使用浏览器原生错误堆栈
-
-window.marktext = {}
+;(window as any).marktext = {}
 bootstrapRenderer()
 
 addElementStyle()
@@ -37,27 +32,26 @@ const App = {
 
 const app = createApp(App)
 
-// Configure Element Plus (locale set in component level if needed)
+// Configure Element Plus
 app.use(ElementPlus)
 
-// Configure Pinia (新状态管理)
+// Configure Pinia
 const pinia = createPinia()
 app.use(pinia)
 
 // Configure Vue Router 4
 const router = createRouter({
   history: createWebHashHistory(),
-  routes: routes(window.marktext.env.type)
+  routes: routes((window as any).marktext.env.type)
 })
 
 app.use(router)
-app.use(store) // Vuex store (临时保留，逐步迁移)
 
 // Add axios to global properties
 app.config.globalProperties.$http = axios
 
 // Add services to global properties
-services.forEach((s) => {
+services.forEach((s: any) => {
   app.config.globalProperties['$' + s.name] = s[s.name]
 })
 

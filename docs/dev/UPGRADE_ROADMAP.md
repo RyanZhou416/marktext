@@ -609,18 +609,21 @@ vue-template-compiler: 2.6.14 → 2.7.16
 
 ---
 
-## 阶段 6: Vue 3 迁移 + 构建工具现代化
+## 阶段 6: Vue 3 迁移 + 构建工具现代化 ✅ 已完成
 
 **目标**: 完成 Vue 2 → Vue 3 迁移，同时迁移到 Vite 构建工具
 
-| 任务                           | 状态 | 说明                |
-| ------------------------------ | ---- | ------------------- |
-| 迁移 webpack → Vite            | ⬜   | 解决 ESM 兼容性问题 |
-| 升级 Vue 3                     | ⬜   | vue@3.x             |
-| 迁移 Vuex → Pinia              | ⬜   | 状态管理            |
-| 迁移 Element UI → Element Plus | ⬜   | 组件库              |
-| 迁移 Vue Router                | ⬜   | vue-router@4.x      |
-| 修复所有组件                   | ⬜   | 语法适配            |
+| 任务                           | 状态 | 说明                                   |
+| ------------------------------ | ---- | -------------------------------------- |
+| 迁移 webpack → Vite            | ✅   | 纯 Vite 构建 (vite.config.mjs)        |
+| 升级 Vue 3                     | ✅   | vue@3.4.x + createApp                 |
+| 迁移 Vuex → Pinia              | ✅   | 9 个模块 → 10 个 Pinia stores (.ts)   |
+| 迁移 Element UI → Element Plus | ✅   | element-plus                           |
+| 迁移 Vue Router                | ✅   | vue-router@4.x + createWebHashHistory |
+| 修复所有组件                   | ✅   | 27+ 组件 store 引用更新               |
+| Mixins → Composables           | ✅   | 4 个 mixin → 4 个 composable          |
+| 移除 Vuex 依赖                 | ✅   | package.json 中已移除                  |
+| 清理 babel Element UI 插件     | ✅   | babel-plugin-component 已移除          |
 
 ### 为什么迁移到 Vite
 
@@ -671,37 +674,21 @@ electron.vite.config.ts
 
 ---
 
-## 阶段 7: TypeScript 迁移
+## 阶段 7: TypeScript 迁移 ✅ 已完成
 
 **目标**: 逐步将 JavaScript 迁移到 TypeScript
 
-| 任务             | 状态 | 说明             |
-| ---------------- | ---- | ---------------- |
-| 配置 TypeScript  | ⬜   | tsconfig.json    |
-| 添加类型定义     | ⬜   | 安装 @types/\*   |
-| 迁移主进程代码   | ⬜   | src/main/        |
-| 迁移渲染进程代码 | ⬜   | src/renderer/    |
-| 迁移 Muya        | ⬜   | src/muya/ (最后) |
-
-### 配置示例
-
-```json
-// tsconfig.json
-{
-  "compilerOptions": {
-    "target": "ES2020",
-    "module": "ESNext",
-    "strict": true,
-    "jsx": "preserve",
-    "moduleResolution": "node",
-    "allowJs": true,
-    "checkJs": false,
-    "esModuleInterop": true
-  },
-  "include": ["src/**/*"],
-  "exclude": ["node_modules"]
-}
-```
+| 任务                           | 状态 | 说明                                          |
+| ------------------------------ | ---- | --------------------------------------------- |
+| 配置 TypeScript                | ✅   | tsconfig.json strict:true, jsx:preserve       |
+| ESLint TypeScript 支持         | ✅   | @typescript-eslint/parser + eslint-plugin      |
+| Vue 组件类型 shim              | ✅   | src/renderer/env.d.ts                         |
+| 迁移 util/ 目录               | ✅   | 13 个 .js → .ts (tauri, index, fileSystem...) |
+| 迁移 Pinia stores             | ✅   | 10 个 store 直接用 .ts 创建                   |
+| 迁移 src/common/              | ✅   | 6 个 .js → .ts (envPaths, filesystem, ...)    |
+| Vue 组件 lang=ts              | ✅   | 45 个 .vue 文件添加 lang="ts"                 |
+| 入口文件迁移                   | ✅   | main.ts + router/index.ts                     |
+| 迁移 Muya                     | ⬜   | src/muya/ (Phase 10 编辑器现代化时处理)       |
 
 ---
 
@@ -894,8 +881,8 @@ src-tauri/src/
 | 阶段 4: Electron 大版本升级   | ✅ 完成   | 2026-02-04 | 2026-02-05 |
 | 阶段 4.5: 渲染进程现代化      | ✅ 完成   | 2026-02-04 | 2026-02-05 |
 | 阶段 5: Vue 生态升级准备      | ✅ 完成   | 2026-02-05 | 2026-02-05 |
-| 阶段 6: Vue 3 迁移            | ⬜ 待开始 | -          | -          |
-| 阶段 7: TypeScript 迁移       | ⬜ 待开始 | -          | -          |
+| 阶段 6: Vue 3 迁移            | ✅ 完成   | 2026-02-06 | 2026-02-06 |
+| 阶段 7: TypeScript 迁移       | ✅ 完成   | 2026-02-06 | 2026-02-06 |
 | 阶段 8: Tauri 评估与 PoC      | ✅ 完成   | 2026-02-05 | 2026-02-05 |
 | 阶段 9: Tauri 完整迁移        | ✅ 完成   | 2026-02-05 | 2026-02-05 |
 | 阶段 10: 编辑器引擎现代化     | ⬜ 待开始 | -          | -          |

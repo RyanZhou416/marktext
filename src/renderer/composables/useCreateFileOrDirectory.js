@@ -22,7 +22,7 @@ export function useCreateFileOrDirectory (inputRef, folder) {
   }
 
   function handleInputEnter () {
-    projectStore.createFileDirectory(createName.value)
+    projectStore.CREATE_FILE_DIRECTORY(createName.value)
   }
 
   return {

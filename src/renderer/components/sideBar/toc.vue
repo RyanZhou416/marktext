@@ -21,8 +21,10 @@
   </div>
 </template>
 
-<script>
-import { mapState } from 'vuex'
+<script lang="ts">
+import { mapState } from 'pinia'
+import { useEditorStore } from '@/stores/editor'
+import { usePreferencesStore } from '@/stores/preferences'
 import bus from '../../bus'
 import EmptyIcon from '@/assets/icons/undraw_toc_empty.svg'
 
@@ -37,10 +39,8 @@ export default {
     }
   },
   computed: {
-    ...mapState({
-      toc: state => state.editor.toc,
-      wordWrapInToc: state => state.preferences.wordWrapInToc
-    })
+    ...mapState(useEditorStore, ['toc']),
+    ...mapState(usePreferencesStore, ['wordWrapInToc'])
   },
   methods: {
     handleClick ({ slug }) {

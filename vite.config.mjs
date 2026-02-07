@@ -77,7 +77,7 @@ export default defineConfig({
       'command-exists': resolve(__dirname, 'src/renderer/node/stubs/empty.js'),
       '@hfelix/electron-localshortcut': resolve(__dirname, 'src/renderer/node/stubs/empty.js')
     },
-    extensions: ['.mjs', '.js', '.mts', '.ts', '.jsx', '.tsx', '.json', '.vue']
+    extensions: ['.mts', '.ts', '.tsx', '.mjs', '.js', '.jsx', '.json', '.vue']
   },
   define: {
     'process.versions.MARKTEXT_VERSION': JSON.stringify(pkg.version),

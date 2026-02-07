@@ -8,31 +8,204 @@
 // Import pure JS path polyfill for synchronous path operations
 import pathPolyfill from './pathPolyfill'
 
+// Augment Window interface for Tauri and custom globals
+declare global {
+  interface Window {
+    __TAURI_INTERNALS__?: any
+    __TAURI_API_INITIALIZED__?: boolean
+    electronAPI?: TauriApiObject
+    webkitAudioContext?: typeof AudioContext
+    marktext?: { paths: { userDataPath: string } }
+  }
+}
+
+// ============================================================================
+// Types
+// ============================================================================
+
+interface FileSaveData {
+  pathname?: string
+  markdown: string
+  filename?: string
+  defaultPath?: string
+  options?: { encoding?: string }
+}
+
+interface FileMoveData {
+  pathname: string
+}
+
+interface ExportData {
+  type: string
+  content: string
+  pathname?: string
+  title?: string
+}
+
+interface UnsavedFile {
+  pathname?: string
+  markdown: string
+}
+
+interface SaveResult {
+  success: boolean
+  path: string
+}
+
+interface StatResult {
+  is_file: boolean
+  is_directory: boolean
+  is_symlink: boolean
+  size: number
+  modified?: string
+  created?: string
+  accessed?: string
+}
+
+interface WindowState {
+  isFullscreen: boolean
+}
+
+interface EventListener {
+  callback: Function
+  unsubscribe: (() => void) | Promise<() => void>
+}
+
+interface IpcChannelHandler {
+  (args: any[]): Promise<any>
+}
+
+interface TauriModule {
+  invoke: (cmd: string, args?: Record<string, any>) => Promise<any>
+}
+
+interface TauriEventModule {
+  listen: (event: string, handler: (event: { payload: any }) => void) => Promise<() => void>
+  once: (event: string, handler: (event: { payload: any }) => void) => Promise<() => void>
+}
+
+interface TauriShellModule {
+  open: (path: string) => Promise<void>
+  Command: {
+    create: (cmd: string, args: string[]) => {
+      execute: () => Promise<{ stdout: string; stderr: string }>
+    }
+  }
+}
+
+interface TauriDialogModule {
+  [key: string]: any
+}
+
+interface TauriClipboardModule {
+  readText: () => Promise<string>
+  writeText: (text: string) => Promise<void>
+}
+
+interface TauriFsModule {
+  readTextFile: (path: string) => Promise<string>
+  writeTextFile: (path: string, contents: string) => Promise<void>
+  readDir: (path: string) => Promise<Array<{ name: string }>>
+}
+
+interface TauriOsModule {
+  [key: string]: any
+}
+
+interface TauriPathModule {
+  [key: string]: any
+}
+
+interface TauriProcessModule {
+  [key: string]: any
+}
+
+interface FsStatResult {
+  isFile: () => boolean
+  isDirectory: () => boolean
+  isSymbolicLink: () => boolean
+  size: number
+  mtime: Date | null
+  ctime: Date | null
+  atime: Date | null
+}
+
+interface MkdirOptions {
+  recursive?: boolean
+}
+
+interface RmdirOptions {
+  recursive?: boolean
+}
+
+interface WriteJsonOptions {
+  spaces?: number
+}
+
+interface PathObject {
+  root?: string
+  dir?: string
+  base?: string
+  ext?: string
+  name?: string
+}
+
+interface HashObject {
+  update: (input: string | Uint8Array) => HashObject
+  digest: (encoding?: string) => Promise<string | number[]>
+}
+
+interface Store {
+  dispatch: (action: string, payload?: any) => any
+  commit: (mutation: string, payload?: any) => void
+  state: any
+}
+
+interface TauriApiObject {
+  ipcRenderer: typeof ipcRenderer
+  shell: typeof shell
+  clipboard: typeof clipboard
+  nativeImage: typeof nativeImage
+  webFrame: typeof webFrame
+  webUtils: typeof webUtils
+  fs: typeof fs
+  path: typeof path
+  os: typeof os
+  process: typeof processInfo
+  crypto: typeof crypto
+  childProcess: typeof childProcess
+  isOsx: boolean
+  isWindows: boolean
+  isLinux: boolean
+  isMas: boolean
+  staticPath: string | null
+}
+
 // Check if we're running in Tauri
-const isTauri = () => {
+const isTauri = (): boolean => {
   return typeof window !== 'undefined' && window.__TAURI_INTERNALS__ !== undefined
 }
 
 // Lazy load Tauri APIs to avoid errors when not in Tauri context
-let tauriCore = null
-let tauriEvent = null
-let tauriShell = null
-let tauriDialog = null
-let tauriClipboard = null
-let tauriFs = null
-let tauriOs = null
-let tauriPath = null
-let tauriProcess = null
+let tauriCore: TauriModule | null = null
+let tauriEvent: TauriEventModule | null = null
+let tauriShell: TauriShellModule | null = null
+let tauriDialog: TauriDialogModule | null = null
+let tauriClipboard: TauriClipboardModule | null = null
+let tauriFs: TauriFsModule | null = null
+let tauriOs: TauriOsModule | null = null
+let tauriPath: TauriPathModule | null = null
+let tauriProcess: TauriProcessModule | null = null
 
-const loadTauriApis = async () => {
+const loadTauriApis = async (): Promise<boolean> => {
   if (!isTauri()) return false
   try {
     tauriCore = await import('@tauri-apps/api/core')
     tauriEvent = await import('@tauri-apps/api/event')
-    tauriShell = await import('@tauri-apps/plugin-shell')
+    tauriShell = await import('@tauri-apps/plugin-shell') as any
     tauriDialog = await import('@tauri-apps/plugin-dialog')
-    tauriClipboard = await import('@tauri-apps/plugin-clipboard-manager')
-    tauriFs = await import('@tauri-apps/plugin-fs')
+    tauriClipboard = await import('@tauri-apps/plugin-clipboard-manager') as any
+    tauriFs = await import('@tauri-apps/plugin-fs') as any
     tauriOs = await import('@tauri-apps/plugin-os')
     tauriPath = await import('@tauri-apps/api/path')
     tauriProcess = await import('@tauri-apps/plugin-process')
@@ -44,79 +217,79 @@ const loadTauriApis = async () => {
 }
 
 // Initialize Tauri APIs
-let tauriReady = loadTauriApis()
+const tauriReady: Promise<boolean> = loadTauriApis()
 
 // Event listener management for IPC emulation
-const eventListeners = new Map()
+const eventListeners: Map<string, EventListener[]> = new Map()
 
 // ============================================================================
 // IPC Renderer emulation - maps Electron IPC channels to Tauri commands/events
 // ============================================================================
 
 // High-level IPC channel handlers that map to specific Tauri commands
-const ipcChannelHandlers = {
+const ipcChannelHandlers: Record<string, IpcChannelHandler> = {
   // File operations
-  'mt::response-file-save': async (args) => {
-    const [data] = args
+  'mt::response-file-save': async (args: any[]): Promise<SaveResult | undefined> => {
+    const [data] = args as [FileSaveData | undefined]
     if (!data) return
     const { pathname, markdown, filename, defaultPath, options } = data
     let savePath = pathname
     if (!savePath) {
       // New file - show save dialog
-      savePath = await tauriCore.invoke('save_file_dialog', {
+      savePath = await tauriCore!.invoke('save_file_dialog', {
         defaultPath: defaultPath || null,
         filename: filename || 'Untitled.md'
       })
       if (!savePath) return // User cancelled
     }
-    const result = await tauriCore.invoke('save_markdown_file', {
+    const result: SaveResult = await tauriCore!.invoke('save_markdown_file', {
       filePath: savePath,
       content: markdown,
       encoding: options?.encoding || null
     })
     if (result.success) {
-      await tauriCore.invoke('add_recent_document', { filePath: result.path })
+      await tauriCore!.invoke('add_recent_document', { filePath: result.path })
     }
     return result
   },
-  'mt::response-file-save-as': async (args) => {
-    const [data] = args
+  'mt::response-file-save-as': async (args: any[]): Promise<SaveResult | null | undefined> => {
+    const [data] = args as [FileSaveData | undefined]
     if (!data) return
     const { pathname, markdown, filename, options } = data
     const dir = pathname ? pathPolyfill.dirname(pathname) : null
-    const savePath = await tauriCore.invoke('save_file_dialog', {
+    const savePath: string | null = await tauriCore!.invoke('save_file_dialog', {
       defaultPath: dir,
       filename: filename || 'Untitled.md'
     })
     if (!savePath) return null
-    const result = await tauriCore.invoke('save_markdown_file', {
+    const result: SaveResult = await tauriCore!.invoke('save_markdown_file', {
       filePath: savePath,
       content: markdown,
       encoding: options?.encoding || null
     })
     if (result.success) {
-      await tauriCore.invoke('add_recent_document', { filePath: result.path })
+      await tauriCore!.invoke('add_recent_document', { filePath: result.path })
     }
     return result
   },
-  'mt::save-tabs': async (args) => {
-    const [unsavedFiles] = args
+  'mt::save-tabs': async (args: any[]): Promise<void> => {
+    const [unsavedFiles] = args as [UnsavedFile[] | undefined]
     if (!unsavedFiles || !unsavedFiles.length) return
     for (const file of unsavedFiles) {
       if (file.pathname) {
-        await tauriCore.invoke('save_markdown_file', {
+        await tauriCore!.invoke('save_markdown_file', {
           filePath: file.pathname,
           content: file.markdown
         })
       }
     }
   },
-  'mt::save-and-close-tabs': async (args) => {
-    const [unsavedFiles] = args
+  'mt::save-and-close-tabs': async (args: any[]): Promise<void> => {
+    const [unsavedFiles] = args as [UnsavedFile[] | undefined]
     if (!unsavedFiles) return
     for (const file of unsavedFiles) {
       if (file.pathname) {
-        await tauriCore.invoke('save_markdown_file', {
+        await tauriCore!.invoke('save_markdown_file', {
           filePath: file.pathname,
           content: file.markdown
         })
@@ -124,177 +297,177 @@ const ipcChannelHandlers = {
     }
   },
   // File open operations
-  'mt::cmd-open-file': async () => {
-    const paths = await tauriCore.invoke('open_file_dialog')
+  'mt::cmd-open-file': async (): Promise<string[]> => {
+    const paths: string[] = await tauriCore!.invoke('open_file_dialog')
     return paths
   },
-  'mt::cmd-open-folder': async () => {
-    const folderPath = await tauriCore.invoke('open_folder_dialog')
+  'mt::cmd-open-folder': async (): Promise<string> => {
+    const folderPath: string = await tauriCore!.invoke('open_folder_dialog')
     return folderPath
   },
   // Window operations
-  'mt::cmd-new-editor-window': async () => {
-    return await tauriCore.invoke('create_editor_window', { filePath: null })
+  'mt::cmd-new-editor-window': async (): Promise<any> => {
+    return await tauriCore!.invoke('create_editor_window', { filePath: null })
   },
-  'mt::open-setting-window': async () => {
-    return await tauriCore.invoke('create_settings_window', { page: null })
+  'mt::open-setting-window': async (): Promise<any> => {
+    return await tauriCore!.invoke('create_settings_window', { page: null })
   },
-  'mt::cmd-close-window': async () => {
-    return await tauriCore.invoke('close_window')
+  'mt::cmd-close-window': async (): Promise<any> => {
+    return await tauriCore!.invoke('close_window')
   },
   // Move to trash
-  'mt::response-file-move-to': async (args) => {
-    const [data] = args
+  'mt::response-file-move-to': async (args: any[]): Promise<string | null | undefined> => {
+    const [data] = args as [FileMoveData | undefined]
     if (!data) return
     const { pathname } = data
-    const dest = await tauriCore.invoke('save_file_dialog', {
+    const dest: string | null = await tauriCore!.invoke('save_file_dialog', {
       defaultPath: pathPolyfill.dirname(pathname),
       filename: pathPolyfill.basename(pathname)
     })
     if (!dest) return null
-    await tauriCore.invoke('rename', { old_path: pathname, new_path: dest })
+    await tauriCore!.invoke('rename', { old_path: pathname, new_path: dest })
     return dest
   },
   // Export
-  'mt::response-export': async (args) => {
-    const [data] = args
+  'mt::response-export': async (args: any[]): Promise<string | null | undefined> => {
+    const [data] = args as [ExportData | undefined]
     if (!data) return
     const { type, content, pathname, title } = data
     const ext = type === 'pdf' ? '.pdf' : '.html'
     const basename = pathname ? pathPolyfill.basename(pathname, '.md') : (title || 'Untitled')
-    const filePath = await tauriCore.invoke('export_file_dialog', {
+    const filePath: string | null = await tauriCore!.invoke('export_file_dialog', {
       exportType: type,
       defaultPath: pathname ? pathPolyfill.dirname(pathname) : null,
       filename: basename + ext
     })
     if (!filePath) return null
     if (type === 'styledHtml' || type === 'html') {
-      await tauriCore.invoke('export_html', { filePath, content })
+      await tauriCore!.invoke('export_html', { filePath, content })
     }
     // PDF export is handled by window.print() on the frontend side
     return filePath
   },
   // Preferences
-  'mt::ask-for-user-preference': async () => {
-    return await tauriCore.invoke('get_preferences')
+  'mt::ask-for-user-preference': async (): Promise<any> => {
+    return await tauriCore!.invoke('get_preferences')
   },
-  'mt::set-user-preference': async (args) => {
+  'mt::set-user-preference': async (args: any[]): Promise<void> => {
     const [data] = args
     if (data && typeof data === 'object') {
-      await tauriCore.invoke('set_preferences', { preferences: data })
+      await tauriCore!.invoke('set_preferences', { preferences: data })
     }
   },
-  'mt::cmd-set-single-preference': async (args) => {
-    const [key, value] = args
-    await tauriCore.invoke('set_preference', { key, value })
+  'mt::cmd-set-single-preference': async (args: any[]): Promise<void> => {
+    const [key, value] = args as [string, any]
+    await tauriCore!.invoke('set_preference', { key, value })
   },
   // Recent documents
-  'mt::get-recent-documents': async () => {
-    return await tauriCore.invoke('get_recent_documents')
+  'mt::get-recent-documents': async (): Promise<any> => {
+    return await tauriCore!.invoke('get_recent_documents')
   },
-  'mt::clear-recent-documents': async () => {
-    return await tauriCore.invoke('clear_recent_documents')
+  'mt::clear-recent-documents': async (): Promise<any> => {
+    return await tauriCore!.invoke('clear_recent_documents')
   },
   // Image
-  'mt::pick-image': async () => {
-    return await tauriCore.invoke('pick_image_dialog')
+  'mt::pick-image': async (): Promise<any> => {
+    return await tauriCore!.invoke('pick_image_dialog')
   },
-  'mt::get-image-completions': async (args) => {
-    const [directory, query] = args
-    return await tauriCore.invoke('get_image_completions', { directory, query })
+  'mt::get-image-completions': async (args: any[]): Promise<any> => {
+    const [directory, query] = args as [string, string]
+    return await tauriCore!.invoke('get_image_completions', { directory, query })
   },
-  'mt::copy-image-to-folder': async (args) => {
-    const [source, destDir] = args
-    return await tauriCore.invoke('copy_image_to_folder', { source, destDir })
+  'mt::copy-image-to-folder': async (args: any[]): Promise<any> => {
+    const [source, destDir] = args as [string, string]
+    return await tauriCore!.invoke('copy_image_to_folder', { source, destDir })
   },
   // File watcher
-  'mt::watch-file': async (args) => {
-    const [filePath] = args
-    return await tauriCore.invoke('watch_file', { filePath })
+  'mt::watch-file': async (args: any[]): Promise<any> => {
+    const [filePath] = args as [string]
+    return await tauriCore!.invoke('watch_file', { filePath })
   },
-  'mt::watch-directory': async (args) => {
-    const [dirPath] = args
-    return await tauriCore.invoke('watch_directory', { dirPath })
+  'mt::watch-directory': async (args: any[]): Promise<any> => {
+    const [dirPath] = args as [string]
+    return await tauriCore!.invoke('watch_directory', { dirPath })
   },
-  'mt::unwatch': async (args) => {
-    const [watchPath] = args
-    return await tauriCore.invoke('unwatch', { watchPath })
+  'mt::unwatch': async (args: any[]): Promise<any> => {
+    const [watchPath] = args as [string]
+    return await tauriCore!.invoke('unwatch', { watchPath })
   },
-  'mt::unwatch-all': async () => {
-    return await tauriCore.invoke('unwatch_all')
+  'mt::unwatch-all': async (): Promise<any> => {
+    return await tauriCore!.invoke('unwatch_all')
   },
   // Keybindings
-  'mt::get-keybindings': async () => {
-    return await tauriCore.invoke('get_keybindings')
+  'mt::get-keybindings': async (): Promise<any> => {
+    return await tauriCore!.invoke('get_keybindings')
   },
-  'mt::save-keybindings': async (args) => {
+  'mt::save-keybindings': async (args: any[]): Promise<any> => {
     const [keybindings] = args
-    return await tauriCore.invoke('save_user_keybindings', { keybindings })
+    return await tauriCore!.invoke('save_user_keybindings', { keybindings })
   },
   // Pandoc
-  'mt::check-pandoc': async () => {
-    return await tauriCore.invoke('check_pandoc')
+  'mt::check-pandoc': async (): Promise<any> => {
+    return await tauriCore!.invoke('check_pandoc')
   },
-  'mt::import-with-pandoc': async (args) => {
-    const [filePath] = args
-    return await tauriCore.invoke('import_with_pandoc', { filePath })
+  'mt::import-with-pandoc': async (args: any[]): Promise<any> => {
+    const [filePath] = args as [string]
+    return await tauriCore!.invoke('import_with_pandoc', { filePath })
   },
   // Spellcheck
-  'mt::get-custom-dictionary': async () => {
-    return await tauriCore.invoke('get_custom_dictionary')
+  'mt::get-custom-dictionary': async (): Promise<any> => {
+    return await tauriCore!.invoke('get_custom_dictionary')
   },
-  'mt::add-to-dictionary': async (args) => {
-    const [word] = args
-    return await tauriCore.invoke('add_to_dictionary', { word })
+  'mt::add-to-dictionary': async (args: any[]): Promise<any> => {
+    const [word] = args as [string]
+    return await tauriCore!.invoke('add_to_dictionary', { word })
   },
-  'mt::remove-from-dictionary': async (args) => {
-    const [word] = args
-    return await tauriCore.invoke('remove_from_dictionary', { word })
+  'mt::remove-from-dictionary': async (args: any[]): Promise<any> => {
+    const [word] = args as [string]
+    return await tauriCore!.invoke('remove_from_dictionary', { word })
   },
   // Trash
-  'mt::response-file-trash': async (args) => {
-    const [data] = args
+  'mt::response-file-trash': async (args: any[]): Promise<any> => {
+    const [data] = args as [FileMoveData | undefined]
     if (!data) return
     const { pathname } = data
-    return await tauriCore.invoke('trash_file', { filePath: pathname })
+    return await tauriCore!.invoke('trash_file', { filePath: pathname })
   },
   // Window state
-  'mt::window-minimize': async () => {
-    return await tauriCore.invoke('minimize_window')
+  'mt::window-minimize': async (): Promise<any> => {
+    return await tauriCore!.invoke('minimize_window')
   },
-  'mt::window-maximize': async () => {
-    return await tauriCore.invoke('maximize_window')
+  'mt::window-maximize': async (): Promise<any> => {
+    return await tauriCore!.invoke('maximize_window')
   },
-  'mt::window-close': async () => {
-    return await tauriCore.invoke('close_window')
+  'mt::window-close': async (): Promise<any> => {
+    return await tauriCore!.invoke('close_window')
   },
-  'mt::window-toggle-fullscreen': async () => {
-    const state = await tauriCore.invoke('get_window_state')
-    return await tauriCore.invoke('set_fullscreen', { fullscreen: !state.isFullscreen })
+  'mt::window-toggle-fullscreen': async (): Promise<any> => {
+    const state: WindowState = await tauriCore!.invoke('get_window_state')
+    return await tauriCore!.invoke('set_fullscreen', { fullscreen: !state.isFullscreen })
   },
-  'mt::window-toggle-always-on-top': async (args) => {
-    const [alwaysOnTop] = args
-    return await tauriCore.invoke('set_always_on_top', { alwaysOnTop: !!alwaysOnTop })
+  'mt::window-toggle-always-on-top': async (args: any[]): Promise<any> => {
+    const [alwaysOnTop] = args as [boolean]
+    return await tauriCore!.invoke('set_always_on_top', { alwaysOnTop: !!alwaysOnTop })
   },
   // No-op handlers for channels that don't need backend interaction
-  'mt::set-title': async () => {},
-  'mt::send-initialized': async () => {},
-  'mt::editor-ready': async () => {},
-  'mt::update-line-ending-menu': async () => {},
-  'mt::update-text-direction-menu': async () => {}
+  'mt::set-title': async (): Promise<void> => {},
+  'mt::send-initialized': async (): Promise<void> => {},
+  'mt::editor-ready': async (): Promise<void> => {},
+  'mt::update-line-ending-menu': async (): Promise<void> => {},
+  'mt::update-text-direction-menu': async (): Promise<void> => {}
 }
 
 // Convert mt:: channel names to Tauri command names (fallback)
-function channelToCommand (channel) {
+function channelToCommand (channel: string): string {
   return channel.replace(/^mt::/, '').replace(/-/g, '_')
 }
 
-function channelToEvent (channel) {
+function channelToEvent (channel: string): string {
   return channel
 }
 
 export const ipcRenderer = {
-  send: async (channel, ...args) => {
+  send: async (channel: string, ...args: any[]): Promise<void> => {
     if (!isTauri()) return
     await tauriReady
     // Check for specific handler first
@@ -309,12 +482,12 @@ export const ipcRenderer = {
     // Fallback: convert channel to command
     const command = channelToCommand(channel)
     try {
-      await tauriCore.invoke(command, { args })
-    } catch (e) {
+      await tauriCore!.invoke(command, { args })
+    } catch (e: any) {
       console.warn(`Tauri invoke fallback for ${channel} (${command}):`, e.message || e)
     }
   },
-  invoke: async (channel, ...args) => {
+  invoke: async (channel: string, ...args: any[]): Promise<any> => {
     if (!isTauri()) return Promise.reject(new Error('Tauri API not available'))
     await tauriReady
     // Check for specific handler first
@@ -329,46 +502,46 @@ export const ipcRenderer = {
     // Fallback
     const command = channelToCommand(channel)
     try {
-      return await tauriCore.invoke(command, { args })
+      return await tauriCore!.invoke(command, { args })
     } catch (e) {
       console.error(`Tauri invoke error for ${channel}:`, e)
       throw e
     }
   },
-  sendSync: (channel, ...args) => {
+  sendSync: (channel: string, ..._args: any[]): null => {
     console.warn('sendSync not supported in Tauri, returning null for:', channel)
     return null
   },
-  on: (channel, callback) => {
+  on: (channel: string, callback: (event: any, payload: any) => void): (() => void) => {
     if (!isTauri()) return () => {}
     const unlisten = tauriReady.then(async () => {
       const eventName = channelToEvent(channel)
-      const unsubscribe = await tauriEvent.listen(eventName, (event) => {
+      const unsubscribe = await tauriEvent!.listen(eventName, (event) => {
         const fakeEvent = { sender: null }
         callback(fakeEvent, event.payload)
       })
       if (!eventListeners.has(channel)) {
         eventListeners.set(channel, [])
       }
-      eventListeners.get(channel).push({ callback, unsubscribe })
+      eventListeners.get(channel)!.push({ callback, unsubscribe })
       return unsubscribe
     })
     return () => {
       unlisten.then(fn => fn && fn())
     }
   },
-  once: async (channel, callback) => {
+  once: async (channel: string, callback: (event: any, payload: any) => void): Promise<void> => {
     if (!isTauri()) return
     await tauriReady
     const eventName = channelToEvent(channel)
-    await tauriEvent.once(eventName, (event) => {
+    await tauriEvent!.once(eventName, (event) => {
       const fakeEvent = { sender: null }
       callback(fakeEvent, event.payload)
     })
   },
-  removeAllListeners: (channel) => {
+  removeAllListeners: (channel: string): void => {
     if (eventListeners.has(channel)) {
-      const listeners = eventListeners.get(channel)
+      const listeners = eventListeners.get(channel)!
       listeners.forEach(({ unsubscribe }) => {
         if (typeof unsubscribe === 'function') {
           unsubscribe()
@@ -384,41 +557,41 @@ export const ipcRenderer = {
 // ============================================================================
 
 export const shell = {
-  openExternal: async (url, options) => {
+  openExternal: async (url: string, _options?: any): Promise<void> => {
     if (!isTauri()) return Promise.reject(new Error('Tauri API not available'))
     await tauriReady
     try {
-      await tauriShell.open(url)
+      await tauriShell!.open(url)
     } catch (e) {
       console.error('Failed to open external:', e)
       throw e
     }
   },
-  openPath: async (path) => {
+  openPath: async (path: string): Promise<string> => {
     if (!isTauri()) return Promise.reject(new Error('Tauri API not available'))
     await tauriReady
     try {
-      await tauriShell.open(path)
+      await tauriShell!.open(path)
       return ''
-    } catch (e) {
+    } catch (e: any) {
       console.error('Failed to open path:', e)
       return e.message
     }
   },
-  showItemInFolder: async (fullPath) => {
+  showItemInFolder: async (fullPath: string): Promise<void> => {
     if (!isTauri()) return
     await tauriReady
     try {
       // Reveal parent folder and select the item
       const dir = pathPolyfill.dirname(fullPath)
-      await tauriShell.open(dir)
+      await tauriShell!.open(dir)
     } catch (e) {
       console.error('Failed to show item in folder:', e)
     }
   },
-  beep: () => {
+  beep: (): void => {
     try {
-      const audioContext = new (window.AudioContext || window.webkitAudioContext)()
+      const audioContext = new (window.AudioContext || window.webkitAudioContext!)()
       const oscillator = audioContext.createOscillator()
       oscillator.type = 'sine'
       oscillator.frequency.setValueAtTime(800, audioContext.currentTime)
@@ -436,56 +609,56 @@ export const shell = {
 // ============================================================================
 
 export const clipboard = {
-  readText: async (type) => {
+  readText: async (_type?: string): Promise<string> => {
     if (!isTauri()) return ''
     await tauriReady
     try {
-      return await tauriClipboard.readText() || ''
+      return await tauriClipboard!.readText() || ''
     } catch (e) {
       console.error('Failed to read clipboard:', e)
       return ''
     }
   },
-  writeText: async (text, type) => {
+  writeText: async (text: string, _type?: string): Promise<void> => {
     if (!isTauri()) return
     await tauriReady
     try {
-      await tauriClipboard.writeText(text)
+      await tauriClipboard!.writeText(text)
     } catch (e) {
       console.error('Failed to write clipboard:', e)
     }
   },
-  readHTML: async (type) => '',
-  writeHTML: async (markup, type) => {
+  readHTML: async (_type?: string): Promise<string> => '',
+  writeHTML: async (markup: string, _type?: string): Promise<void> => {
     if (!isTauri()) return
     await tauriReady
     try {
-      await tauriClipboard.writeText(markup)
+      await tauriClipboard!.writeText(markup)
     } catch (e) {
       console.error('Failed to write HTML to clipboard:', e)
     }
   },
-  readRTF: (type) => '',
-  writeRTF: (text, type) => {},
-  readBookmark: () => ({ title: '', url: '' }),
-  writeBookmark: (title, url, type) => {},
-  readFindText: () => '',
-  writeFindText: (text) => {},
-  clear: async (type) => {
+  readRTF: (_type?: string): string => '',
+  writeRTF: (_text: string, _type?: string): void => {},
+  readBookmark: (): { title: string; url: string } => ({ title: '', url: '' }),
+  writeBookmark: (_title: string, _url: string, _type?: string): void => {},
+  readFindText: (): string => '',
+  writeFindText: (_text: string): void => {},
+  clear: async (_type?: string): Promise<void> => {
     if (!isTauri()) return
     await tauriReady
     try {
-      await tauriClipboard.writeText('')
+      await tauriClipboard!.writeText('')
     } catch (e) {
       console.error('Failed to clear clipboard:', e)
     }
   },
-  availableFormats: (type) => [],
-  has: (format, type) => false,
-  read: (format) => '',
-  readBuffer: (format) => new Uint8Array(0),
-  writeBuffer: (format, buffer, type) => {},
-  write: (data, type) => {}
+  availableFormats: (_type?: string): string[] => [],
+  has: (_format: string, _type?: string): boolean => false,
+  read: (_format: string): string => '',
+  readBuffer: (_format: string): Uint8Array => new Uint8Array(0),
+  writeBuffer: (_format: string, _buffer: Uint8Array, _type?: string): void => {},
+  write: (_data: any, _type?: string): void => {}
 }
 
 // ============================================================================
@@ -493,10 +666,10 @@ export const clipboard = {
 // ============================================================================
 
 export const nativeImage = {
-  createEmpty: () => null,
-  createFromPath: (path) => null,
-  createFromBuffer: (buffer, options) => null,
-  createFromDataURL: (dataURL) => null
+  createEmpty: (): null => null,
+  createFromPath: (_path: string): null => null,
+  createFromBuffer: (_buffer: Uint8Array, _options?: any): null => null,
+  createFromDataURL: (_dataURL: string): null => null
 }
 
 // ============================================================================
@@ -504,18 +677,18 @@ export const nativeImage = {
 // ============================================================================
 
 export const webFrame = {
-  setZoomFactor: (factor) => {
-    document.body.style.zoom = factor
+  setZoomFactor: (factor: number): void => {
+    ;(document.body.style as any).zoom = factor
   },
-  getZoomFactor: () => {
-    return parseFloat(document.body.style.zoom) || 1
+  getZoomFactor: (): number => {
+    return parseFloat((document.body.style as any).zoom) || 1
   },
-  setZoomLevel: (level) => {
+  setZoomLevel: (level: number): void => {
     const factor = Math.pow(1.2, level)
-    document.body.style.zoom = factor
+    ;(document.body.style as any).zoom = factor
   },
-  getZoomLevel: () => {
-    const factor = parseFloat(document.body.style.zoom) || 1
+  getZoomLevel: (): number => {
+    const factor = parseFloat((document.body.style as any).zoom) || 1
     return Math.log(factor) / Math.log(1.2)
   }
 }
@@ -525,7 +698,7 @@ export const webFrame = {
 // ============================================================================
 
 export const webUtils = {
-  getPathForFile: (file) => {
+  getPathForFile: (file: File & { path?: string }): string => {
     return file.path || file.name || ''
   }
 }
@@ -534,40 +707,40 @@ export const webUtils = {
 // File System API using Tauri fs plugin + Rust commands
 // ============================================================================
 
-export const fs = {
-  readFile: async (filePath, options) => {
+export const fs: Record<string, any> = {
+  readFile: async (filePath: string, _options?: any): Promise<string> => {
     if (!isTauri()) return Promise.reject(new Error('Tauri API not available'))
     await tauriReady
     try {
-      const content = await tauriFs.readTextFile(filePath)
+      const content: string = await tauriFs!.readTextFile(filePath)
       return content
-    } catch (e) {
+    } catch (e: any) {
       throw new Error(`Failed to read file: ${e.message}`)
     }
   },
-  readFileSync: (filePath, options) => {
+  readFileSync: (_filePath: string, _options?: any): null => {
     console.warn('readFileSync not supported in Tauri, use async version')
     return null
   },
-  readdir: async (dirPath, options) => {
+  readdir: async (dirPath: string, _options?: any): Promise<string[]> => {
     if (!isTauri()) return Promise.reject(new Error('Tauri API not available'))
     await tauriReady
     try {
-      const entries = await tauriFs.readDir(dirPath)
-      return entries.map(e => e.name)
-    } catch (e) {
+      const entries = await tauriFs!.readDir(dirPath)
+      return entries.map((e: { name: string }) => e.name)
+    } catch (e: any) {
       throw new Error(`Failed to read directory: ${e.message}`)
     }
   },
-  readdirSync: (dirPath, options) => {
+  readdirSync: (_dirPath: string, _options?: any): string[] => {
     console.warn('readdirSync not supported in Tauri')
     return []
   },
-  stat: async (filePath, options) => {
+  stat: async (filePath: string, _options?: any): Promise<FsStatResult> => {
     if (!isTauri()) return Promise.reject(new Error('Tauri API not available'))
     await tauriReady
     try {
-      const stat = await tauriCore.invoke('stat', { path: filePath })
+      const stat: StatResult = await tauriCore!.invoke('stat', { path: filePath })
       return {
         isFile: () => stat.is_file,
         isDirectory: () => stat.is_directory,
@@ -577,131 +750,131 @@ export const fs = {
         ctime: stat.created ? new Date(stat.created) : null,
         atime: stat.accessed ? new Date(stat.accessed) : null
       }
-    } catch (e) {
+    } catch (e: any) {
       throw new Error(`Failed to stat: ${e.message}`)
     }
   },
-  statSync: (filePath) => {
+  statSync: (_filePath: string): null => {
     console.warn('statSync not supported in Tauri')
     return null
   },
-  lstat: async (filePath, options) => {
+  lstat: async (filePath: string, options?: any): Promise<FsStatResult> => {
     return fs.stat(filePath, options)
   },
-  lstatSync: (filePath) => null,
-  access: async (filePath, mode) => {
+  lstatSync: (_filePath: string): null => null,
+  access: async (filePath: string, _mode?: number): Promise<void> => {
     if (!isTauri()) return Promise.reject(new Error('Tauri API not available'))
     await tauriReady
     try {
-      const exists = await tauriCore.invoke('exists', { path: filePath })
+      const exists: boolean = await tauriCore!.invoke('exists', { path: filePath })
       if (!exists) throw new Error('File does not exist')
     } catch (e) {
       throw e
     }
   },
-  accessSync: (filePath, mode) => {},
-  existsSync: (filePath) => {
+  accessSync: (_filePath: string, _mode?: number): void => {},
+  existsSync: (_filePath: string): boolean => {
     console.warn('existsSync not supported in Tauri')
     return false
   },
-  realpath: async (filePath, options) => filePath,
-  realpathSync: (filePath, options) => filePath,
-  readlink: async (filePath, options) => filePath,
-  readlinkSync: (filePath, options) => null,
-  writeFile: async (filePath, data, options) => {
+  realpath: async (filePath: string, _options?: any): Promise<string> => filePath,
+  realpathSync: (filePath: string, _options?: any): string => filePath,
+  readlink: async (filePath: string, _options?: any): Promise<string> => filePath,
+  readlinkSync: (_filePath: string, _options?: any): null => null,
+  writeFile: async (filePath: string, data: string, _options?: any): Promise<void> => {
     if (!isTauri()) return Promise.reject(new Error('Tauri API not available'))
     await tauriReady
     try {
-      await tauriFs.writeTextFile(filePath, data)
-    } catch (e) {
+      await tauriFs!.writeTextFile(filePath, data)
+    } catch (e: any) {
       throw new Error(`Failed to write file: ${e.message}`)
     }
   },
-  writeFileSync: (filePath, data, options) => {
+  writeFileSync: (_filePath: string, _data: string, _options?: any): void => {
     console.warn('writeFileSync not supported in Tauri')
   },
-  appendFile: async (filePath, data, options) => {
+  appendFile: async (filePath: string, data: string, _options?: any): Promise<void> => {
     if (!isTauri()) return Promise.reject(new Error('Tauri API not available'))
     await tauriReady
     try {
-      const existing = await tauriFs.readTextFile(filePath).catch(() => '')
-      await tauriFs.writeTextFile(filePath, existing + data)
-    } catch (e) {
+      const existing: string = await tauriFs!.readTextFile(filePath).catch(() => '')
+      await tauriFs!.writeTextFile(filePath, existing + data)
+    } catch (e: any) {
       throw new Error(`Failed to append file: ${e.message}`)
     }
   },
-  mkdir: async (dirPath, options) => {
+  mkdir: async (dirPath: string, options?: MkdirOptions): Promise<void> => {
     if (!isTauri()) return Promise.reject(new Error('Tauri API not available'))
     await tauriReady
     try {
-      await tauriCore.invoke('mkdir', {
+      await tauriCore!.invoke('mkdir', {
         path: dirPath,
         recursive: options?.recursive || false
       })
-    } catch (e) {
+    } catch (e: any) {
       throw new Error(`Failed to create directory: ${e.message}`)
     }
   },
-  mkdirSync: (dirPath, options) => {
+  mkdirSync: (_dirPath: string, _options?: MkdirOptions): void => {
     console.warn('mkdirSync not supported in Tauri')
   },
-  rename: async (oldPath, newPath) => {
+  rename: async (oldPath: string, newPath: string): Promise<void> => {
     if (!isTauri()) return Promise.reject(new Error('Tauri API not available'))
     await tauriReady
     try {
-      await tauriCore.invoke('rename', { old_path: oldPath, new_path: newPath })
-    } catch (e) {
+      await tauriCore!.invoke('rename', { old_path: oldPath, new_path: newPath })
+    } catch (e: any) {
       throw new Error(`Failed to rename: ${e.message}`)
     }
   },
-  renameSync: (oldPath, newPath) => {
+  renameSync: (_oldPath: string, _newPath: string): void => {
     console.warn('renameSync not supported in Tauri')
   },
-  unlink: async (filePath) => {
+  unlink: async (filePath: string): Promise<void> => {
     if (!isTauri()) return Promise.reject(new Error('Tauri API not available'))
     await tauriReady
     try {
-      await tauriCore.invoke('remove', { path: filePath })
-    } catch (e) {
+      await tauriCore!.invoke('remove', { path: filePath })
+    } catch (e: any) {
       throw new Error(`Failed to remove file: ${e.message}`)
     }
   },
-  unlinkSync: (filePath) => {
+  unlinkSync: (_filePath: string): void => {
     console.warn('unlinkSync not supported in Tauri')
   },
-  rmdir: async (dirPath, options) => {
+  rmdir: async (dirPath: string, options?: RmdirOptions): Promise<void> => {
     if (!isTauri()) return Promise.reject(new Error('Tauri API not available'))
     await tauriReady
     try {
-      await tauriCore.invoke('remove', {
+      await tauriCore!.invoke('remove', {
         path: dirPath,
         recursive: options?.recursive || false
       })
-    } catch (e) {
+    } catch (e: any) {
       throw new Error(`Failed to remove directory: ${e.message}`)
     }
   },
-  rm: async (filePath, options) => {
+  rm: async (filePath: string, _options?: any): Promise<void> => {
     return fs.unlink(filePath)
   },
-  copyFile: async (src, dest, mode) => {
+  copyFile: async (src: string, dest: string, _mode?: number): Promise<void> => {
     if (!isTauri()) return Promise.reject(new Error('Tauri API not available'))
     await tauriReady
     try {
-      await tauriCore.invoke('copy_file', { source: src, dest })
-    } catch (e) {
+      await tauriCore!.invoke('copy_file', { source: src, dest })
+    } catch (e: any) {
       throw new Error(`Failed to copy file: ${e.message}`)
     }
   },
-  copyFileSync: (src, dest, mode) => {
+  copyFileSync: (_src: string, _dest: string, _mode?: number): void => {
     console.warn('copyFileSync not supported in Tauri')
   },
-  createReadStream: (filePath, options) => null,
-  createWriteStream: (filePath, options) => null,
-  watch: (filePath, options, listener) => null,
-  watchFile: (filename, options, listener) => {},
-  unwatchFile: (filename, listener) => {},
-  get constants () {
+  createReadStream: (_filePath: string, _options?: any): null => null,
+  createWriteStream: (_filePath: string, _options?: any): null => null,
+  watch: (_filePath: string, _options?: any, _listener?: Function): null => null,
+  watchFile: (_filename: string, _options?: any, _listener?: Function): void => {},
+  unwatchFile: (_filename: string, _listener?: Function): void => {},
+  get constants (): { F_OK: number; R_OK: number; W_OK: number; X_OK: number } {
     return { F_OK: 0, R_OK: 4, W_OK: 2, X_OK: 1 }
   }
 }
@@ -710,38 +883,38 @@ export const fs = {
 // Ensure fs-extra compatibility (ensureDir, pathExists, etc.)
 // ============================================================================
 
-fs.ensureDir = async (dirPath) => {
+fs.ensureDir = async (dirPath: string): Promise<void> => {
   return fs.mkdir(dirPath, { recursive: true })
 }
-fs.ensureDirSync = (dirPath) => {
+fs.ensureDirSync = (_dirPath: string): void => {
   console.warn('ensureDirSync not supported in Tauri')
 }
-fs.pathExists = async (filePath) => {
+fs.pathExists = async (filePath: string): Promise<boolean> => {
   try {
     await tauriReady
-    return await tauriCore.invoke('exists', { path: filePath })
+    return await tauriCore!.invoke('exists', { path: filePath })
   } catch {
     return false
   }
 }
-fs.pathExistsSync = (filePath) => false
-fs.outputFile = async (filePath, data, options) => {
+fs.pathExistsSync = (_filePath: string): boolean => false
+fs.outputFile = async (filePath: string, data: string, options?: any): Promise<void> => {
   const dir = pathPolyfill.dirname(filePath)
   await fs.ensureDir(dir)
   return fs.writeFile(filePath, data, options)
 }
-fs.readJson = async (filePath) => {
-  const content = await fs.readFile(filePath)
+fs.readJson = async (filePath: string): Promise<any> => {
+  const content: string = await fs.readFile(filePath)
   return JSON.parse(content)
 }
-fs.writeJson = async (filePath, data, options) => {
+fs.writeJson = async (filePath: string, data: any, options?: WriteJsonOptions): Promise<void> => {
   const content = JSON.stringify(data, null, options?.spaces || 2)
   return fs.writeFile(filePath, content)
 }
-fs.remove = async (filePath) => {
+fs.remove = async (filePath: string): Promise<void> => {
   try {
     await tauriReady
-    await tauriCore.invoke('remove', { path: filePath, recursive: true })
+    await tauriCore!.invoke('remove', { path: filePath, recursive: true })
   } catch (e) {
     // ignore if not found
   }
@@ -752,20 +925,20 @@ fs.remove = async (filePath) => {
 // ============================================================================
 
 export const path = {
-  join: (...args) => pathPolyfill.join(...args),
-  resolve: (...args) => pathPolyfill.resolve(...args),
-  dirname: (filePath) => pathPolyfill.dirname(filePath),
-  basename: (filePath, ext) => pathPolyfill.basename(filePath, ext),
-  extname: (filePath) => pathPolyfill.extname(filePath),
-  parse: (filePath) => pathPolyfill.parse(filePath),
-  format: (pathObject) => pathPolyfill.format(pathObject),
-  normalize: (filePath) => pathPolyfill.normalize(filePath),
-  isAbsolute: (filePath) => pathPolyfill.isAbsolute(filePath),
-  relative: (from, to) => pathPolyfill.relative(from, to),
-  get sep () { return pathPolyfill.sep },
-  get delimiter () { return pathPolyfill.delimiter },
-  get posix () { return null },
-  get win32 () { return null }
+  join: (...args: string[]): string => pathPolyfill.join(...args),
+  resolve: (...args: string[]): string => pathPolyfill.resolve(...args),
+  dirname: (filePath: string): string => pathPolyfill.dirname(filePath),
+  basename: (filePath: string, ext?: string): string => pathPolyfill.basename(filePath, ext),
+  extname: (filePath: string): string => pathPolyfill.extname(filePath),
+  parse: (filePath: string): PathObject => pathPolyfill.parse(filePath),
+  format: (pathObject: PathObject): string => pathPolyfill.format(pathObject),
+  normalize: (filePath: string): string => pathPolyfill.normalize(filePath),
+  isAbsolute: (filePath: string): boolean => pathPolyfill.isAbsolute(filePath),
+  relative: (from: string, to: string): string => pathPolyfill.relative(from, to),
+  get sep (): string { return pathPolyfill.sep },
+  get delimiter (): string { return pathPolyfill.delimiter },
+  get posix (): null { return null },
+  get win32 (): null { return null }
 }
 
 // ============================================================================
@@ -773,26 +946,26 @@ export const path = {
 // ============================================================================
 
 export const os = {
-  homedir: async () => {
+  homedir: async (): Promise<string> => {
     if (!isTauri()) return ''
     await tauriReady
-    try { return await tauriCore.invoke('get_homedir') } catch (e) { return '' }
+    try { return await tauriCore!.invoke('get_homedir') } catch (e) { return '' }
   },
-  tmpdir: async () => {
+  tmpdir: async (): Promise<string> => {
     if (!isTauri()) return ''
     await tauriReady
-    try { return await tauriCore.invoke('get_tmpdir') } catch (e) { return '' }
+    try { return await tauriCore!.invoke('get_tmpdir') } catch (e) { return '' }
   },
-  platform: async () => {
+  platform: async (): Promise<string> => {
     if (!isTauri()) return ''
     await tauriReady
-    try { return await tauriCore.invoke('get_platform') } catch (e) { return '' }
+    try { return await tauriCore!.invoke('get_platform') } catch (e) { return '' }
   },
-  type: async () => {
+  type: async (): Promise<string> => {
     if (!isTauri()) return ''
     await tauriReady
     try {
-      const platform = await tauriCore.invoke('get_platform')
+      const platform: string = await tauriCore!.invoke('get_platform')
       switch (platform) {
         case 'windows': return 'Windows_NT'
         case 'macos': return 'Darwin'
@@ -801,21 +974,21 @@ export const os = {
       }
     } catch (e) { return '' }
   },
-  arch: async () => {
+  arch: async (): Promise<string> => {
     if (!isTauri()) return ''
     await tauriReady
-    try { return await tauriCore.invoke('get_arch') } catch (e) { return '' }
+    try { return await tauriCore!.invoke('get_arch') } catch (e) { return '' }
   },
-  release: () => '',
-  hostname: async () => {
+  release: (): string => '',
+  hostname: async (): Promise<string> => {
     if (!isTauri()) return ''
     await tauriReady
-    try { return await tauriCore.invoke('get_hostname') } catch (e) { return '' }
+    try { return await tauriCore!.invoke('get_hostname') } catch (e) { return '' }
   },
-  cpus: () => [],
-  totalmem: () => 0,
-  freemem: () => 0,
-  get EOL () {
+  cpus: (): any[] => [],
+  totalmem: (): number => 0,
+  freemem: (): number => 0,
+  get EOL (): string {
     return navigator.platform.startsWith('Win') ? '\r\n' : '\n'
   }
 }
@@ -825,24 +998,24 @@ export const os = {
 // ============================================================================
 
 export const processInfo = {
-  get platform () {
+  get platform (): string {
     const userAgent = navigator.userAgent.toLowerCase()
     if (userAgent.includes('win')) return 'win32'
     if (userAgent.includes('mac')) return 'darwin'
     if (userAgent.includes('linux')) return 'linux'
     return 'unknown'
   },
-  get arch () {
+  get arch (): string {
     return navigator.userAgent.includes('x64') ? 'x64' : 'x86'
   },
-  get versions () { return {} },
-  get env () { return {} },
-  cwd: () => '',
-  get argv () { return [] },
-  get execPath () { return '' },
-  get pid () { return 0 },
-  get ppid () { return 0 },
-  get resourcesPath () { return '' }
+  get versions (): Record<string, any> { return {} },
+  get env (): Record<string, any> { return {} },
+  cwd: (): string => '',
+  get argv (): string[] { return [] },
+  get execPath (): string { return '' },
+  get pid (): number { return 0 },
+  get ppid (): number { return 0 },
+  get resourcesPath (): string { return '' }
 }
 
 // ============================================================================
@@ -850,10 +1023,10 @@ export const processInfo = {
 // ============================================================================
 
 export const crypto = {
-  createHash: (algorithm) => {
+  createHash: (algorithm: string): HashObject => {
     let data = new Uint8Array()
     return {
-      update: function (input) {
+      update: function (input: string | Uint8Array): HashObject {
         const encoder = new TextEncoder()
         const inputBytes = typeof input === 'string' ? encoder.encode(input) : input
         const newData = new Uint8Array(data.length + inputBytes.length)
@@ -862,7 +1035,7 @@ export const crypto = {
         data = newData
         return this
       },
-      digest: async function (encoding) {
+      digest: async function (encoding?: string): Promise<string | number[]> {
         const hashBuffer = await window.crypto.subtle.digest(
           algorithm.toUpperCase().replace('-', ''),
           data
@@ -875,12 +1048,12 @@ export const crypto = {
       }
     }
   },
-  randomBytes: (size) => {
+  randomBytes: (size: number): Uint8Array => {
     const bytes = new Uint8Array(size)
     window.crypto.getRandomValues(bytes)
     return bytes
   },
-  randomUUID: () => {
+  randomUUID: (): string => {
     return window.crypto.randomUUID()
   }
 }
@@ -890,39 +1063,39 @@ export const crypto = {
 // ============================================================================
 
 export const childProcess = {
-  spawn: (command, args, options) => {
+  spawn: (_command: string, _args?: string[], _options?: any): null => {
     console.warn('spawn not fully supported in Tauri')
     return null
   },
-  exec: async (command, options, callback) => {
+  exec: async (command: string, options?: any, callback?: (err: Error | null, stdout?: string, stderr?: string) => void): Promise<any> => {
     if (!isTauri()) {
       if (callback) callback(new Error('Tauri API not available'))
       return null
     }
     await tauriReady
     try {
-      const result = await tauriShell.Command.create('cmd', ['/c', command]).execute()
+      const result = await tauriShell!.Command.create('cmd', ['/c', command]).execute()
       if (callback) callback(null, result.stdout, result.stderr)
       return result
-    } catch (e) {
+    } catch (e: any) {
       if (callback) callback(e)
       return null
     }
   },
-  execFile: (file, args, options, callback) => {
+  execFile: (_file: string, _args?: string[], _options?: any, callback?: (err: Error | null, stdout?: string, stderr?: string) => void): null => {
     console.warn('execFile not fully supported in Tauri')
     if (callback) callback(new Error('Not supported'))
     return null
   },
-  execSync: (command, options) => {
+  execSync: (_command: string, _options?: any): null => {
     console.warn('execSync not supported in Tauri')
     return null
   },
-  execFileSync: (file, args, options) => {
+  execFileSync: (_file: string, _args?: string[], _options?: any): null => {
     console.warn('execFileSync not supported in Tauri')
     return null
   },
-  spawnSync: (command, args, options) => {
+  spawnSync: (_command: string, _args?: string[], _options?: any): null => {
     console.warn('spawnSync not supported in Tauri')
     return null
   }
@@ -932,7 +1105,14 @@ export const childProcess = {
 // Platform detection
 // ============================================================================
 
-const detectPlatform = () => {
+interface PlatformInfo {
+  isOsx: boolean
+  isWindows: boolean
+  isLinux: boolean
+  isMas: boolean
+}
+
+const detectPlatform = (): PlatformInfo => {
   const userAgent = navigator.userAgent.toLowerCase()
   return {
     isOsx: userAgent.includes('mac'),
@@ -944,31 +1124,31 @@ const detectPlatform = () => {
 
 const platformInfo = detectPlatform()
 
-export const isOsx = platformInfo.isOsx
-export const isWindows = platformInfo.isWindows
-export const isLinux = platformInfo.isLinux
-export const isMas = platformInfo.isMas
+export const isOsx: boolean = platformInfo.isOsx
+export const isWindows: boolean = platformInfo.isWindows
+export const isLinux: boolean = platformInfo.isLinux
+export const isMas: boolean = platformInfo.isMas
 
 // ============================================================================
 // Menu event handler - listens for Tauri menu events and dispatches them
 // ============================================================================
 
 let menuEventInitialized = false
-export function initMenuEvents (store) {
+export function initMenuEvents (store: Store): void {
   if (menuEventInitialized || !isTauri()) return
   menuEventInitialized = true
 
   tauriReady.then(async () => {
-    await tauriEvent.listen('menu-event', (event) => {
-      const menuId = event.payload
+    await tauriEvent!.listen('menu-event', (event) => {
+      const menuId = event.payload as string
       handleMenuAction(menuId, store)
     })
   })
 }
 
-function handleMenuAction (menuId, store) {
+function handleMenuAction (menuId: string, store: Store): void {
   // Map menu IDs to Vuex store actions / mutations
-  const menuActions = {
+  const menuActions: Record<string, () => void> = {
     // File
     'file.new-tab': () => store.dispatch('NEW_UNTITLED_TAB'),
     'file.new-window': () => ipcRenderer.send('mt::cmd-new-editor-window'),
@@ -1035,7 +1215,7 @@ function handleMenuAction (menuId, store) {
     'help.about': () => {
       // Show about info via notification or dialog
       tauriReady.then(async () => {
-        const version = await tauriCore.invoke('get_app_version')
+        const version: string = await tauriCore!.invoke('get_app_version')
         alert(`MarkText v${version}\n\nA simple and elegant markdown editor.`)
       })
     }
@@ -1049,26 +1229,26 @@ function handleMenuAction (menuId, store) {
   }
 }
 
-async function handleOpenFile (store) {
+async function handleOpenFile (store: Store): Promise<void> {
   await tauriReady
-  const paths = await tauriCore.invoke('open_file_dialog')
+  const paths: string[] = await tauriCore!.invoke('open_file_dialog')
   if (paths && paths.length > 0) {
     for (const filePath of paths) {
-      const doc = await tauriCore.invoke('read_markdown_file', { filePath })
+      const doc: { markdown: string; filename: string; pathname: string } = await tauriCore!.invoke('read_markdown_file', { filePath })
       store.dispatch('NEW_TAB_WITH_CONTENT', {
         markdown: doc.markdown,
         filename: doc.filename,
         pathname: doc.pathname,
         options: {}
       })
-      await tauriCore.invoke('add_recent_document', { filePath })
+      await tauriCore!.invoke('add_recent_document', { filePath })
     }
   }
 }
 
-async function handleOpenFolder (store) {
+async function handleOpenFolder (store: Store): Promise<void> {
   await tauriReady
-  const folderPath = await tauriCore.invoke('open_folder_dialog')
+  const folderPath: string = await tauriCore!.invoke('open_folder_dialog')
   if (folderPath) {
     store.dispatch('OPEN_FOLDER', folderPath)
   }
@@ -1078,23 +1258,23 @@ async function handleOpenFolder (store) {
 // Static path / App path
 // ============================================================================
 
-export const getStaticPath = async () => {
+export const getStaticPath = async (): Promise<string | null> => {
   if (!isTauri()) return null
   await tauriReady
   try {
-    return await tauriCore.invoke('get_app_path', { name: 'resource' })
+    return await tauriCore!.invoke('get_app_path', { name: 'resource' })
   } catch (e) {
     return null
   }
 }
 
-export const isTauriAvailable = isTauri
+export const isTauriAvailable: () => boolean = isTauri
 
 // ============================================================================
 // Tauri API object matching Electron's window.electronAPI interface
 // ============================================================================
 
-const tauriApiObject = {
+const tauriApiObject: TauriApiObject = {
   ipcRenderer,
   shell,
   clipboard,
@@ -1117,7 +1297,7 @@ const tauriApiObject = {
 /**
  * Initialize Tauri API bridge
  */
-export function initTauriApi () {
+export function initTauriApi (): boolean {
   if (!isTauri()) return false
 
   if (typeof window !== 'undefined' && !window.electronAPI) {

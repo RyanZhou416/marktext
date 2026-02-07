@@ -266,8 +266,7 @@
   </div>
 </template>
 
-<script>
-import { mapState } from 'vuex'
+<script lang="ts">
 import { fs, path } from '../../util/tauri'
 import { isDirectory, isFile } from 'common/filesystem'
 import bus from '../../bus'
@@ -333,9 +332,7 @@ export default {
       tocIncludeTopHeading: true
     }
   },
-  computed: {
-    ...mapState({})
-  },
+  computed: {},
   created () {
     bus.$on('showExportDialog', this.showDialog)
   },

@@ -30,7 +30,7 @@
           :key="index"
           :searchMatch="searchMatch"
           :title="searchMatch.lineText"
-          @click="handleSearchResultClick(searchMatch)"
+          @click="handleSearchResultClick(searchMatch, searchResult)"
         >
           <!-- <span class="line-number">{{ searchMatch.range[0][0] }}</span> -->
           <span>{{
@@ -58,14 +58,18 @@
   </div>
 </template>
 
-<script>
+<script lang="ts">
 import { path } from '../../util/tauri'
-import { mapState } from 'vuex'
-import { fileMixins } from '../../mixins'
+import { mapState } from 'pinia'
+import { useEditorStore } from '@/stores/editor'
+import { useFile } from '../../composables/useFile'
 import { PATH_SEPARATOR } from '../../config'
 
 export default {
-  mixins: [fileMixins],
+  setup () {
+    const { handleSearchResultClick, handleFileClick } = useFile()
+    return { handleSearchResultClick, handleFileClick }
+  },
   data () {
     return {
       showSearchMatches: this.searchResult.matches.length <= 20,
@@ -80,10 +84,7 @@ export default {
     }
   },
   computed: {
-    ...mapState({
-      tabs: (state) => state.editor.tabs,
-      currentFile: (state) => state.editor.currentFile
-    }),
+    ...mapState(useEditorStore, ['tabs', 'currentFile']),
 
     getMatches () {
       if (this.searchResult.matches.length === 0 || this.allMatchesShown) {

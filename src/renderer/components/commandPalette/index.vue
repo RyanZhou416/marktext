@@ -52,8 +52,9 @@
   </div>
 </template>
 
-<script>
-import { mapState } from 'vuex'
+<script lang="ts">
+import { mapState } from 'pinia'
+import { useCommandCenterStore } from '@/stores/commandCenter'
 import log from '../../util/logger'
 import bus from '../../bus'
 import loading from '../loading'
@@ -63,9 +64,7 @@ export default {
     loading
   },
   computed: {
-    ...mapState({
-      rootCommand: (state) => state.commandCenter.rootCommand
-    })
+    ...mapState(useCommandCenterStore, ['rootCommand'])
   },
   data () {
     this.currentCommand = null

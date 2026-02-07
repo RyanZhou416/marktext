@@ -115,9 +115,12 @@
   </div>
 </template>
 
-<script>
+<script lang="ts">
 import { ipcRenderer } from '../../util/tauri'
-import { mapState } from 'vuex'
+import { mapState } from 'pinia'
+import { usePreferencesStore } from '@/stores/preferences'
+import { useLayoutStore } from '@/stores/layout'
+import { useEditorStore } from '@/stores/editor'
 import {
   minimizePath,
   restorePath,
@@ -174,10 +177,8 @@ export default {
     isSaved: Boolean
   },
   computed: {
-    ...mapState({
-      titleBarStyle: (state) => state.preferences.titleBarStyle,
-      showTabBar: (state) => state.layout.showTabBar
-    }),
+    ...mapState(usePreferencesStore, ['titleBarStyle']),
+    ...mapState(useLayoutStore, ['showTabBar']),
     paths () {
       if (!this.pathname) return []
       const pathnameToken = this.pathname
@@ -245,7 +246,7 @@ export default {
 
     rename () {
       if (this.platform === 'darwin') {
-        this.$store.dispatch('RESPONSE_FOR_RENAME')
+        useEditorStore().RESPONSE_FOR_RENAME()
       }
     },
 

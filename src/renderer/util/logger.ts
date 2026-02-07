@@ -8,8 +8,30 @@
 
 import { ipcRenderer } from './tauri'
 
+interface LogTransports {
+  console: {
+    level: string
+  }
+  file: {
+    level: string
+    resolvePath: ((variables: any) => string) | null
+  }
+  mainConsole: any
+}
+
+interface Logger {
+  transports: LogTransports
+  log: (...args: any[]) => void
+  error: (...args: any[]) => void
+  warn: (...args: any[]) => void
+  info: (...args: any[]) => void
+  verbose: (...args: any[]) => void
+  debug: (...args: any[]) => void
+  silly: (...args: any[]) => void
+}
+
 // Create logger instance
-const log = {
+const log: Logger = {
   transports: {
     console: {
       level: 'info'
@@ -22,11 +44,11 @@ const log = {
   },
 
   // Log to console
-  log: (...args) => {
+  log: (...args: any[]): void => {
     console.log(...args)
   },
 
-  error: (...args) => {
+  error: (...args: any[]): void => {
     console.error('[ERROR]', ...args)
     // Send to main process for file logging
     try {
@@ -39,7 +61,7 @@ const log = {
     }
   },
 
-  warn: (...args) => {
+  warn: (...args: any[]): void => {
     console.warn('[WARN]', ...args)
     try {
       ipcRenderer.send('mt::renderer-log', {
@@ -51,7 +73,7 @@ const log = {
     }
   },
 
-  info: (...args) => {
+  info: (...args: any[]): void => {
     console.info('[INFO]', ...args)
     try {
       ipcRenderer.send('mt::renderer-log', {
@@ -63,15 +85,15 @@ const log = {
     }
   },
 
-  verbose: (...args) => {
+  verbose: (...args: any[]): void => {
     console.log('[VERBOSE]', ...args)
   },
 
-  debug: (...args) => {
+  debug: (...args: any[]): void => {
     console.debug('[DEBUG]', ...args)
   },
 
-  silly: (...args) => {
+  silly: (...args: any[]): void => {
     console.log('[SILLY]', ...args)
   }
 }

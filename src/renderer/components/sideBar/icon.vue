@@ -2,7 +2,7 @@
     <span :class="className" class="file-icon"></span>
 </template>
 
-<script>
+<script lang="ts">
 import fileIcons from 'muya/lib/ui/fileIcons'
 
 export default {

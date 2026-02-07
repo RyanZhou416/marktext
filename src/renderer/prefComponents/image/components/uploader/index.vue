@@ -114,7 +114,7 @@
   </div>
 </template>
 
-<script>
+<script lang="ts">
 import { shell } from '../../../../util/tauri'
 import services, { isValidService } from './services.js'
 import legalNoticesCheckbox from './legalNoticesCheckbox'
@@ -123,6 +123,7 @@ import CurSelect from '@/prefComponents/common/select'
 // commandExists was a Node.js module - in Tauri we use Rust backend
 const commandExists = { sync: () => false }
 import notice from '@/services/notification'
+import { usePreferencesStore } from '@/stores/preferences'
 
 export default {
   components: {
@@ -155,22 +156,22 @@ export default {
   computed: {
     currentUploader: {
       get: function () {
-        return this.$store.state.preferences.currentUploader
+        return usePreferencesStore().currentUploader
       }
     },
     imageBed: {
       get: function () {
-        return this.$store.state.preferences.imageBed
+        return usePreferencesStore().imageBed
       }
     },
     prefGithubToken: {
       get: function () {
-        return this.$store.state.preferences.githubToken
+        return usePreferencesStore().githubToken
       }
     },
     prefCliScript: {
       get: function () {
-        return this.$store.state.preferences.cliScript
+        return usePreferencesStore().cliScript
       }
     },
     githubDisable () {
@@ -220,21 +221,22 @@ export default {
       if (!this.validate(type)) {
         return
       }
+      const preferencesStore = usePreferencesStore()
       const newImageBedConfig = Object.assign({}, this.imageBed, {
         [type]: this[type]
       })
-      this.$store.dispatch('SET_USER_DATA', {
+      preferencesStore.SET_USER_DATA({
         type: 'imageBed',
         value: newImageBedConfig
       })
       if (type === 'github') {
-        this.$store.dispatch('SET_USER_DATA', {
+        preferencesStore.SET_USER_DATA({
           type: 'githubToken',
           value: this.githubToken
         })
       }
       if (type === 'cliScript') {
-        this.$store.dispatch('SET_USER_DATA', {
+        preferencesStore.SET_USER_DATA({
           type: 'cliScript',
           value: this.cliScript
         })
@@ -251,7 +253,8 @@ export default {
 
     setCurrentUploader (value) {
       const type = 'currentUploader'
-      this.$store.dispatch('SET_USER_DATA', { type, value })
+      const preferencesStore = usePreferencesStore()
+      preferencesStore.SET_USER_DATA({ type, value })
     },
 
     testPicgo () {

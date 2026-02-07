@@ -35,12 +35,13 @@
   </div>
 </template>
 
-<script>
+<script lang="ts">
 import { shell, clipboard } from '../../util/tauri'
-import { mapState } from 'vuex'
+import { mapState } from 'pinia'
+import { useEditorStore } from '@/stores/editor'
 import autoScroll from 'dom-autoscroller'
 import dragula from 'dragula'
-import { tabsMixins } from '../../mixins'
+import { useTabs } from '../../composables/useTabs'
 import { showContextMenu } from '../../contextMenu/tabs'
 import bus from '../../bus'
 
@@ -50,16 +51,16 @@ export default {
     this.drake = null
     return {}
   },
-  mixins: [tabsMixins],
+  setup () {
+    const { selectFile, removeFileInTab } = useTabs()
+    return { selectFile, removeFileInTab }
+  },
   computed: {
-    ...mapState({
-      currentFile: (state) => state.editor.currentFile,
-      tabs: (state) => state.editor.tabs
-    })
+    ...mapState(useEditorStore, ['currentFile', 'tabs'])
   },
   methods: {
     newFile () {
-      this.$store.dispatch('NEW_UNTITLED_TAB', {})
+      useEditorStore().NEW_UNTITLED_TAB({})
     },
     handleTabScroll (event) {
       // Use mouse wheel value first but prioritize X value more (e.g. touchpad input).
@@ -78,25 +79,25 @@ export default {
     closeTab (tabId) {
       const tab = this.tabs.find((f) => f.id === tabId)
       if (tab) {
-        this.$store.dispatch('CLOSE_TAB', tab)
+        useEditorStore().CLOSE_TAB(tab)
       }
     },
     closeOthers (tabId) {
       const tab = this.tabs.find((f) => f.id === tabId)
       if (tab) {
-        this.$store.dispatch('CLOSE_OTHER_TABS', tab)
+        useEditorStore().CLOSE_OTHER_TABS(tab)
       }
     },
     closeSaved () {
-      this.$store.dispatch('CLOSE_SAVED_TABS')
+      useEditorStore().CLOSE_SAVED_TABS()
     },
     closeAll () {
-      this.$store.dispatch('CLOSE_ALL_TABS')
+      useEditorStore().CLOSE_ALL_TABS()
     },
     rename (tabId) {
       const tab = this.tabs.find((f) => f.id === tabId)
       if (tab && tab.pathname) {
-        this.$store.dispatch('RENAME_FILE', tab)
+        useEditorStore().RENAME_FILE(tab)
       }
     },
     copyPath (tabId) {
@@ -152,7 +153,7 @@ export default {
           throw new Error('Cannot reorder tabs: invalid tab id.')
         }
 
-        this.$store.dispatch('EXCHANGE_TABS_BY_ID', {
+        useEditorStore().EXCHANGE_TABS_BY_ID({
           fromId: droppedId,
           toId: isLastTab ? null : nextTabId
         })

@@ -18,12 +18,13 @@
   </div>
 </template>
 
-<script>
+<script lang="ts">
 import Separator from '../common/separator'
 import Uploader from './components/uploader'
 import CurSelect from '@/prefComponents/common/select'
 import FolderSetting from './components/folderSetting'
 import { imageActions } from './config'
+import { usePreferencesStore } from '@/stores/preferences'
 
 export default {
   components: {
@@ -40,13 +41,14 @@ export default {
   computed: {
     imageInsertAction: {
       get: function () {
-        return this.$store.state.preferences.imageInsertAction
+        return usePreferencesStore().imageInsertAction
       }
     }
   },
   methods: {
     onSelectChange (type, value) {
-      this.$store.dispatch('SET_SINGLE_PREFERENCE', { type, value })
+      const preferencesStore = usePreferencesStore()
+      preferencesStore.SET_SINGLE_PREFERENCE({ type, value })
     }
   }
 }

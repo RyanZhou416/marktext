@@ -44,8 +44,9 @@
   </section>
 </template>
 
-<script>
-import { mapState } from 'vuex'
+<script lang="ts">
+import { mapState } from 'pinia'
+import { usePreferencesStore } from '@/stores/preferences'
 import { shell } from '../../../../util/tauri'
 import Bool from '@/prefComponents/common/bool'
 import Compound from '@/prefComponents/common/compound'
@@ -61,27 +62,25 @@ export default {
     return {}
   },
   computed: {
-    ...mapState({
-      imageFolderPath: (state) => state.preferences.imageFolderPath,
-      imagePreferRelativeDirectory: (state) =>
-        state.preferences.imagePreferRelativeDirectory,
-      imageRelativeDirectoryName: (state) =>
-        state.preferences.imageRelativeDirectoryName
-    }),
+    ...mapState(usePreferencesStore, [
+      'imageFolderPath',
+      'imagePreferRelativeDirectory',
+      'imageRelativeDirectoryName'
+    ]),
     imageInsertAction: {
       get: function () {
-        return this.$store.state.preferences.imageInsertAction
+        return usePreferencesStore().imageInsertAction
       }
     },
     folderPathPlaceholder: {
       get: function () {
-        return this.$store.state.preferences.imageFolderPath || ''
+        return usePreferencesStore().imageFolderPath || ''
       }
     },
     relativeDirectoryNamePlaceholder: {
       get: function () {
         return (
-          this.$store.state.preferences.imageRelativeDirectoryName || 'assets'
+          usePreferencesStore().imageRelativeDirectoryName || 'assets'
         )
       }
     }
@@ -91,10 +90,12 @@ export default {
       shell.openPath(this.imageFolderPath)
     },
     modifyImageFolderPath (value) {
-      return this.$store.dispatch('SET_IMAGE_FOLDER_PATH', value)
+      const preferencesStore = usePreferencesStore()
+      return preferencesStore.SET_IMAGE_FOLDER_PATH(value)
     },
     onSelectChange (type, value) {
-      this.$store.dispatch('SET_SINGLE_PREFERENCE', { type, value })
+      const preferencesStore = usePreferencesStore()
+      preferencesStore.SET_SINGLE_PREFERENCE({ type, value })
     }
   }
 }

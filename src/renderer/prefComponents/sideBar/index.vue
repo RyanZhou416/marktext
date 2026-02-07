@@ -35,7 +35,7 @@
     </section>
   </div>
 </template>
-<script>
+<script lang="ts">
 import { ipcRenderer } from '../../util/tauri'
 import { category, searchContent } from './config'
 

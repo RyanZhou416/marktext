@@ -38,7 +38,7 @@
   </div>
 </template>
 
-<script>
+<script lang="ts">
 // Pure JS replacements for @hfelix/electron-localshortcut (Electron-only module)
 const isCompositionEvent = (e) => e.isComposing || e.keyCode === 229
 const isValidElectronAccelerator = (accel) => {

@@ -6,29 +6,62 @@
  * with Node.js path module for basic operations used by Muya.
  */
 
+interface ParsedPath {
+  root: string
+  dir: string
+  base: string
+  ext: string
+  name: string
+}
+
+interface PathObject {
+  root?: string
+  dir?: string
+  base?: string
+  name?: string
+  ext?: string
+}
+
+interface PathModule {
+  sep: string
+  delimiter: string
+  normalize: (path: string) => string
+  join: (...paths: string[]) => string
+  resolve: (...paths: string[]) => string
+  dirname: (path: string) => string
+  basename: (path: string, ext?: string) => string
+  extname: (path: string) => string
+  isAbsolute: (path: string) => boolean
+  relative: (from: string, to: string) => string
+  parse: (path: string) => ParsedPath
+  format: (pathObject: PathObject) => string
+  posix: null
+  win32: null
+}
+
 // Detect platform from userAgent
-const isWindows = typeof navigator !== 'undefined' &&
+const isWindows: boolean = typeof navigator !== 'undefined' &&
   navigator.userAgent.toLowerCase().includes('win')
 
-const sep = isWindows ? '\\' : '/'
-const delimiter = isWindows ? ';' : ':'
+const sep: string = isWindows ? '\\' : '/'
+const delimiter: string = isWindows ? ';' : ':'
 
 /**
  * Normalize a path, resolving '..' and '.' segments
  */
-function normalize (path) {
+function normalize (path: string): string {
   if (!path || path.length === 0) return '.'
 
-  const isAbsolutePath = isAbsolute(path)
-  const trailingSep = path.charCodeAt(path.length - 1) === 47 || // /
+  const isAbsolutePath: boolean = isAbsolute(path)
+  const trailingSep: boolean = path.charCodeAt(path.length - 1) === 47 || // /
                       path.charCodeAt(path.length - 1) === 92 // \
 
   // Normalize separators
   path = path.replace(/[/\\]+/g, sep)
 
   // Split and process segments
-  const segments = path.split(sep)
-  const result = []
+  const segments: string[] = path.split(sep)
+  const result: string[] = []
 
   for (const segment of segments) {
     if (segment === '..') {
@@ -42,7 +75,7 @@ function normalize (path) {
     }
   }
 
-  let normalized = result.join(sep)
+  let normalized: string = result.join(sep)
 
   // Handle Windows drive letter
   if (isWindows && isAbsolutePath && normalized.length >= 2) {
@@ -65,10 +98,10 @@ function normalize (path) {
 /**
  * Join path segments
  */
-function join (...paths) {
+function join (...paths: string[]): string {
   if (paths.length === 0) return '.'
 
-  let joined = ''
+  let joined: string = ''
   for (const path of paths) {
     if (path && path.length > 0) {
       if (joined.length > 0) {
@@ -85,11 +118,11 @@ function join (...paths) {
 /**
  * Resolve paths to an absolute path
  */
-function resolve (...paths) {
-  let resolved = ''
+function resolve (...paths: string[]): string {
+  let resolved: string = ''
 
-  for (let i = paths.length - 1; i >= 0 && !isAbsolute(resolved); i--) {
-    const path = paths[i]
+  for (let i: number = paths.length - 1; i >= 0 && !isAbsolute(resolved); i--) {
+    const path: string = paths[i]
     if (path && path.length > 0) {
       resolved = path + (resolved ? sep + resolved : '')
     }
@@ -105,7 +138,7 @@ function resolve (...paths) {
 /**
  * Get the directory name of a path
  */
-function dirname (path) {
+function dirname (path: string): string {
   if (!path || path.length === 0) return '.'
 
   path = normalize(path)
@@ -115,7 +148,7 @@ function dirname (path) {
     path = path.slice(0, -1)
   }
 
-  const lastSepIndex = path.lastIndexOf(sep)
+  const lastSepIndex: number = path.lastIndexOf(sep)
 
   if (lastSepIndex === -1) return '.'
   if (lastSepIndex === 0) return sep
@@ -131,7 +164,7 @@ function dirname (path) {
 /**
  * Get the base name of a path
  */
-function basename (path, ext) {
+function basename (path: string, ext?: string): string {
   if (!path || path.length === 0) return ''
 
   path = normalize(path)
@@ -141,8 +174,8 @@ function basename (path, ext) {
     path = path.slice(0, -1)
   }
 
-  const lastSepIndex = path.lastIndexOf(sep)
-  let base = lastSepIndex === -1 ? path : path.slice(lastSepIndex + 1)
+  const lastSepIndex: number = path.lastIndexOf(sep)
+  let base: string = lastSepIndex === -1 ? path : path.slice(lastSepIndex + 1)
 
   // Remove extension if provided
   if (ext && base.endsWith(ext)) {
@@ -155,11 +188,11 @@ function basename (path, ext) {
 /**
  * Get the extension of a path
  */
-function extname (path) {
+function extname (path: string): string {
   if (!path || path.length === 0) return ''
 
-  const base = basename(path)
-  const dotIndex = base.lastIndexOf('.')
+  const base: string = basename(path)
+  const dotIndex: number = base.lastIndexOf('.')
 
   if (dotIndex === -1 || dotIndex === 0) return ''
 
@@ -169,7 +202,7 @@ function extname (path) {
 /**
  * Check if a path is absolute
  */
-function isAbsolute (path) {
+function isAbsolute (path: string): boolean {
   if (!path || path.length === 0) return false
 
   // Unix absolute path
@@ -177,9 +210,9 @@ function isAbsolute (path) {
 
   // Windows absolute path (C:\ or C:/)
   if (isWindows && path.length >= 3) {
-    const code0 = path.charCodeAt(0)
-    const code1 = path.charCodeAt(1)
-    const code2 = path.charCodeAt(2)
+    const code0: number = path.charCodeAt(0)
+    const code1: number = path.charCodeAt(1)
+    const code2: number = path.charCodeAt(2)
 
     // Drive letter (A-Z or a-z)
     if ((code0 >= 65 && code0 <= 90) || (code0 >= 97 && code0 <= 122)) {
@@ -191,8 +224,8 @@ function isAbsolute (path) {
 
   // UNC path
   if (isWindows && path.length >= 2) {
-    const code0 = path.charCodeAt(0)
-    const code1 = path.charCodeAt(1)
+    const code0: number = path.charCodeAt(0)
+    const code1: number = path.charCodeAt(1)
     if ((code0 === 47 || code0 === 92) && (code1 === 47 || code1 === 92)) {
       return true
     }
@@ -204,7 +237,7 @@ function isAbsolute (path) {
 /**
  * Get relative path from 'from' to 'to'
  */
-function relative (from, to) {
+function relative (from: string, to: string): string {
   if (from === to) return ''
 
   from = resolve(from)
@@ -213,13 +246,13 @@ function relative (from, to) {
   if (from === to) return ''
 
   // Find common prefix
-  const fromParts = from.split(sep).filter(p => p.length > 0)
-  const toParts = to.split(sep).filter(p => p.length > 0)
+  const fromParts: string[] = from.split(sep).filter((p: string) => p.length > 0)
+  const toParts: string[] = to.split(sep).filter((p: string) => p.length > 0)
 
-  let commonLength = 0
-  const minLength = Math.min(fromParts.length, toParts.length)
+  let commonLength: number = 0
+  const minLength: number = Math.min(fromParts.length, toParts.length)
 
-  for (let i = 0; i < minLength; i++) {
+  for (let i: number = 0; i < minLength; i++) {
     if (fromParts[i] === toParts[i]) {
       commonLength++
     } else {
@@ -228,14 +261,14 @@ function relative (from, to) {
   }
 
   // Build relative path
-  const upCount = fromParts.length - commonLength
-  const result = []
+  const upCount: number = fromParts.length - commonLength
+  const result: string[] = []
 
-  for (let i = 0; i < upCount; i++) {
+  for (let i: number = 0; i < upCount; i++) {
     result.push('..')
   }
 
-  for (let i = commonLength; i < toParts.length; i++) {
+  for (let i: number = commonLength; i < toParts.length; i++) {
     result.push(toParts[i])
   }
 
@@ -245,8 +278,8 @@ function relative (from, to) {
 /**
  * Parse a path into components
  */
-function parse (path) {
-  const result = {
+function parse (path: string): ParsedPath {
+  const result: ParsedPath = {
     root: '',
     dir: '',
     base: '',
@@ -278,12 +311,12 @@ function parse (path) {
 /**
  * Format a path from components
  */
-function format (pathObject) {
+function format (pathObject: PathObject): string {
   if (!pathObject) return ''
 
   const { root = '', dir, base, name, ext } = pathObject
 
-  let result = ''
+  let result: string = ''
 
   if (dir) {
     result = dir
@@ -304,7 +337,7 @@ function format (pathObject) {
 }
 
 // Export path module compatible interface
-export const path = {
+export const path: PathModule = {
   sep,
   delimiter,
   normalize,

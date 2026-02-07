@@ -5,7 +5,6 @@ const syntaxDynamicImport = require('@babel/plugin-syntax-dynamic-import')
 const functionBind = require('@babel/plugin-proposal-function-bind')
 const exportDefault = require('@babel/plugin-proposal-export-default-from')
 const isTanbul = require('babel-plugin-istanbul')
-const component = require('babel-plugin-component')
 const presetEnv = require('@babel/preset-env')
 
 const presetsHash = {
@@ -40,14 +39,8 @@ module.exports = function (api) {
 
   if (env === 'test') {
     plugins.push(isTanbul)
-  } else if (env === 'renderer') {
-    plugins.push(
-      [component, {
-        style: false,
-        libraryName: 'element-ui'
-      }
-    ])
   }
+  // babel-plugin-component for Element UI removed - using Element Plus with Vite
 
   return {
     presets,

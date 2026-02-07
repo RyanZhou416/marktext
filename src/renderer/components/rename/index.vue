@@ -25,9 +25,10 @@
   </div>
 </template>
 
-<script>
+<script lang="ts">
 import bus from '../../bus'
-import { mapState } from 'vuex'
+import { mapState } from 'pinia'
+import { useEditorStore } from '@/stores/editor'
 
 export default {
   data () {
@@ -45,8 +46,8 @@ export default {
     bus.$off('rename', this.handleRename)
   },
   computed: {
-    ...mapState({
-      filename: state => state.editor.currentFile.filename
+    ...mapState(useEditorStore, {
+      filename: state => state.currentFile.filename
     })
   },
   methods: {
@@ -56,7 +57,8 @@ export default {
       this.$refs.search.focus()
     },
     confirm () {
-      this.$store.dispatch('RENAME', this.tempName)
+      const editorStore = useEditorStore()
+      editorStore.RENAME(this.tempName)
       this.showRename = false
     }
   }

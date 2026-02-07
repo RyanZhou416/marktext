@@ -70,7 +70,6 @@
     "vega-lite": "^5.2.0",
     "vue": "^3.4.0",
     "vue-router": "^4.2.0",
-    "vuex": "^4.1.0",
     "webfontloader": "^1.6.28"
   },
   "devDependencies": {
@@ -80,6 +79,8 @@
     "@playwright/test": "^1.21.0",
     "@tauri-apps/cli": "^2.0.0",
     "@types/node": "^25.2.1",
+    "@typescript-eslint/eslint-plugin": "^8.54.0",
+    "@typescript-eslint/parser": "^8.54.0",
     "@vitejs/plugin-vue": "^5.0.0",
     "cross-env": "^7.0.3",
     "eslint": "^8.13.0",

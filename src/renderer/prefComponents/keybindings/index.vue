@@ -63,7 +63,7 @@
   </div>
 </template>
 
-<script>
+<script lang="ts">
 import { ipcRenderer, shell } from '../../util/tauri'
 import log from '../../util/logger'
 // setKeyboardLayout was from @hfelix/electron-localshortcut (Electron-only)

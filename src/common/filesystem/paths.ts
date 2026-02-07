@@ -1,47 +1,81 @@
 import { isFile, isFile2, isSymbolicLink } from './index'
 
 // Tauri 渲染进程 - 使用 window.electronAPI (由 tauri.js 桥接层设置)
-let fs, path, isOsx, processInfo
 
-if (typeof window !== 'undefined' && window.electronAPI) {
-  const api = window.electronAPI
+interface StatResult {
+  ino: number
+  isFile: () => boolean
+  isDirectory: () => boolean
+  isSymbolicLink: () => boolean
+}
+
+interface FsModule {
+  readlinkSync: (p: string) => string
+  statSync: (p: string) => StatResult
+}
+
+interface PathModule {
+  join: (...args: string[]) => string
+  resolve: (...args: string[]) => string
+  dirname: (p: string) => string
+  basename: (p: string, ext?: string) => string
+  extname: (p: string) => string
+  normalize: (p: string) => string
+  isAbsolute: (p: string) => boolean
+  relative: (from: string, to: string) => string
+  sep: string
+}
+
+interface ProcessInfo {
+  platform: string
+  resourcesPath: string
+  env: Record<string, string | undefined>
+}
+
+let fs: FsModule
+let path: PathModule
+let isOsx: boolean
+let processInfo: ProcessInfo
+
+if (typeof window !== 'undefined' && (window as any).electronAPI) {
+  const api = (window as any).electronAPI
   fs = {
-    readlinkSync: api.fs.readlinkSync || (() => ''),
-    statSync: api.fs.statSync || (() => ({ ino: 0, isFile: () => false, isDirectory: () => false, isSymbolicLink: () => false }))
+    readlinkSync: api.fs.readlinkSync || ((): string => ''),
+    statSync: api.fs.statSync || ((): StatResult => ({ ino: 0, isFile: () => false, isDirectory: () => false, isSymbolicLink: () => false }))
   }
   path = api.path
   isOsx = api.isOsx || false
   processInfo = api.process || { platform: 'unknown', resourcesPath: '', env: {} }
 } else {
   // 降级 stub
-  const sep = typeof navigator !== 'undefined' && navigator.platform.startsWith('Win') ? '\\' : '/'
+  const sep: string = typeof navigator !== 'undefined' && navigator.platform.startsWith('Win') ? '\\' : '/'
   fs = {
-    readlinkSync: () => '',
-    statSync: () => ({ ino: 0, isFile: () => false, isDirectory: () => false, isSymbolicLink: () => false })
+    readlinkSync: (): string => '',
+    statSync: (): StatResult => ({ ino: 0, isFile: () => false, isDirectory: () => false, isSymbolicLink: () => false })
   }
   path = {
-    join: (...args) => args.filter(Boolean).join(sep).replace(/[/\\]+/g, sep),
-    resolve: (...args) => args.filter(Boolean).join(sep).replace(/[/\\]+/g, sep),
-    dirname: (p) => p ? p.substring(0, Math.max(p.lastIndexOf('/'), p.lastIndexOf('\\'))) || sep : '.',
-    basename: (p, ext) => {
+    join: (...args: string[]): string => args.filter(Boolean).join(sep).replace(/[/\\]+/g, sep),
+    resolve: (...args: string[]): string => args.filter(Boolean).join(sep).replace(/[/\\]+/g, sep),
+    dirname: (p: string): string => p ? p.substring(0, Math.max(p.lastIndexOf('/'), p.lastIndexOf('\\'))) || sep : '.',
+    basename: (p: string, ext?: string): string => {
       if (!p) return ''
       let base = p.substring(Math.max(p.lastIndexOf('/'), p.lastIndexOf('\\')) + 1)
       if (ext && base.endsWith(ext)) base = base.slice(0, -ext.length)
       return base
     },
-    extname: (p) => {
+    extname: (p: string): string => {
       if (!p) return ''
       const base = p.substring(Math.max(p.lastIndexOf('/'), p.lastIndexOf('\\')) + 1)
       const dotIdx = base.lastIndexOf('.')
       return dotIdx > 0 ? base.slice(dotIdx) : ''
     },
-    normalize: (p) => p ? p.replace(/[/\\]+/g, sep) : '.',
-    isAbsolute: (p) => {
+    normalize: (p: string): string => p ? p.replace(/[/\\]+/g, sep) : '.',
+    isAbsolute: (p: string): boolean => {
       if (!p) return false
       if (sep === '\\') return /^[A-Za-z]:[/\\]/.test(p)
       return p.startsWith('/')
     },
-    relative: (from, to) => {
+    relative: (from: string, to: string): string => {
       if (!from || !to) return ''
       return to
     },
@@ -57,7 +91,7 @@ if (typeof window !== 'undefined' && window.electronAPI) {
   }
 }
 
-export const MARKDOWN_EXTENSIONS = Object.freeze([
+export const MARKDOWN_EXTENSIONS: readonly string[] = Object.freeze([
   'markdown',
   'mdown',
   'mkdn',
@@ -71,9 +105,9 @@ export const MARKDOWN_EXTENSIONS = Object.freeze([
   'txt'
 ])
 
-export const MARKDOWN_INCLUSIONS = Object.freeze(MARKDOWN_EXTENSIONS.map(x => '*.' + x))
+export const MARKDOWN_INCLUSIONS: readonly string[] = Object.freeze(MARKDOWN_EXTENSIONS.map(x => '*.' + x))
 
-export const IMAGE_EXTENSIONS = Object.freeze([
+export const IMAGE_EXTENSIONS: readonly string[] = Object.freeze([
   'jpeg',
   'jpg',
   'png',
@@ -85,9 +119,9 @@ export const IMAGE_EXTENSIONS = Object.freeze([
 /**
  * Returns true if the filename matches one of the markdown extensions.
  *
- * @param {string} filename Path or filename
+ * @param filename Path or filename
  */
-export const hasMarkdownExtension = filename => {
+export const hasMarkdownExtension = (filename: string): boolean => {
   if (!filename || typeof filename !== 'string') return false
   return MARKDOWN_EXTENSIONS.some(ext => filename.toLowerCase().endsWith(`.${ext}`))
 }
@@ -95,9 +129,9 @@ export const hasMarkdownExtension = filename => {
 /**
  * Returns true if the path is an image file.
  *
- * @param {string} filepath The path
+ * @param filepath The path
  */
-export const isImageFile = filepath => {
+export const isImageFile = (filepath: string): boolean => {
   const extname = path.extname(filepath)
   return isFile(filepath) && IMAGE_EXTENSIONS.some(ext => {
     const EXT_REG = new RegExp(ext, 'i')
@@ -108,9 +142,9 @@ export const isImageFile = filepath => {
 /**
  * Returns true if the path is a markdown file or symbolic link to a markdown file.
  *
- * @param {string} filepath The path or link path.
+ * @param filepath The path or link path.
  */
-export const isMarkdownFile = filepath => {
+export const isMarkdownFile = (filepath: string): boolean => {
   if (!isFile2(filepath)) return false
 
   // Check symbolic link.
@@ -124,11 +158,11 @@ export const isMarkdownFile = filepath => {
 /**
  * Check if the both paths point to the same file.
  *
- * @param {string} pathA The first path.
- * @param {string} pathB The second path.
- * @param {boolean} [isNormalized] Are both paths already normalized.
+ * @param pathA The first path.
+ * @param pathB The second path.
+ * @param isNormalized Are both paths already normalized.
  */
-export const isSamePathSync = (pathA, pathB, isNormalized = false) => {
+export const isSamePathSync = (pathA: string, pathB: string, isNormalized: boolean = false): boolean => {
   if (!pathA || !pathB) return false
   const a = isNormalized ? pathA : path.normalize(pathA)
   const b = isNormalized ? pathB : path.normalize(pathB)
@@ -151,18 +185,18 @@ export const isSamePathSync = (pathA, pathB, isNormalized = false) => {
 /**
  * Check whether a file or directory is a child of the given directory.
  *
- * @param {string} dir The parent directory.
- * @param {string} child The file or directory path to check.
+ * @param dir The parent directory.
+ * @param child The file or directory path to check.
  */
-export const isChildOfDirectory = (dir, child) => {
+export const isChildOfDirectory = (dir: string, child: string): boolean => {
   if (!dir || !child) return false
   const relative = path.relative(dir, child)
-  return relative && !relative.startsWith('..') && !path.isAbsolute(relative)
+  return !!relative && !relative.startsWith('..') && !path.isAbsolute(relative)
 }
 
-export const getResourcesPath = () => {
-  let resPath = processInfo.resourcesPath
-  const nodeEnv = processInfo.env ? processInfo.env.NODE_ENV : 'production'
+export const getResourcesPath = (): string => {
+  let resPath: string = processInfo.resourcesPath
+  const nodeEnv: string = processInfo.env ? (processInfo.env.NODE_ENV || 'production') : 'production'
   if (nodeEnv === 'development') {
     // Default locations:
     //   Linux/Windows: node_modules/electron/dist/resources/

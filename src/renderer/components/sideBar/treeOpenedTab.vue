@@ -14,12 +14,16 @@
     </div>
 </template>
 
-<script>
-import { mapState } from 'vuex'
-import { tabsMixins } from '../../mixins'
+<script lang="ts">
+import { mapState } from 'pinia'
+import { useEditorStore } from '@/stores/editor'
+import { useTabs } from '../../composables/useTabs'
 
 export default {
-  mixins: [tabsMixins],
+  setup () {
+    const { selectFile, removeFileInTab } = useTabs()
+    return { selectFile, removeFileInTab }
+  },
   props: {
     file: {
       type: Object,
@@ -27,9 +31,7 @@ export default {
     }
   },
   computed: {
-    ...mapState({
-      currentFile: state => state.editor.currentFile
-    })
+    ...mapState(useEditorStore, ['currentFile'])
   }
 }
 </script>

@@ -1,21 +1,30 @@
 import { processInfo } from './tauri'
 
-export const delay = (time) => {
-  let timerId
-  let rejectFn
-  const p = new Promise((resolve, reject) => {
+interface CancelablePromise<T> extends Promise<T> {
+  cancel: () => void
+}
+
+interface CursorPosition {
+  line: number
+  ch: number
+}
+
+export const delay = (time: number): CancelablePromise<void> => {
+  let timerId: ReturnType<typeof setTimeout> | null
+  let rejectFn: ((reason?: any) => void) | null
+  const p = new Promise<void>((resolve, reject) => {
     rejectFn = reject
     timerId = setTimeout(() => {
-      p.cancel = () => {}
+      (p as CancelablePromise<void>).cancel = () => {}
       rejectFn = null
       resolve()
     }, time)
-  })
+  }) as CancelablePromise<void>
 
   p.cancel = () => {
-    clearTimeout(timerId)
+    clearTimeout(timerId!)
     timerId = null
-    rejectFn()
+    rejectFn!()
     rejectFn = null
   }
   return p
@@ -24,59 +33,64 @@ export const delay = (time) => {
 const ID_PREFEX = 'mt-'
 let id = 0
 
-export const serialize = function (params) {
+export const serialize = function (params: Record<string, string | number | boolean>): string {
   return Object.keys(params)
-    .map((key) => `${key}=${encodeURI(params[key])}`)
+    .map((key) => `${key}=${encodeURI(String(params[key]))}`)
     .join('&')
 }
 
-export const merge = function (...args) {
+export const merge = function (...args: Record<string, any>[]): Record<string, any> {
   return Object.assign({}, ...args)
 }
 
-export const dataURItoBlob = function (dataURI) {
+export const dataURItoBlob = function (dataURI: string): Blob {
   const data = dataURI.split(';base64,')
   const byte = window.atob(data[1])
   const mime = data[0].split(':')[1]
   const ab = new ArrayBuffer(byte.length)
   const ia = new Uint8Array(ab)
   const len = byte.length
-  let i
+  let i: number
   for (i = 0; i < len; i++) {
     ia[i] = byte.charCodeAt(i)
   }
   return new window.Blob([ab], { type: mime })
 }
 
-export const adjustCursor = (cursor, preline, line, nextline) => {
-  let newCursor = Object.assign({}, { line: cursor.line, ch: cursor.ch })
+export const adjustCursor = (
+  cursor: CursorPosition,
+  preline: string | undefined,
+  line: string,
+  nextline: string | undefined
+): CursorPosition | null => {
+  let newCursor: CursorPosition | null = Object.assign({}, { line: cursor.line, ch: cursor.ch })
   // It's need to adjust the cursor when cursor is at begin or end in table row.
   if (/\|[^|]+\|.+\|\s*$/.test(line)) {
     if (/\|\s*:?-+:?\s*\|[:-\s|]+\|\s*$/.test(line)) {
       // cursor in `| --- | :---: |` :the second line of table
-      newCursor.line += 1 // reset the cursor to the next line
-      newCursor.ch = nextline.indexOf('|') + 1
+      newCursor!.line += 1 // reset the cursor to the next line
+      newCursor!.ch = (nextline as string).indexOf('|') + 1
     } else {
       // cursor is not at the second line to table
-      if (cursor.ch <= line.indexOf('|')) newCursor.ch = line.indexOf('|') + 1
-      if (cursor.ch >= line.lastIndexOf('|')) { newCursor.ch = line.lastIndexOf('|') - 1 }
+      if (cursor.ch <= line.indexOf('|')) newCursor!.ch = line.indexOf('|') + 1
+      if (cursor.ch >= line.lastIndexOf('|')) { newCursor!.ch = line.lastIndexOf('|') - 1 }
     }
   }
 
   // Need to adjust the cursor when cursor in the first or last line of code/math block.
   if (/```[\S]*/.test(line) || /^\$\$$/.test(line)) {
     if (typeof nextline === 'string' && /\S/.test(nextline)) {
-      newCursor.line += 1
-      newCursor.ch = 0
+      newCursor!.line += 1
+      newCursor!.ch = 0
     } else if (typeof preline === 'string' && /\S/.test(preline)) {
-      newCursor.line -= 1
-      newCursor.ch = preline.length
+      newCursor!.line -= 1
+      newCursor!.ch = preline.length
     }
   }
 
   // Need to adjust the cursor when cursor at the begin of the list
-  if (/[*+-]\s.+/.test(line) && newCursor.ch <= 1) {
-    newCursor.ch = 2
+  if (/[*+-]\s.+/.test(line) && newCursor!.ch <= 1) {
+    newCursor!.ch = 2
   }
 
   // Need to adjust the cursor when cursor at blank line or in a line contains HTML tag.
@@ -87,7 +101,12 @@ export const adjustCursor = (cursor, preline, line, nextline) => {
   return newCursor
 }
 
-export const animatedScrollTo = function (element, to, duration, callback) {
+export const animatedScrollTo = function (
+  element: HTMLElement,
+  to: number,
+  duration: number,
+  callback?: () => void
+): void {
   const start = element.scrollTop
   const change = to - start
   const animationStart = +new Date()
@@ -98,14 +117,14 @@ export const animatedScrollTo = function (element, to, duration, callback) {
     return
   }
 
-  const easeInOutQuad = function (t, b, c, d) {
+  const easeInOutQuad = function (t: number, b: number, c: number, d: number): number {
     t /= d / 2
     if (t < 1) return (c / 2) * t * t + b
     t--
     return (-c / 2) * (t * (t - 2) - 1) + b
   }
 
-  const animateScroll = function () {
+  const animateScroll = function (): void {
     const now = +new Date()
     const val = Math.floor(
       easeInOutQuad(now - animationStart, start, change, duration)
@@ -126,42 +145,42 @@ export const animatedScrollTo = function (element, to, duration, callback) {
   requestAnimationFrame(animateScroll)
 }
 
-export const getUniqueId = () => {
+export const getUniqueId = (): string => {
   return `${ID_PREFEX}${id++}`
 }
 
-export const hasKeys = (obj) => Object.keys(obj).length > 0
+export const hasKeys = (obj: Record<string, any>): boolean => Object.keys(obj).length > 0
 
 /**
  * Clone an object as a shallow or deep copy.
  *
- * @param {*} obj Object to clone
- * @param {Boolean} deepCopy Create a shallow (false) or deep copy (true)
+ * @param obj Object to clone
+ * @param deepCopy Create a shallow (false) or deep copy (true)
  * @deprecated Use `cloneObject` (shallow copy) or `deepClone` (deep copy).
  */
-export const cloneObj = (obj, deepCopy = true) => {
+export const cloneObj = (obj: any, deepCopy: boolean = true): any => {
   return deepCopy ? JSON.parse(JSON.stringify(obj)) : Object.assign({}, obj)
 }
 
 /**
  * Shallow clone the given object.
  *
- * @param {*} obj Object to clone
- * @param {boolean} inheritFromObject Whether the clone should inherit from `Object`
+ * @param obj Object to clone
+ * @param inheritFromObject Whether the clone should inherit from `Object`
  */
-export const cloneObject = (obj, inheritFromObject = true) => {
+export const cloneObject = (obj: Record<string, any>, inheritFromObject: boolean = true): Record<string, any> => {
   return Object.assign(inheritFromObject ? {} : Object.create(null), obj)
 }
 
 /**
  * Deep clone the given object.
  *
- * @param {*} obj Object to clone
+ * @param obj Object to clone
  */
-export const deepClone = (obj) => {
+export const deepClone = (obj: any): any => {
   return JSON.parse(JSON.stringify(obj))
 }
 
-export const isOsx = processInfo.platform === 'darwin'
-export const isWindows = processInfo.platform === 'win32'
-export const isLinux = processInfo.platform === 'linux'
+export const isOsx: boolean = processInfo.platform === 'darwin'
+export const isWindows: boolean = processInfo.platform === 'win32'
+export const isLinux: boolean = processInfo.platform === 'linux'

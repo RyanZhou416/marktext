@@ -66,10 +66,13 @@
   </div>
 </template>
 
-<script>
+<script lang="ts">
 import { shell, path, processInfo } from '../../util/tauri'
 import log from '../../util/logger'
-import { mapState } from 'vuex'
+import { mapState } from 'pinia'
+import { usePreferencesStore } from '@/stores/preferences'
+import { useEditorStore } from '@/stores/editor'
+import { useProjectStore } from '@/stores/project'
 // import ViewImage from 'view-image'
 import { isChildOfDirectory } from 'common/filesystem/paths'
 import Muya from 'muya/lib'
@@ -126,57 +129,26 @@ export default {
   },
 
   computed: {
-    ...mapState({
-      preferences: (state) => state.preferences,
-      preferLooseListItem: (state) => state.preferences.preferLooseListItem,
-      autoPairBracket: (state) => state.preferences.autoPairBracket,
-      autoPairMarkdownSyntax: (state) =>
-        state.preferences.autoPairMarkdownSyntax,
-      autoPairQuote: (state) => state.preferences.autoPairQuote,
-      bulletListMarker: (state) => state.preferences.bulletListMarker,
-      orderListDelimiter: (state) => state.preferences.orderListDelimiter,
-      tabSize: (state) => state.preferences.tabSize,
-      listIndentation: (state) => state.preferences.listIndentation,
-      frontmatterType: (state) => state.preferences.frontmatterType,
-      superSubScript: (state) => state.preferences.superSubScript,
-      footnote: (state) => state.preferences.footnote,
-      isHtmlEnabled: (state) => state.preferences.isHtmlEnabled,
-      isGitlabCompatibilityEnabled: (state) =>
-        state.preferences.isGitlabCompatibilityEnabled,
-      lineHeight: (state) => state.preferences.lineHeight,
-      fontSize: (state) => state.preferences.fontSize,
-      codeFontSize: (state) => state.preferences.codeFontSize,
-      codeFontFamily: (state) => state.preferences.codeFontFamily,
-      codeBlockLineNumbers: (state) => state.preferences.codeBlockLineNumbers,
-      trimUnnecessaryCodeBlockEmptyLines: (state) =>
-        state.preferences.trimUnnecessaryCodeBlockEmptyLines,
-      editorFontFamily: (state) => state.preferences.editorFontFamily,
-      hideQuickInsertHint: (state) => state.preferences.hideQuickInsertHint,
-      hideLinkPopup: (state) => state.preferences.hideLinkPopup,
-      autoCheck: (state) => state.preferences.autoCheck,
-      editorLineWidth: (state) => state.preferences.editorLineWidth,
-      imageInsertAction: (state) => state.preferences.imageInsertAction,
-      imagePreferRelativeDirectory: (state) =>
-        state.preferences.imagePreferRelativeDirectory,
-      imageRelativeDirectoryName: (state) =>
-        state.preferences.imageRelativeDirectoryName,
-      imageFolderPath: (state) => state.preferences.imageFolderPath,
-      theme: (state) => state.preferences.theme,
-      sequenceTheme: (state) => state.preferences.sequenceTheme,
-      hideScrollbar: (state) => state.preferences.hideScrollbar,
-      spellcheckerEnabled: (state) => state.preferences.spellcheckerEnabled,
-      spellcheckerNoUnderline: (state) =>
-        state.preferences.spellcheckerNoUnderline,
-      spellcheckerLanguage: (state) => state.preferences.spellcheckerLanguage,
-
-      currentFile: (state) => state.editor.currentFile,
-      projectTree: (state) => state.project.projectTree,
-
+    ...mapState(usePreferencesStore, {
+      preferences: (store) => store.$state
+    }),
+    ...mapState(usePreferencesStore, [
+      'preferLooseListItem', 'autoPairBracket', 'autoPairMarkdownSyntax',
+      'autoPairQuote', 'bulletListMarker', 'orderListDelimiter', 'tabSize',
+      'listIndentation', 'frontmatterType', 'superSubScript', 'footnote',
+      'isHtmlEnabled', 'isGitlabCompatibilityEnabled', 'lineHeight', 'fontSize',
+      'codeFontSize', 'codeFontFamily', 'codeBlockLineNumbers',
+      'trimUnnecessaryCodeBlockEmptyLines', 'editorFontFamily',
+      'hideQuickInsertHint', 'hideLinkPopup', 'autoCheck', 'editorLineWidth',
+      'imageInsertAction', 'imagePreferRelativeDirectory',
+      'imageRelativeDirectoryName', 'imageFolderPath', 'theme', 'sequenceTheme',
+      'hideScrollbar', 'spellcheckerEnabled', 'spellcheckerNoUnderline',
+      'spellcheckerLanguage',
       // edit modes
-      typewriter: (state) => state.preferences.typewriter,
-      focus: (state) => state.preferences.focus,
-      sourceCode: (state) => state.preferences.sourceCode
-    })
+      'typewriter', 'focus', 'sourceCode'
+    ]),
+    ...mapState(useEditorStore, ['currentFile']),
+    ...mapState(useProjectStore, ['projectTree'])
   },
 
   data () {
@@ -463,6 +435,7 @@ export default {
   created () {
     this.$nextTick(() => {
       this.printer = new Printer()
+      const editorStore = useEditorStore()
       const ele = this.$refs.editor
       const {
         focus: focusMode,
@@ -615,8 +588,7 @@ export default {
 
       this.editor.on('change', (changes) => {
         // WORKAROUND: "id: 'muya'"
-        this.$store.dispatch(
-          'LISTEN_FOR_CONTENT_CHANGE',
+        editorStore.LISTEN_FOR_CONTENT_CHANGE(
           Object.assign(changes, { id: 'muya' })
         )
       })
@@ -625,7 +597,7 @@ export default {
         const ctrlOrMeta =
           (isOsx && event.metaKey) || (!isOsx && event.ctrlKey)
         if (formatType === 'link' && ctrlOrMeta) {
-          this.$store.dispatch('FORMAT_LINK_CLICK', {
+          editorStore.FORMAT_LINK_CLICK({
             data,
             dirname: window.DIRNAME
           })
@@ -682,11 +654,11 @@ export default {
         }
 
         this.selectionChange = changes
-        this.$store.dispatch('SELECTION_CHANGE', changes)
+        editorStore.SELECTION_CHANGE(changes)
       })
 
       this.editor.on('selectionFormats', (formats) => {
-        this.$store.dispatch('SELECTION_FORMATS', formats)
+        editorStore.SELECTION_FORMATS(formats)
       })
 
       document.addEventListener('keyup', this.keyup)
@@ -701,14 +673,14 @@ export default {
 
     jumpClick (linkInfo) {
       const { href } = linkInfo
-      this.$store.dispatch('FORMAT_LINK_CLICK', {
+      useEditorStore().FORMAT_LINK_CLICK({
         data: { href },
         dirname: window.DIRNAME
       })
     },
 
     async imagePathAutoComplete (src) {
-      const files = await this.$store.dispatch('ASK_FOR_IMAGE_AUTO_PATH', src)
+      const files = await useEditorStore().ASK_FOR_IMAGE_AUTO_PATH(src)
       return files.map((f) => {
         const iconClass = f.type === 'directory' ? 'icon-folder' : 'icon-image'
         return Object.assign(f, {
@@ -830,7 +802,7 @@ export default {
     },
 
     imagePathPicker () {
-      return this.$store.dispatch('ASK_FOR_IMAGE_PATH')
+      return useEditorStore().ASK_FOR_IMAGE_PATH()
     },
 
     keyup (event) {
@@ -942,18 +914,18 @@ export default {
 
     handleSearch (value, opt) {
       const searchMatches = this.editor.search(value, opt)
-      this.$store.dispatch('SEARCH', searchMatches)
+      useEditorStore().SEARCH(searchMatches)
       this.scrollToHighlight()
     },
 
     handReplace (value, opt) {
       const searchMatches = this.editor.replace(value, opt)
-      this.$store.dispatch('SEARCH', searchMatches)
+      useEditorStore().SEARCH(searchMatches)
     },
 
     handleUploadedImage (url, deletionUrl) {
       this.insertImage(url)
-      this.$store.dispatch('SHOW_IMAGE_DELETION_URL', deletionUrl)
+      useEditorStore().SHOW_IMAGE_DELETION_URL(deletionUrl)
     },
 
     scrollToCursor (duration = 300) {
@@ -993,7 +965,7 @@ export default {
 
     handleFindAction (action) {
       const searchMatches = this.editor.find(action)
-      this.$store.dispatch('SEARCH', searchMatches)
+      useEditorStore().SEARCH(searchMatches)
       this.scrollToHighlight()
     },
 
@@ -1016,7 +988,7 @@ export default {
               extraCss,
               toc: htmlToc
             })
-            this.$store.dispatch('EXPORT', { type, content })
+            useEditorStore().EXPORT({ type, content })
           } catch (err) {
             log.error('Failed to export document:', err)
             notice.notify({
@@ -1050,7 +1022,7 @@ export default {
               headerFooterStyled
             })
             this.printer.renderMarkdown(html, true)
-            this.$store.dispatch('EXPORT', { type, pageOptions })
+            useEditorStore().EXPORT({ type, pageOptions })
           } catch (err) {
             log.error('Failed to export document:', err)
             notice.notify({
@@ -1077,7 +1049,7 @@ export default {
               headerFooterStyled
             })
             this.printer.renderMarkdown(html, true)
-            this.$store.dispatch('PRINT_RESPONSE')
+            useEditorStore().PRINT_RESPONSE()
           } catch (err) {
             log.error('Failed to export document:', err)
             notice.notify({
