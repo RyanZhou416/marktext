@@ -48,7 +48,7 @@ Vue 2 + Vuex       ────────────────────�
 webpack            ──────────────────────────────►   Vite                    ✅ 已完成
 JavaScript         ──────────────────────────────►   TypeScript              ✅ 已完成
 原生模块 x3        ──────────────────────────────►   原生模块 x0             ✅ 已完成
-单语言             ──────────────────────────────►   i18n 多语言             ⬜ 阶段 10
+单语言             ──────────────────────────────►   i18n 多语言             ✅ 已完成
 Muya (自研)        ──────────────────────────────►   Milkdown (ProseMirror)  ⬜ 阶段 11-16
 仅 WYSIWYG         ──────────────────────────────►   Split View 对照编辑     ⬜ 阶段 14
 ```
@@ -847,35 +847,33 @@ src-tauri/src/
 
 ---
 
-## 阶段 10: 国际化（i18n）
+## 阶段 10: 国际化（i18n）✅ 已完成
 
 > **优先级：高** — 在编辑器迁移之前完成，避免后续新代码产生新的硬编码字符串。
 > 详细方案见 [`MILKDOWN_MIGRATION_REPORT.md` 第 9 章](./MILKDOWN_MIGRATION_REPORT.md#9-国际化方案i18n)。
 
 **目标**: 实现中英双语支持，建立可扩展的多语言框架
 
-**当前状态**: 零 i18n 支持，~60 个文件中有 ~325 个硬编码用户可见字符串，语言选择器被禁用。
-
 | 任务 | 状态 | 说明 |
 | ---- | ---- | ---- |
-| 10.1 安装 vue-i18n v10 + Vite 插件 | ⬜ | `vue-i18n@^10` + `@intlify/unplugin-vue-i18n` |
-| 10.2 创建 `src/locales/en.json` | ⬜ | 英文翻译文件，~400 个 flat key |
-| 10.3 创建 `src/locales/zh-CN.json` | ⬜ | 简体中文翻译文件 |
-| 10.4 创建 `src/locales/_meta.json` | ⬜ | 语言元数据（名称、方向、进度） |
-| 10.5 创建 `src/renderer/i18n/index.ts` | ⬜ | createI18n 配置 (`legacy: true` 兼容 Options API) |
-| 10.6 创建 `src/renderer/i18n/loader.ts` | ⬜ | 语言懒加载（非默认语言按需加载） |
-| 10.7 `main.ts` 中注册 i18n 插件 | ⬜ | `app.use(i18n)` |
-| 10.8 提取 Vue 组件字符串 | ⬜ | ~20 个文件 → `$t('key')` |
-| 10.9 提取偏好设置组件字符串 | ⬜ | ~15 个 prefComponent 文件 + ~8 个 config.js |
-| 10.10 提取 Muya UI 配置字符串 | ⬜ | formatPicker, quickInsert, imageToolbar 等 ~8 文件 |
-| 10.11 提取上下文菜单字符串 | ⬜ | tabs/menuItems.js, sideBar/menuItems.js |
-| 10.12 提取 Store 通知/错误字符串 | ⬜ | ~5 个 Pinia store 文件 |
-| 10.13 Rust 侧 i18n 实现 | ⬜ | `src-tauri/src/i18n.rs`，`include_str!` 读取共享 JSON |
-| 10.14 Rust 菜单本地化 | ⬜ | `menu.rs` 所有菜单标签使用 `i18n.t()` |
-| 10.15 Rust 对话框本地化 | ⬜ | `window.rs`, `file_ops.rs` 中的对话框文本 |
-| 10.16 启用语言选择器 | ⬜ | 移除 `:disable="true"`，从 `_meta.json` 动态生成选项 |
-| 10.17 添加重启提示 | ⬜ | 切换语言后提示"原生菜单将在重启后更新" |
-| 10.18 配置 i18n-ally | ⬜ | `.cursor/settings.json` 添加 i18n-ally 配置 |
+| 10.1 安装 vue-i18n v10 + Vite 插件 | ✅ | `vue-i18n@^10` + `@intlify/unplugin-vue-i18n` |
+| 10.2 创建 `src/locales/en.json` | ✅ | 英文翻译文件，~400 个 flat key |
+| 10.3 创建 `src/locales/zh-CN.json` | ✅ | 简体中文翻译文件 |
+| 10.4 创建 `src/locales/_meta.json` | ✅ | 语言元数据（名称、方向、进度） |
+| 10.5 创建 `src/renderer/i18n/index.ts` | ✅ | createI18n 配置 (`legacy: true`，从 `__TAURI_ENV__` 读初始 locale) |
+| 10.6 创建 `src/renderer/i18n/loader.ts` | ✅ | 运行时语言切换，使用 `.value` 兼容 vue-i18n v10 Ref API |
+| 10.7 `main.ts` 中注册 i18n 插件 | ✅ | `app.use(i18n)` + watcher 同步 store→locale |
+| 10.8 提取 Vue 组件字符串 | ✅ | titleBar, about, import, app.vue 等 → `$t('key')` |
+| 10.9 提取偏好设置组件字符串 | ✅ | general, editor, markdown, theme, image, sideBar, keybindings, spellchecker + 8 个 config.js |
+| 10.10 提取 Muya UI 配置字符串 | ✅ | formatPicker, quickInsert, imageToolbar, frontMenu, tableTools, codePicker, imageSelector (i18nBridge.js) |
+| 10.11 提取上下文菜单字符串 | ✅ | tabs/menuItems.js, sideBar/menuItems.js |
+| 10.12 提取 Store 通知/错误字符串 | ✅ | editor.ts, notification.ts, preferences.ts |
+| 10.13 Rust 侧 i18n 实现 | ✅ | `src-tauri/src/i18n.rs`，`include_str!` 读取共享 JSON |
+| 10.14 Rust 菜单本地化 | ✅ | `menu.rs` 所有菜单标签使用 `i18n.t()` |
+| 10.15 Rust 对话框本地化 | ✅ | `window.rs`, `file_ops.rs`, `context_menu.rs` 中的对话框文本 |
+| 10.16 启用语言选择器 | ✅ | 从 `_meta.json` 动态生成选项，即时生效 |
+| 10.17 添加重启提示 | ✅ | 切换语言后原生菜单需重启更新（与 VS Code 一致） |
+| 10.18 配置 i18n-ally | ✅ | vite.config.mjs 中配置 `@intlify/unplugin-vue-i18n` |
 
 ### 技术决策
 
@@ -912,19 +910,48 @@ src-tauri/src/
 4. 提交 PR — 无需修改任何代码文件
 ```
 
+### 实现细节
+
+**关键技术点**:
+
+1. **vue-i18n v10 Ref API**: `i18n.global.locale` 在 v10 中是 `WritableComputedRef`，必须用 `.value` 设置，直接赋值会替换 ref 导致 `$i18n.locale` 变为 `undefined`
+2. **initialization_script 注入**: 使用 Tauri 的 `initialization_script`（而非 `eval`）注入 `window.__TAURI_ENV__`，保证在任何页面 JS 执行之前就设置好语言环境，消除竞态条件
+3. **主窗口手动创建**: 将主窗口从 `tauri.conf.json` 自动创建改为 `setup()` 中手动创建（`WebviewWindowBuilder`），以支持 `initialization_script`
+4. **ipcRenderer 本地事件发射器**: 实现了完整的本地事件系统（`emit`/`on`/`once`/`removeAllListeners`），弥补 Tauri 环境下前端内部事件通信的缺失
+5. **Muya i18nBridge**: 为非 Vue 的 Muya 编辑器组件创建了 `i18nBridge.js`，通过 `window.__marktext_i18n` 桥接 vue-i18n 实例
+
+**新增文件**:
+- `src/locales/en.json` — 英文翻译 (~400 key)
+- `src/locales/zh-CN.json` — 简体中文翻译 (~400 key)
+- `src/locales/_meta.json` — 语言元数据
+- `src/renderer/i18n/index.ts` — vue-i18n 配置
+- `src/renderer/i18n/loader.ts` — 运行时语言切换
+- `src/muya/lib/ui/i18nBridge.js` — Muya ↔ vue-i18n 桥接
+- `src-tauri/src/i18n.rs` — Rust 侧 i18n（菜单、对话框）
+
 ### 验证清单
 
-- [ ] `yarn dev` 启动后界面显示英文
-- [ ] 设置中切换语言为简体中文，UI 立即更新
-- [ ] 重启后原生菜单显示中文
-- [ ] 所有偏好设置面板文本已翻译
-- [ ] 编辑器工具栏/斜杠命令文本已翻译
-- [ ] 上下文菜单文本已翻译
-- [ ] 对话框文本已翻译
-- [ ] `scripts\build-tauri-portable.cmd` 构建成功
-- [ ] 构建后的应用双语正常
+- [x] `yarn dev` 启动后界面显示英文（默认）
+- [x] 设置中切换语言为简体中文，UI 立即更新
+- [x] 重启后原生菜单显示中文
+- [x] 所有偏好设置面板文本已翻译
+- [x] 编辑器工具栏/斜杠命令文本已翻译
+- [x] 上下文菜单文本已翻译
+- [x] 对话框文本已翻译
+- [ ] `scripts\build-tauri-portable.cmd` 构建成功（待验证）
+- [ ] 构建后的应用双语正常（待验证）
 
-预估工期: **2-2.5 周**
+### 已修复的问题
+
+1. **CMD 脚本语法错误**: `echo` 中未转义的括号导致 `dev-tauri.cmd`/`build-tauri-portable.cmd`/`clean.cmd` 闪退
+2. **`timeout` 命令不兼容**: 在非交互式 shell 中 `timeout` 报错，替换为 `ping -n 2 127.0.0.1 >nul`
+3. **`ipcRenderer.emit` 缺失**: 自定义 `ipcRenderer` 实现缺少本地事件发射功能，导致前端内部事件通信全部静默失败
+4. **Pinia store 单项更新不同步**: `SET_SINGLE_PREFERENCE` 只发送到后端而未更新本地 state
+5. **vue-i18n v10 locale 设置方式变更**: 直接赋值 `i18n.global.locale = 'zh-CN'` 在 v10 中会替换 Ref 对象，导致 `$i18n.locale` 变为 `undefined`
+6. **`__TAURI_ENV__` 注入竞态条件**: `window.eval()` 在窗口创建后执行，可能晚于页面 JS，改用 `initialization_script` 保证时序
+7. **缺失 IPC 处理器**: `keybinding-get-keyboard-info`、`keybinding-get-pref-keybindings`、`renderer-log` 未注册
+
+验证时间: 2026-02-08
 
 ---
 
@@ -1308,7 +1335,7 @@ src/renderer/editor/shared/              ← 引擎无关，Muya 和 Milkdown �
 | 阶段 7: TypeScript 迁移 | ✅ 完成 | 2026-02-06 | 2026-02-06 | - |
 | 阶段 8: Tauri 评估与 PoC | ✅ 完成 | 2026-02-05 | 2026-02-05 | - |
 | 阶段 9: Tauri 完整迁移 | ✅ 完成 | 2026-02-05 | 2026-02-05 | - |
-| **阶段 10: 国际化 (i18n)** | ⬜ 待开始 | - | - | 2-2.5 周 |
+| **阶段 10: 国际化 (i18n)** | ✅ 完成 | 2026-02-07 | 2026-02-08 | - |
 | **阶段 11: 编辑器抽象层 + 引擎切换** | ⬜ 待开始 | - | - | 3 周 |
 | **阶段 12: Milkdown 核心功能** | ⬜ 待开始 | - | - | 3-4 周 |
 | **阶段 13: 自定义插件 (复用 Muya)** | ⬜ 待开始 | - | - | 4-5 周 |
