@@ -33,13 +33,14 @@ pub struct SaveResult {
 #[tauri::command]
 pub async fn open_file_dialog(
     app: tauri::AppHandle,
+    i18n: tauri::State<'_, crate::i18n::I18n>,
 ) -> Result<Vec<String>, String> {
     use tauri_plugin_dialog::DialogExt;
     let result = app
         .dialog()
         .file()
-        .add_filter("Markdown", &["md", "markdown", "mdown", "mkdn", "mkd", "mdwn", "mdtxt", "mdtext", "txt"])
-        .add_filter("All Files", &["*"])
+        .add_filter(&i18n.t("dialog.markdown"), &["md", "markdown", "mdown", "mkdn", "mkd", "mdwn", "mdtxt", "mdtext", "txt"])
+        .add_filter(&i18n.t("dialog.allFiles"), &["*"])
         .blocking_pick_files();
 
     match result {
@@ -69,6 +70,7 @@ pub async fn open_folder_dialog(
 #[tauri::command]
 pub async fn save_file_dialog(
     app: tauri::AppHandle,
+    i18n: tauri::State<'_, crate::i18n::I18n>,
     default_path: Option<String>,
     filename: Option<String>,
 ) -> Result<Option<String>, String> {
@@ -76,8 +78,8 @@ pub async fn save_file_dialog(
     let mut builder = app
         .dialog()
         .file()
-        .add_filter("Markdown", &["md", "markdown", "txt"])
-        .add_filter("All Files", &["*"]);
+        .add_filter(&i18n.t("dialog.markdown"), &["md", "markdown", "txt"])
+        .add_filter(&i18n.t("dialog.allFiles"), &["*"]);
 
     if let Some(ref dp) = default_path {
         let p = PathBuf::from(dp);
@@ -189,22 +191,28 @@ pub fn get_title_from_markdown(markdown: String) -> String {
 #[tauri::command]
 pub async fn export_file_dialog(
     app: tauri::AppHandle,
+    i18n: tauri::State<'_, crate::i18n::I18n>,
     export_type: String,
     default_path: Option<String>,
     filename: Option<String>,
 ) -> Result<Option<String>, String> {
     use tauri_plugin_dialog::DialogExt;
 
-    let (filter_name, extensions): (&str, Vec<&str>) = match export_type.as_str() {
-        "pdf" => ("Portable Document Format", vec!["pdf"]),
-        "styledHtml" | "html" => ("Hypertext Markup Language", vec!["html"]),
-        _ => ("All Files", vec!["*"]),
+    let filter_name: String = match export_type.as_str() {
+        "pdf" => i18n.t("dialog.portableDocFormat"),
+        "styledHtml" | "html" => i18n.t("dialog.htmlFormat"),
+        _ => i18n.t("dialog.allFiles"),
+    };
+    let extensions: Vec<&str> = match export_type.as_str() {
+        "pdf" => vec!["pdf"],
+        "styledHtml" | "html" => vec!["html"],
+        _ => vec!["*"],
     };
 
     let mut builder = app
         .dialog()
         .file()
-        .add_filter(filter_name, &extensions);
+        .add_filter(&filter_name, &extensions);
 
     if let Some(ref dp) = default_path {
         let p = PathBuf::from(dp);

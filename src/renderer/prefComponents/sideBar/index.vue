@@ -1,12 +1,12 @@
 <template>
   <div class="pref-sidebar">
-    <h3 class="title">Preferences</h3>
+    <h3 class="title">{{ $t('settings.preferences') }}</h3>
     <section class="search-wrapper">
       <el-autocomplete
         popper-class="pref-autocomplete"
         v-model="state"
         :fetch-suggestions="querySearch"
-        placeholder="Search preferences"
+        :placeholder="$t('settings.searchPreferences')"
         :trigger-on-focus="false"
         @select="handleSelect"
       >
@@ -41,11 +41,15 @@ import { category, searchContent } from './config'
 
 export default {
   data () {
-    this.category = category
     return {
       currentCategory: 'general',
       restaurants: [],
       state: ''
+    }
+  },
+  computed: {
+    category () {
+      return category(this.$t)
     }
   },
   watch: {

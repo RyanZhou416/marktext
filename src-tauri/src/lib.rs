@@ -4,6 +4,7 @@
 //! It replaces the Electron main process with Rust commands.
 
 mod commands;
+mod i18n;
 mod menu;
 mod watcher;
 
@@ -118,7 +119,23 @@ pub fn run() {
             let _ = std::fs::create_dir_all(app_data_dir.join("images"));
 
             // Manage preferences state
-            app.manage(PreferencesState::new(&app_data_dir));
+            let prefs = PreferencesState::new(&app_data_dir);
+
+            // Read language preference for i18n
+            let locale = {
+                let p = prefs.preferences.lock().unwrap();
+                p.get("language")
+                    .and_then(|v| v.as_str())
+                    .unwrap_or("en")
+                    .to_string()
+            };
+            log::info!("Locale: {}", locale);
+
+            app.manage(prefs);
+
+            // Create and manage i18n state
+            let i18n_state = i18n::I18n::new(&locale);
+            app.manage(i18n_state);
 
             // Initialize and manage watcher state
             let watcher_state = WatcherState::new();
@@ -127,15 +144,16 @@ pub fn run() {
             }
             app.manage(watcher_state);
 
-            // Setup application menu
+            // Setup application menu (with i18n)
             if let Err(e) = menu::setup_menu(app) {
                 log::error!("Failed to setup menu: {}", e);
             }
 
-            // Get the main window
-            #[allow(unused_variables)]
-            if let Some(window) = app.get_webview_window("main") {
-                log::info!("Main window created");
+            // Create main window manually (not via tauri.conf.json) so we can
+            // use initialization_script to guarantee __TAURI_ENV__ is available
+            // before ANY page JavaScript executes.
+            {
+                log::info!("Creating main window...");
 
                 // Load preferences for initial state
                 let prefs_state = app.state::<PreferencesState>();
@@ -174,9 +192,10 @@ pub fn run() {
                 // Inject Tauri environment info into the webview
                 let is_debug = cli_args.debug || cfg!(debug_assertions);
                 let js = format!(
-                    "window.__TAURI_ENV__ = {{ userDataPath: '{}', debug: {}, windowId: 1, type: 'editor', theme: '{}', codeFontFamily: '{}', codeFontSize: '{}', hideScrollbar: false, titleBarStyle: 'custom', portable: {}, safeMode: {}{} }};",
+                    "window.__TAURI_ENV__ = {{ userDataPath: '{}', debug: {}, windowId: 1, type: 'editor', language: '{}', theme: '{}', codeFontFamily: '{}', codeFontSize: '{}', hideScrollbar: false, titleBarStyle: 'custom', portable: {}, safeMode: {}{} }};",
                     user_data_path.replace('\\', "\\\\").replace('\'', "\\'"),
                     if is_debug { "true" } else { "false" },
+                    locale,
                     theme,
                     code_font_family,
                     code_font_size,
@@ -185,14 +204,30 @@ pub fn run() {
                     files_json,
                 );
 
-                if let Err(e) = window.eval(&js) {
-                    log::error!("Failed to inject Tauri env: {}", e);
-                }
+                let window = tauri::WebviewWindowBuilder::new(
+                    app,
+                    "main",
+                    tauri::WebviewUrl::default(),
+                )
+                .title("MarkText")
+                .inner_size(1280.0, 800.0)
+                .min_inner_size(600.0, 400.0)
+                .resizable(true)
+                .decorations(true)
+                .focused(true)
+                .initialization_script(&js)
+                .build()
+                .expect("Failed to create main window");
+
+                log::info!("Main window created");
 
                 #[cfg(debug_assertions)]
                 {
                     window.open_devtools();
                 }
+
+                #[cfg(not(debug_assertions))]
+                let _ = &window;
             }
 
             Ok(())
@@ -252,6 +287,7 @@ pub fn run() {
             // Window management
             commands::window::create_editor_window,
             commands::window::create_settings_window,
+            menu::show_app_menu,
             commands::window::close_window_confirm,
             commands::window::minimize_window,
             commands::window::maximize_window,

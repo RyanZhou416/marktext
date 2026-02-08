@@ -34,3 +34,8 @@ src-tauri/gen/
 src-tauri/Cargo.lock
 *.rs.bk
 **/*.rs.bk
+
+# Environment marker
+.tauri-env-ready
+
+_old/

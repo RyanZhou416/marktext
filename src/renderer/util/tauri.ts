@@ -199,21 +199,32 @@ let tauriProcess: TauriProcessModule | null = null
 
 const loadTauriApis = async (): Promise<boolean> => {
   if (!isTauri()) return false
+  // Load core APIs first (required)
   try {
     tauriCore = await import('@tauri-apps/api/core')
     tauriEvent = await import('@tauri-apps/api/event')
-    tauriShell = await import('@tauri-apps/plugin-shell') as any
-    tauriDialog = await import('@tauri-apps/plugin-dialog')
-    tauriClipboard = await import('@tauri-apps/plugin-clipboard-manager') as any
-    tauriFs = await import('@tauri-apps/plugin-fs') as any
-    tauriOs = await import('@tauri-apps/plugin-os')
-    tauriPath = await import('@tauri-apps/api/path')
-    tauriProcess = await import('@tauri-apps/plugin-process')
-    return true
   } catch (e) {
-    console.error('Failed to load Tauri APIs:', e)
+    console.error('Failed to load Tauri core APIs:', e)
     return false
   }
+  // Load plugin APIs individually (optional - don't block on failure)
+  const pluginLoaders: [string, () => Promise<void>][] = [
+    ['shell', async () => { tauriShell = await import('@tauri-apps/plugin-shell') as any }],
+    ['dialog', async () => { tauriDialog = await import('@tauri-apps/plugin-dialog') }],
+    ['clipboard', async () => { tauriClipboard = await import('@tauri-apps/plugin-clipboard-manager') as any }],
+    ['fs', async () => { tauriFs = await import('@tauri-apps/plugin-fs') as any }],
+    ['os', async () => { tauriOs = await import('@tauri-apps/plugin-os') }],
+    ['path', async () => { tauriPath = await import('@tauri-apps/api/path') }],
+    ['process', async () => { tauriProcess = await import('@tauri-apps/plugin-process') }],
+  ]
+  for (const [name, loader] of pluginLoaders) {
+    try {
+      await loader()
+    } catch (e) {
+      console.warn(`Failed to load Tauri plugin "${name}":`, e)
+    }
+  }
+  return true
 }
 
 // Initialize Tauri APIs
@@ -296,14 +307,34 @@ const ipcChannelHandlers: Record<string, IpcChannelHandler> = {
       }
     }
   },
-  // File open operations
-  'mt::cmd-open-file': async (): Promise<string[]> => {
+  // File open operations (mirrors old Electron: open dialog → read files → mt::open-new-tab)
+  'mt::cmd-open-file': async (): Promise<void> => {
     const paths: string[] = await tauriCore!.invoke('open_file_dialog')
-    return paths
+    if (!paths || !paths.length) return
+    for (const filePath of paths) {
+      try {
+        const doc = await tauriCore!.invoke('read_markdown_file', { filePath })
+        ipcRenderer.emit('mt::open-new-tab', null, doc, {}, true)
+      } catch (e) {
+        console.error(`Failed to open file ${filePath}:`, e)
+      }
+    }
   },
   'mt::cmd-open-folder': async (): Promise<string> => {
     const folderPath: string = await tauriCore!.invoke('open_folder_dialog')
     return folderPath
+  },
+  // Open a single file by path (used by sidebar file click, quick open, etc.)
+  // Mirrors old Electron: windowManager.js ipcMain.on('mt::open-file') → editor.openTab()
+  'mt::open-file': async (args: any[]): Promise<void> => {
+    const [filePath, options = {}] = args as [string, any]
+    if (!filePath || !tauriCore) return
+    try {
+      const doc = await tauriCore.invoke('read_markdown_file', { filePath })
+      ipcRenderer.emit('mt::open-new-tab', null, doc, options, true)
+    } catch (e) {
+      console.error(`Failed to open file ${filePath}:`, e)
+    }
   },
   // Window operations
   'mt::cmd-new-editor-window': async (): Promise<any> => {
@@ -348,8 +379,11 @@ const ipcChannelHandlers: Record<string, IpcChannelHandler> = {
     return filePath
   },
   // Preferences
-  'mt::ask-for-user-preference': async (): Promise<any> => {
-    return await tauriCore!.invoke('get_preferences')
+  'mt::ask-for-user-preference': async (): Promise<void> => {
+    const preferences = await tauriCore!.invoke('get_preferences')
+    if (preferences) {
+      ipcRenderer.emit('mt::user-preference', null, preferences)
+    }
   },
   'mt::set-user-preference': async (args: any[]): Promise<void> => {
     const [data] = args
@@ -404,6 +438,18 @@ const ipcChannelHandlers: Record<string, IpcChannelHandler> = {
     const [keybindings] = args
     return await tauriCore!.invoke('save_user_keybindings', { keybindings })
   },
+  // Keybinding preference page: returns keyboard layout info.
+  // In Tauri/WebView2 we don't have Electron's low-level keyboard API,
+  // so we return a stub US layout. setKeyboardLayout() is already a no-op.
+  'mt::keybinding-get-keyboard-info': async (): Promise<any> => {
+    return { layout: 'US', keymap: {} }
+  },
+  // Keybinding preference page: returns default + user keybindings for editing.
+  'mt::keybinding-get-pref-keybindings': async (): Promise<any> => {
+    const defaultKeybindings = await tauriCore!.invoke('get_default_keybindings')
+    const userKeybindings = await tauriCore!.invoke('get_user_keybindings')
+    return { defaultKeybindings, userKeybindings }
+  },
   // Pandoc
   'mt::check-pandoc': async (): Promise<any> => {
     return await tauriCore!.invoke('check_pandoc')
@@ -449,6 +495,38 @@ const ipcChannelHandlers: Record<string, IpcChannelHandler> = {
     const [alwaysOnTop] = args as [boolean]
     return await tauriCore!.invoke('set_always_on_top', { alwaysOnTop: !!alwaysOnTop })
   },
+  // Show app menu as popup (hamburger button in custom titlebar)
+  'mt::show-app-menu': async (args: any[]): Promise<void> => {
+    if (tauriCore) {
+      try {
+        const [pos] = args as [{ x?: number; y?: number } | undefined]
+        await tauriCore.invoke('show_app_menu', {
+          x: pos?.x ?? null,
+          y: pos?.y ?? null
+        })
+      } catch (e) {
+        console.warn('Failed to show app menu:', e)
+      }
+    }
+  },
+  // Drag-and-drop file open: reads files and opens them as tabs
+  'mt::window::drop': async (args: any[]): Promise<void> => {
+    const [fileList] = args as [string[]]
+    if (!fileList || !fileList.length || !tauriCore) return
+    for (const filePath of fileList) {
+      try {
+        const doc = await tauriCore.invoke('read_markdown_file', { filePath })
+        ipcRenderer.emit('mt::open-new-tab', null, doc, {}, true)
+      } catch (e) {
+        console.warn(`Failed to open dropped file ${filePath}:`, e)
+      }
+    }
+  },
+  // Renderer log: in Electron this sent logs to the main process for file logging.
+  // In Tauri we just absorb it — the logger already writes to the browser console.
+  'mt::renderer-log': async (): Promise<void> => {
+    // No-op: log.error/warn/info already writes to console before calling this.
+  },
   // No-op handlers for channels that don't need backend interaction
   'mt::set-title': async (): Promise<void> => {},
   'mt::send-initialized': async (): Promise<void> => {},
@@ -466,7 +544,54 @@ function channelToEvent (channel: string): string {
   return channel
 }
 
+// ---------------------------------------------------------------------------
+// Local event emitter for in-process events.
+// Electron's ipcRenderer extends Node.js EventEmitter, so code throughout
+// MarkText uses ipcRenderer.emit(channel, fakeEvent, ...data) to dispatch
+// events locally within the renderer process. The Tauri event system only
+// handles cross-process events (Rust ↔ JS). This local emitter bridges the
+// gap so that emit() and on() work for both in-process and cross-process events.
+// ---------------------------------------------------------------------------
+const localEventListeners = new Map<string, Set<Function>>()
+const localOnceListeners = new Map<string, Set<Function>>()
+
 export const ipcRenderer = {
+  /**
+   * Emit an event locally (in-process). Mirrors Node.js EventEmitter.emit().
+   * Dispatches to all listeners registered via on() and once().
+   * Signature: emit(channel, fakeEvent, ...data) — matches Electron convention.
+   */
+  emit: (channel: string, ...args: any[]): boolean => {
+    let handled = false
+    // Dispatch to persistent listeners (registered via on())
+    const listeners = localEventListeners.get(channel)
+    if (listeners && listeners.size > 0) {
+      handled = true
+      listeners.forEach(cb => {
+        try {
+          cb(...args)
+        } catch (e) {
+          console.error(`Error in local listener for ${channel}:`, e)
+        }
+      })
+    }
+    // Dispatch to one-shot listeners (registered via once())
+    const onceSet = localOnceListeners.get(channel)
+    if (onceSet && onceSet.size > 0) {
+      handled = true
+      const callbacks = Array.from(onceSet)
+      onceSet.clear()
+      callbacks.forEach(cb => {
+        try {
+          cb(...args)
+        } catch (e) {
+          console.error(`Error in local once-listener for ${channel}:`, e)
+        }
+      })
+    }
+    return handled
+  },
+
   send: async (channel: string, ...args: any[]): Promise<void> => {
     if (!isTauri()) return
     await tauriReady
@@ -480,9 +605,13 @@ export const ipcRenderer = {
       return
     }
     // Fallback: convert channel to command
+    if (!tauriCore) {
+      console.warn(`Tauri core not loaded, skipping fallback for: ${channel}`)
+      return
+    }
     const command = channelToCommand(channel)
     try {
-      await tauriCore!.invoke(command, { args })
+      await tauriCore.invoke(command, { args })
     } catch (e: any) {
       console.warn(`Tauri invoke fallback for ${channel} (${command}):`, e.message || e)
     }
@@ -500,9 +629,12 @@ export const ipcRenderer = {
       }
     }
     // Fallback
+    if (!tauriCore) {
+      return Promise.reject(new Error('Tauri core API not loaded'))
+    }
     const command = channelToCommand(channel)
     try {
-      return await tauriCore!.invoke(command, { args })
+      return await tauriCore.invoke(command, { args })
     } catch (e) {
       console.error(`Tauri invoke error for ${channel}:`, e)
       throw e
@@ -512,34 +644,97 @@ export const ipcRenderer = {
     console.warn('sendSync not supported in Tauri, returning null for:', channel)
     return null
   },
-  on: (channel: string, callback: (event: any, payload: any) => void): (() => void) => {
-    if (!isTauri()) return () => {}
-    const unlisten = tauriReady.then(async () => {
-      const eventName = channelToEvent(channel)
-      const unsubscribe = await tauriEvent!.listen(eventName, (event) => {
-        const fakeEvent = { sender: null }
-        callback(fakeEvent, event.payload)
+
+  /**
+   * Register a persistent listener. Fires for:
+   *   1. Local events via ipcRenderer.emit(channel, ...)
+   *   2. Tauri backend events (from Rust via tauriEvent)
+   */
+  on: (channel: string, callback: (event: any, ...args: any[]) => void): (() => void) => {
+    // Register locally for emit() calls
+    if (!localEventListeners.has(channel)) {
+      localEventListeners.set(channel, new Set())
+    }
+    localEventListeners.get(channel)!.add(callback)
+
+    // Also register with Tauri event system for backend (Rust → JS) events
+    let tauriUnsubscribe: (() => void) | null = null
+    if (isTauri()) {
+      const unlistenPromise = tauriReady.then(async () => {
+        if (!tauriEvent) return null
+        const eventName = channelToEvent(channel)
+        const unsub = await tauriEvent.listen(eventName, (event) => {
+          const fakeEvent = { sender: null }
+          callback(fakeEvent, event.payload)
+        })
+        if (!eventListeners.has(channel)) {
+          eventListeners.set(channel, [])
+        }
+        eventListeners.get(channel)!.push({ callback, unsubscribe: unsub })
+        return unsub
       })
-      if (!eventListeners.has(channel)) {
-        eventListeners.set(channel, [])
-      }
-      eventListeners.get(channel)!.push({ callback, unsubscribe })
-      return unsubscribe
-    })
+      // Wrap for cleanup
+      tauriUnsubscribe = null
+      unlistenPromise.then(fn => { tauriUnsubscribe = fn })
+    }
+
+    // Return unsubscribe function that cleans up both local and Tauri listeners
     return () => {
-      unlisten.then(fn => fn && fn())
+      localEventListeners.get(channel)?.delete(callback)
+      if (tauriUnsubscribe) tauriUnsubscribe()
     }
   },
-  once: async (channel: string, callback: (event: any, payload: any) => void): Promise<void> => {
-    if (!isTauri()) return
-    await tauriReady
-    const eventName = channelToEvent(channel)
-    await tauriEvent!.once(eventName, (event) => {
-      const fakeEvent = { sender: null }
-      callback(fakeEvent, event.payload)
-    })
+
+  /**
+   * Register a one-shot listener. Fires once for:
+   *   1. Local events via ipcRenderer.emit(channel, ...)
+   *   2. Tauri backend events (from Rust via tauriEvent)
+   * Whichever fires first removes the listener from both paths.
+   */
+  once: (channel: string, callback: (event: any, ...args: any[]) => void): (() => void) => {
+    // Wrapper that removes itself after first call (from either path)
+    let fired = false
+    const wrappedCallback = (...args: any[]) => {
+      if (fired) return
+      fired = true
+      // Clean up local once-listener
+      localOnceListeners.get(channel)?.delete(wrappedCallback)
+      // Clean up Tauri listener
+      if (tauriUnsubscribe) tauriUnsubscribe()
+      callback(...args)
+    }
+
+    // Register locally for emit() calls
+    if (!localOnceListeners.has(channel)) {
+      localOnceListeners.set(channel, new Set())
+    }
+    localOnceListeners.get(channel)!.add(wrappedCallback)
+
+    // Also register with Tauri event system
+    let tauriUnsubscribe: (() => void) | null = null
+    if (isTauri()) {
+      tauriReady.then(async () => {
+        if (!tauriEvent || fired) return
+        const eventName = channelToEvent(channel)
+        tauriUnsubscribe = await tauriEvent.once(eventName, (event) => {
+          const fakeEvent = { sender: null }
+          wrappedCallback(fakeEvent, event.payload)
+        })
+      })
+    }
+
+    return () => {
+      fired = true
+      localOnceListeners.get(channel)?.delete(wrappedCallback)
+      if (tauriUnsubscribe) tauriUnsubscribe()
+    }
   },
+
   removeAllListeners: (channel: string): void => {
+    // Clean up local listeners
+    localEventListeners.delete(channel)
+    localOnceListeners.delete(channel)
+    // Clean up Tauri event listeners
     if (eventListeners.has(channel)) {
       const listeners = eventListeners.get(channel)!
       listeners.forEach(({ unsubscribe }) => {
@@ -1130,74 +1325,139 @@ export const isLinux: boolean = platformInfo.isLinux
 export const isMas: boolean = platformInfo.isMas
 
 // ============================================================================
-// Menu event handler - listens for Tauri menu events and dispatches them
+// Drag-and-drop handler - listens for Tauri native drag-drop events
+// In Tauri, browser File API doesn't expose full paths (unlike Electron's file.path),
+// so we use Tauri's native tauri://drag-drop event which provides full OS paths.
+//
+// Mirrors old Electron flow: ipcMain.on('mt::window::drop') in main/menu/actions/file.js
+// → isMarkdownFile() check → openFileOrFolder() → loadMarkdownFile() → mt::open-new-tab
 // ============================================================================
 
-let menuEventInitialized = false
-export function initMenuEvents (store: Store): void {
-  if (menuEventInitialized || !isTauri()) return
-  menuEventInitialized = true
+// Markdown extensions matching the old version (common/filesystem/paths.js)
+const MARKDOWN_EXTENSIONS = [
+  '.markdown', '.mdown', '.mkdn', '.md', '.mkd', '.mdwn', '.mdtxt', '.mdtext', '.mdx', '.text', '.txt'
+]
+
+function hasMarkdownExtension (filename: string): boolean {
+  if (!filename) return false
+  const lower = filename.toLowerCase()
+  return MARKDOWN_EXTENSIONS.some(ext => lower.endsWith(ext))
+}
+
+let dragDropInitialized = false
+
+export function initDragDrop (bus: any): void {
+  if (dragDropInitialized || !isTauri()) return
+  dragDropInitialized = true
 
   tauriReady.then(async () => {
-    await tauriEvent!.listen('menu-event', (event) => {
-      const menuId = event.payload as string
-      handleMenuAction(menuId, store)
+    if (!tauriEvent || !tauriCore) {
+      console.warn('Tauri APIs not loaded, cannot listen for drag-drop events')
+      return
+    }
+
+    // Listen for Tauri's native drag-drop event which provides full file paths
+    await tauriEvent.listen('tauri://drag-drop', async (event: any) => {
+      const paths: string[] = event.payload?.paths || []
+      if (!paths.length) return
+
+      // Close the import dialog
+      bus.$emit('importDialog', false)
+
+      // Process each dropped file (same logic as old mt::window::drop handler)
+      for (const filePath of paths) {
+        if (hasMarkdownExtension(filePath)) {
+          // Open markdown file as a new tab
+          try {
+            const doc = await tauriCore!.invoke('read_markdown_file', { filePath })
+            ipcRenderer.emit('mt::open-new-tab', null, doc, {}, true)
+          } catch (e) {
+            console.warn(`Failed to open dropped file ${filePath}:`, e)
+          }
+        }
+        // Non-markdown files (e.g. .docx, .tex) are silently ignored for now.
+        // Old version used Pandoc import for these, which requires pandoc to be installed.
+      }
     })
   })
 }
 
-function handleMenuAction (menuId: string, store: Store): void {
-  // Map menu IDs to Vuex store actions / mutations
+// ============================================================================
+// Menu event handler - listens for Tauri menu events and dispatches them
+// Uses the same bus/ipcRenderer patterns as commands/index.js (Pinia-compatible)
+// ============================================================================
+
+let menuEventInitialized = false
+let _bus: any = null
+
+export function initMenuEvents (bus: any): void {
+  if (menuEventInitialized || !isTauri()) return
+  menuEventInitialized = true
+  _bus = bus
+
+  tauriReady.then(async () => {
+    if (!tauriEvent) {
+      console.warn('Tauri event API not loaded, cannot listen for menu events')
+      return
+    }
+    await tauriEvent.listen('menu-event', (event) => {
+      const menuId = event.payload as string
+      handleMenuAction(menuId)
+    })
+  })
+}
+
+function handleMenuAction (menuId: string): void {
   const menuActions: Record<string, () => void> = {
     // File
-    'file.new-tab': () => store.dispatch('NEW_UNTITLED_TAB'),
+    'file.new-tab': () => ipcRenderer.emit('mt::new-untitled-tab', null),
     'file.new-window': () => ipcRenderer.send('mt::cmd-new-editor-window'),
-    'file.open-file': () => handleOpenFile(store),
-    'file.open-folder': () => handleOpenFolder(store),
-    'file.save': () => store.dispatch('SAVE_FILE'),
-    'file.save-as': () => store.dispatch('SAVE_FILE_AS'),
-    'file.close-tab': () => store.dispatch('CLOSE_TAB'),
+    'file.open-file': () => ipcRenderer.send('mt::cmd-open-file'),
+    'file.open-folder': () => ipcRenderer.send('mt::cmd-open-folder'),
+    'file.save': () => ipcRenderer.emit('mt::editor-ask-file-save', null),
+    'file.save-as': () => ipcRenderer.emit('mt::editor-ask-file-save-as', null),
+    'file.close-tab': () => ipcRenderer.emit('mt::editor-close-tab', null),
     'file.close-window': () => ipcRenderer.send('mt::cmd-close-window'),
     'file.preferences': () => ipcRenderer.send('mt::open-setting-window'),
     // Edit
-    'edit.find': () => store.dispatch('SEARCH', { type: 'find' }),
-    'edit.replace': () => store.dispatch('SEARCH', { type: 'replace' }),
-    'edit.find-in-folder': () => store.dispatch('SEARCH', { type: 'folder' }),
+    'edit.find': () => _bus && _bus.$emit('find', 'find'),
+    'edit.replace': () => _bus && _bus.$emit('replace', 'replace'),
+    'edit.find-in-folder': () => ipcRenderer.emit('mt::editor-edit-action', null, 'findInFolder'),
     // Paragraph
-    'paragraph.heading-1': () => store.dispatch('FORMAT', { type: 'heading', level: 1 }),
-    'paragraph.heading-2': () => store.dispatch('FORMAT', { type: 'heading', level: 2 }),
-    'paragraph.heading-3': () => store.dispatch('FORMAT', { type: 'heading', level: 3 }),
-    'paragraph.heading-4': () => store.dispatch('FORMAT', { type: 'heading', level: 4 }),
-    'paragraph.heading-5': () => store.dispatch('FORMAT', { type: 'heading', level: 5 }),
-    'paragraph.heading-6': () => store.dispatch('FORMAT', { type: 'heading', level: 6 }),
-    'paragraph.paragraph': () => store.dispatch('FORMAT', { type: 'paragraph' }),
-    'paragraph.order-list': () => store.dispatch('FORMAT', { type: 'order-list' }),
-    'paragraph.bullet-list': () => store.dispatch('FORMAT', { type: 'bullet-list' }),
-    'paragraph.task-list': () => store.dispatch('FORMAT', { type: 'task-list' }),
-    'paragraph.code-fence': () => store.dispatch('FORMAT', { type: 'pre' }),
-    'paragraph.quote-block': () => store.dispatch('FORMAT', { type: 'blockquote' }),
-    'paragraph.math-formula': () => store.dispatch('FORMAT', { type: 'mathblock' }),
-    'paragraph.html-block': () => store.dispatch('FORMAT', { type: 'html' }),
-    'paragraph.table': () => store.dispatch('FORMAT', { type: 'table' }),
-    'paragraph.horizontal-line': () => store.dispatch('FORMAT', { type: 'hr' }),
+    'paragraph.heading-1': () => _bus && _bus.$emit('format', 'heading 1'),
+    'paragraph.heading-2': () => _bus && _bus.$emit('format', 'heading 2'),
+    'paragraph.heading-3': () => _bus && _bus.$emit('format', 'heading 3'),
+    'paragraph.heading-4': () => _bus && _bus.$emit('format', 'heading 4'),
+    'paragraph.heading-5': () => _bus && _bus.$emit('format', 'heading 5'),
+    'paragraph.heading-6': () => _bus && _bus.$emit('format', 'heading 6'),
+    'paragraph.paragraph': () => _bus && _bus.$emit('format', 'paragraph'),
+    'paragraph.order-list': () => _bus && _bus.$emit('format', 'order-list'),
+    'paragraph.bullet-list': () => _bus && _bus.$emit('format', 'bullet-list'),
+    'paragraph.task-list': () => _bus && _bus.$emit('format', 'task-list'),
+    'paragraph.code-fence': () => _bus && _bus.$emit('format', 'pre'),
+    'paragraph.quote-block': () => _bus && _bus.$emit('format', 'blockquote'),
+    'paragraph.math-formula': () => _bus && _bus.$emit('format', 'mathblock'),
+    'paragraph.html-block': () => _bus && _bus.$emit('format', 'html'),
+    'paragraph.table': () => _bus && _bus.$emit('format', 'table'),
+    'paragraph.horizontal-line': () => _bus && _bus.$emit('format', 'hr'),
     // Format
-    'format.strong': () => store.dispatch('FORMAT', { type: 'strong' }),
-    'format.emphasis': () => store.dispatch('FORMAT', { type: 'em' }),
-    'format.underline': () => store.dispatch('FORMAT', { type: 'u' }),
-    'format.superscript': () => store.dispatch('FORMAT', { type: 'sup' }),
-    'format.subscript': () => store.dispatch('FORMAT', { type: 'sub' }),
-    'format.highlight': () => store.dispatch('FORMAT', { type: 'mark' }),
-    'format.inline-code': () => store.dispatch('FORMAT', { type: 'inline_code' }),
-    'format.inline-math': () => store.dispatch('FORMAT', { type: 'inline_math' }),
-    'format.strike': () => store.dispatch('FORMAT', { type: 'del' }),
-    'format.hyperlink': () => store.dispatch('FORMAT', { type: 'link' }),
-    'format.image': () => store.dispatch('FORMAT', { type: 'image' }),
-    'format.clear-format': () => store.dispatch('FORMAT', { type: 'clear' }),
+    'format.strong': () => _bus && _bus.$emit('format', 'strong'),
+    'format.emphasis': () => _bus && _bus.$emit('format', 'em'),
+    'format.underline': () => _bus && _bus.$emit('format', 'u'),
+    'format.superscript': () => _bus && _bus.$emit('format', 'sup'),
+    'format.subscript': () => _bus && _bus.$emit('format', 'sub'),
+    'format.highlight': () => _bus && _bus.$emit('format', 'mark'),
+    'format.inline-code': () => _bus && _bus.$emit('format', 'inline_code'),
+    'format.inline-math': () => _bus && _bus.$emit('format', 'inline_math'),
+    'format.strike': () => _bus && _bus.$emit('format', 'del'),
+    'format.hyperlink': () => _bus && _bus.$emit('format', 'link'),
+    'format.image': () => _bus && _bus.$emit('format', 'image'),
+    'format.clear-format': () => _bus && _bus.$emit('format', 'clear'),
     // View
-    'view.source-code-mode': () => store.dispatch('TOGGLE_VIEW_MODE'),
-    'view.toggle-sidebar': () => store.commit('SET_LAYOUT', { showSideBar: !store.state.layout.showSideBar }),
-    'view.toggle-tabbar': () => store.commit('SET_LAYOUT', { showTabBar: !store.state.layout.showTabBar }),
-    'view.command-palette': () => store.commit('SET_LAYOUT', { showCommandPalette: true }),
+    'view.source-code-mode': () => _bus && _bus.$emit('view:toggle-view-entry', 'sourceCode'),
+    'view.toggle-sidebar': () => _bus && _bus.$emit('view:toggle-layout-entry', 'showSideBar'),
+    'view.toggle-tabbar': () => _bus && _bus.$emit('view:toggle-layout-entry', 'showTabBar'),
+    'view.command-palette': () => _bus && _bus.$emit('show-command-palette'),
     'view.zoom-in': () => {
       const current = webFrame.getZoomFactor()
       webFrame.setZoomFactor(Math.min(current + 0.1, 2.0))
@@ -1213,10 +1473,14 @@ function handleMenuAction (menuId: string, store: Store): void {
     'help.markdown-reference': () => shell.openExternal('https://github.com/marktext/marktext/blob/develop/docs/MARKDOWN_SYNTAX.md'),
     'help.changelog': () => shell.openExternal('https://github.com/marktext/marktext/blob/develop/.github/CHANGELOG.md'),
     'help.about': () => {
-      // Show about info via notification or dialog
       tauriReady.then(async () => {
-        const version: string = await tauriCore!.invoke('get_app_version')
-        alert(`MarkText v${version}\n\nA simple and elegant markdown editor.`)
+        if (!tauriCore) return
+        try {
+          const version: string = await tauriCore.invoke('get_app_version')
+          alert(`MarkText v${version}\n\nA simple and elegant markdown editor.`)
+        } catch {
+          alert(`MarkText\n\nA simple and elegant markdown editor.`)
+        }
       })
     }
   }
@@ -1226,31 +1490,6 @@ function handleMenuAction (menuId: string, store: Store): void {
     action()
   } else {
     console.warn('Unknown menu action:', menuId)
-  }
-}
-
-async function handleOpenFile (store: Store): Promise<void> {
-  await tauriReady
-  const paths: string[] = await tauriCore!.invoke('open_file_dialog')
-  if (paths && paths.length > 0) {
-    for (const filePath of paths) {
-      const doc: { markdown: string; filename: string; pathname: string } = await tauriCore!.invoke('read_markdown_file', { filePath })
-      store.dispatch('NEW_TAB_WITH_CONTENT', {
-        markdown: doc.markdown,
-        filename: doc.filename,
-        pathname: doc.pathname,
-        options: {}
-      })
-      await tauriCore!.invoke('add_recent_document', { filePath })
-    }
-  }
-}
-
-async function handleOpenFolder (store: Store): Promise<void> {
-  await tauriReady
-  const folderPath: string = await tauriCore!.invoke('open_folder_dialog')
-  if (folderPath) {
-    store.dispatch('OPEN_FOLDER', folderPath)
   }
 }
 

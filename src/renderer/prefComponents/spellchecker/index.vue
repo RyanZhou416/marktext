@@ -1,17 +1,17 @@
 <template>
   <div class="pref-spellchecker">
-    <h4>Spelling</h4>
+    <h4>{{ $t('settings.spelling.title') }}</h4>
     <compound>
       <template #head>
         <bool
-          description="Enable spell checking"
+          :description="$t('settings.spelling.enable')"
           :bool="spellcheckerEnabled"
           :onChange="handleSpellcheckerEnabled"
         ></bool>
       </template>
       <template #children>
         <bool
-          description="Hide marks for spelling errors"
+          :description="$t('settings.spelling.hideMarks')"
           :bool="spellcheckerNoUnderline"
           :disable="!spellcheckerEnabled"
           :onChange="
@@ -20,13 +20,13 @@
         ></bool>
         <bool
           v-show="isOsx"
-          description="Automatically detect document language"
+          :description="$t('settings.spelling.autoDetect')"
           :bool="true"
           :disable="true"
         ></bool>
         <cur-select
           v-show="!isOsx"
-          description="Default language for spell checking"
+          :description="$t('settings.spelling.defaultLanguage')"
           :value="spellcheckerLanguage"
           :options="availableDictionaries"
           :disable="!spellcheckerEnabled"
@@ -36,28 +36,26 @@
     </compound>
 
     <div v-if="isOsx && spellcheckerEnabled" class="description">
-      The used language will be detected automatically while typing. Additional
-      languages may be added through "Language & Region" in your system
-      preferences pane.
+      {{ $t('settings.spelling.autoDetectNote') }}
     </div>
 
     <div v-if="!isOsx && spellcheckerEnabled">
-      <h6 class="title">Custom dictionary:</h6>
-      <div class="description">Edit words in custom dictionary.</div>
+      <h6 class="title">{{ $t('settings.spelling.customDictionary') }}</h6>
+      <div class="description">{{ $t('settings.spelling.editWords') }}</div>
       <el-table
         :data="wordsInCustomDictionary"
-        empty-text="No words available"
+        :empty-text="$t('settings.spelling.noWords')"
         style="width: 100%"
       >
-        <el-table-column prop="word" label="Word"> </el-table-column>
+        <el-table-column prop="word" :label="$t('settings.spelling.word')"> </el-table-column>
 
-        <el-table-column fixed="right" label="Options" width="90">
+        <el-table-column fixed="right" :label="$t('settings.spelling.options')" width="90">
           <template #default="scope">
             <el-button
               @click="handleDeleteClick(scope.row)"
               type="text"
               size="small"
-              title="Delete"
+              :title="$t('common.delete')"
             >
               <i class="el-icon-delete"></i>
             </el-button>
@@ -144,7 +142,7 @@ export default {
         .catch((error) => {
           log.error(error)
           notice.notify({
-            title: 'Failed to switch language',
+            title: this.$t('settings.spelling.failedSwitch'),
             type: 'error',
             message: error.message
           })
@@ -169,9 +167,9 @@ export default {
                 )
             } else {
               notice.notify({
-                title: 'Failed to remove custom word',
+                title: this.$t('settings.spelling.failedRemove'),
                 type: 'error',
-                message: 'An unexpected error occurred while saving.'
+                message: this.$t('settings.spelling.unexpectedError')
               })
             }
           })

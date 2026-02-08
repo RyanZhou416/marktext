@@ -9,8 +9,9 @@ echo ==============================================================
 echo           MarkText Tauri Development Environment Setup
 echo ==============================================================
 echo.
-echo This script sets up the Tauri development environment.
-echo Prerequisites: Node.js, Yarn, Visual Studio with C++ (for Electron)
+echo   Responsibility: check tools, install dependencies, warm caches.
+echo   Run this ONCE before using dev-tauri.cmd or build-tauri-portable.cmd.
+echo   Safe to re-run: skips steps that are already done.
 echo.
 
 :: Change to project root
@@ -19,14 +20,13 @@ echo Working directory: %CD%
 echo.
 
 :: ==============================================================
-::                    Dependency Check
+::    Step 1: Check SYSTEM tools (must be pre-installed by user)
 :: ==============================================================
-echo [Pre-check] Checking Tauri dependencies...
+echo [Step 1/4] Checking system tools...
 echo.
 
 set "MISSING_DEPS=0"
 set "NEED_RUST=0"
-set "NEED_TAURI_CLI=0"
 set "NEED_WEBVIEW2=0"
 
 :: ---------- Check Rust ----------
@@ -51,30 +51,6 @@ if errorlevel 1 (
 ) else (
     for /f "tokens=*" %%v in ('cargo --version 2^>nul') do set "CARGO_VER=%%v"
     echo     [OK] !CARGO_VER!
-)
-
-:: ---------- Check Tauri CLI ----------
-echo   Checking Tauri CLI...
-set "TAURI_FOUND=0"
-where cargo-tauri >nul 2>&1
-if not errorlevel 1 (
-    for /f "tokens=*" %%v in ('cargo-tauri --version 2^>nul') do set "TAURI_VER=%%v"
-    set "TAURI_FOUND=1"
-)
-if "!TAURI_FOUND!"=="0" (
-    :: Also check via npx (project-local install)
-    call npx tauri --version >nul 2>&1
-    if not errorlevel 1 (
-        for /f "tokens=*" %%v in ('npx tauri --version 2^>nul') do set "TAURI_VER=%%v"
-        set "TAURI_FOUND=1"
-    )
-)
-if "!TAURI_FOUND!"=="1" (
-    echo     [OK] Tauri CLI !TAURI_VER!
-) else (
-    echo     [MISSING] Tauri CLI not installed
-    set "MISSING_DEPS=1"
-    set "NEED_TAURI_CLI=1"
 )
 
 :: ---------- Check Node.js ----------
@@ -105,7 +81,6 @@ reg query "HKEY_LOCAL_MACHINE\SOFTWARE\WOW6432Node\Microsoft\EdgeUpdate\Clients\
 if errorlevel 1 (
     reg query "HKEY_CURRENT_USER\Software\Microsoft\EdgeUpdate\Clients\{F3017226-FE2A-4295-8BDF-00C3A9A7E4C5}" /v pv >nul 2>&1
     if errorlevel 1 (
-        :: Check if Edge is installed (WebView2 is bundled with Edge)
         if exist "%ProgramFiles(x86)%\Microsoft\Edge\Application\msedge.exe" (
             echo     [OK] WebView2 available via Microsoft Edge
         ) else if exist "%ProgramFiles%\Microsoft\Edge\Application\msedge.exe" (
@@ -124,121 +99,121 @@ if errorlevel 1 (
 
 echo.
 
-:: ==============================================================
-::              Check if any dependencies are missing
-:: ==============================================================
-if "!MISSING_DEPS!"=="0" goto :DEPS_OK
+:: Show install guide if system tools are missing
+if "!MISSING_DEPS!"=="0" goto :SYSTEM_OK
 
 echo ==============================================================
-echo                 [ERROR] Missing Dependencies
+echo              [ERROR] Missing System Dependencies
 echo ==============================================================
-echo.
-echo -------------------- Installation Guide --------------------
 echo.
 
 if not "!NEED_RUST!"=="1" goto :SKIP_RUST
 echo [Rust]
 echo   1. Visit https://rustup.rs/
 echo   2. Download and run rustup-init.exe
-echo   3. Follow the installation prompts (default options are fine)
-echo   4. Restart your terminal after installation
-echo.
-echo   Or run this in PowerShell:
-echo     winget install Rustlang.Rustup
+echo   3. Restart your terminal after installation
+echo   Or: winget install Rustlang.Rustup
 echo.
 :SKIP_RUST
 
-if not "!NEED_TAURI_CLI!"=="1" goto :SKIP_TAURI_CLI
-echo [Tauri CLI]
-echo   Option 1 - Via Cargo (after installing Rust):
-echo     cargo install tauri-cli
-echo.
-echo   Option 2 - Via npm (already included in devDependencies):
-echo     yarn install
-echo     (Then use: npx tauri or yarn tauri:dev)
-echo.
-:SKIP_TAURI_CLI
-
 if not "!NEED_WEBVIEW2!"=="1" goto :SKIP_WEBVIEW2
 echo [WebView2 Runtime]
-echo   1. Install Microsoft Edge (recommended)
-echo   Or:
-echo   2. Download WebView2 Runtime from:
-echo      https://developer.microsoft.com/en-us/microsoft-edge/webview2/
+echo   Install Microsoft Edge, or download from:
+echo   https://developer.microsoft.com/en-us/microsoft-edge/webview2/
 echo.
 :SKIP_WEBVIEW2
 
-echo -------------------------------------------------------------
-echo.
 echo Please install missing components and run this script again.
 echo.
-echo Press any key to close...
 pause >nul
 exit /b 1
 
 :: ==============================================================
-::              All dependencies OK, start setup
+::    Step 2: Install JS dependencies
+::    (must happen BEFORE Tauri CLI check, since Tauri CLI is
+::     a devDependency in package.json — npx needs node_modules)
 :: ==============================================================
-:DEPS_OK
-echo [OK] All Tauri dependencies found!
-echo.
+:SYSTEM_OK
+echo [Step 2/4] Installing JS dependencies...
 
-:: ---------- Step 1: Install frontend dependencies ----------
-echo [Step 1/4] Installing frontend dependencies...
-if not exist "node_modules" (
-    call yarn install --ignore-scripts
+if exist "node_modules\.yarn-integrity" (
+    echo   [SKIP] node_modules already exists
+) else (
+    echo   Running yarn install...
+    call yarn install
     if errorlevel 1 (
-        echo [ERROR] Failed to install dependencies
+        echo   [ERROR] yarn install failed
         goto :ERROR_EXIT
     )
+    echo   [OK] JS dependencies installed
 )
-echo [OK] Frontend dependencies ready
+
 echo.
 
-:: ---------- Step 2: Build frontend ----------
-echo [Step 2/4] Building frontend...
-call yarn build
-if errorlevel 1 (
-    echo [ERROR] Failed to build frontend
+:: ==============================================================
+::    Step 3: Check PROJECT tools + fetch Rust dependencies
+::    (Tauri CLI comes from node_modules, so we check it here)
+:: ==============================================================
+echo [Step 3/4] Checking project tools and fetching Rust dependencies...
+echo.
+
+:: --- Check Tauri CLI (now node_modules exists) ---
+echo   Checking Tauri CLI...
+set "TAURI_FOUND=0"
+where cargo-tauri >nul 2>&1
+if not errorlevel 1 (
+    for /f "tokens=*" %%v in ('cargo-tauri --version 2^>nul') do set "TAURI_VER=%%v"
+    set "TAURI_FOUND=1"
+)
+if "!TAURI_FOUND!"=="0" (
+    call npx tauri --version >nul 2>&1
+    if not errorlevel 1 (
+        for /f "tokens=*" %%v in ('npx tauri --version 2^>nul') do set "TAURI_VER=%%v"
+        set "TAURI_FOUND=1"
+    )
+)
+if "!TAURI_FOUND!"=="1" (
+    echo     [OK] Tauri CLI !TAURI_VER!
+) else (
+    echo     [ERROR] Tauri CLI not found even after yarn install
+    echo             Try: cargo install tauri-cli
     goto :ERROR_EXIT
 )
-echo [OK] Frontend built
-echo.
 
-:: ---------- Step 3: Install Tauri dependencies ----------
-echo [Step 3/4] Installing Tauri Rust dependencies...
-cd src-tauri
-call cargo fetch
-if errorlevel 1 (
-    echo [WARN] Failed to fetch Rust dependencies (this may be normal for first run)
-)
-cd ..
-echo [OK] Tauri dependencies fetched
-echo.
-
-:: ---------- Step 4: Verify Tauri build ----------
-echo [Step 4/4] Verifying Tauri configuration...
-call npx tauri info
-if errorlevel 1 (
-    echo [WARN] Could not get Tauri info (this may be normal for first run)
+:: --- Fetch Rust dependencies ---
+if exist "src-tauri\target\.cargo-lock" (
+    echo   [SKIP] Rust dependencies already fetched
+) else (
+    echo   Fetching Rust dependencies...
+    pushd src-tauri
+    call cargo fetch
+    popd
+    echo   [OK] Rust dependencies fetched
 )
 
 echo.
+
+:: ==============================================================
+::    Step 4: Write env-ready marker + show summary
+:: ==============================================================
+echo [Step 4/4] Finalizing...
+
+echo %date% %time% > ".tauri-env-ready"
+echo   [OK] Environment marker written
+echo.
+
 echo ==============================================================
-echo              Tauri Development Environment Ready!
+echo          Tauri Development Environment Ready!
 echo ==============================================================
 echo.
-echo Environment:
 echo   Rust:       !RUST_VER!
 echo   Tauri CLI:  !TAURI_VER!
 echo   Node.js:    !NODE_VER!
 echo   Yarn:       !YARN_VER!
 echo.
-echo Available commands:
-echo   yarn tauri:dev     - Run Tauri in development mode
-echo   yarn tauri:build   - Build Tauri application
-echo.
-echo Note: For Electron development, run setup-dev-env.cmd instead.
+echo   Next steps:
+echo     scripts\dev-tauri.cmd            Debug build + run
+echo     scripts\build-tauri-portable.cmd Release build
 echo.
 goto :END
 
@@ -246,12 +221,10 @@ goto :END
 echo.
 echo [!] Setup failed. Please check the errors above.
 echo.
-echo Press any key to close...
 pause >nul
 exit /b 1
 
 :END
-echo.
 echo Press any key to close...
 pause >nul
 exit /b 0

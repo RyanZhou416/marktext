@@ -51,15 +51,15 @@
         >
           <template #content>
             <div class="title-item">
-              <span class="front">Words:</span
+              <span class="front">{{ $t('titleBar.words') }}:</span
               ><span class="text">{{ wordCount["word"] }}</span>
             </div>
             <div class="title-item">
-              <span class="front">Characters:</span
+              <span class="front">{{ $t('titleBar.characters') }}:</span
               ><span class="text">{{ wordCount["character"] }}</span>
             </div>
             <div class="title-item">
-              <span class="front">Paragraphs:</span
+              <span class="front">{{ $t('titleBar.paragraphs') }}:</span
               ><span class="text">{{ wordCount["paragraph"] }}</span>
             </div>
           </template>

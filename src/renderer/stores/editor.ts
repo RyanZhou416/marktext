@@ -28,6 +28,9 @@ import { usePreferencesStore } from './preferences'
 import { useLayoutStore } from './layout'
 import { useProjectStore } from './project'
 import { useAppStore } from './app'
+import i18n from '../i18n'
+
+const t = (key: string, params?: Record<string, any>) => (i18n.global as any).t(key, params)
 
 const autoSaveTimers = new Map<string, ReturnType<typeof setTimeout>>()
 
@@ -274,8 +277,8 @@ export const useEditorStore = defineStore('editor', {
       if (!tab) {
         console.error('LOAD_CHANGE: Cannot find tab in tab list.')
         notice.notify({
-          title: 'Error loading tab',
-          message: 'There was an error while loading the file change because the tab cannot be found.',
+          title: t('notification.errorLoadingTab'),
+          message: t('notification.errorLoadingTabMsg'),
           type: 'error',
           time: 20000,
           showConfirm: false
@@ -541,8 +544,8 @@ export const useEditorStore = defineStore('editor', {
     SHOW_IMAGE_DELETION_URL (deletionUrl: string) {
       notice
         .notify({
-          title: 'Image deletion URL',
-          message: `Click to copy the deletion URL of the uploaded image to the clipboard (${deletionUrl}).`,
+          title: t('notification.imageDeletionUrl'),
+          message: t('notification.imageDeletionUrlMsg', { url: deletionUrl }),
           showConfirm: true,
           time: 20000
         })
@@ -632,7 +635,7 @@ export const useEditorStore = defineStore('editor', {
         const tab = tabs.find((t: any) => t.id === tabId)
         if (!tab) {
           notice.notify({
-            title: 'Save failure',
+            title: t('notification.saveFailure'),
             message: msg,
             type: 'error',
             time: 20000,
@@ -643,7 +646,7 @@ export const useEditorStore = defineStore('editor', {
         this.SET_SAVE_STATUS_BY_TAB({ tab, status: false })
         this.PUSH_TAB_NOTIFICATION({
           tabId,
-          msg: `There was an error while saving: ${msg}`,
+          msg: t('notification.saveFailureMsg', { msg }),
           style: 'crit'
         })
       })
@@ -1187,8 +1190,8 @@ export const useEditorStore = defineStore('editor', {
       ipcRenderer.on('mt::export-success', (e: any, { type, filePath }: any) => {
         notice
           .notify({
-            title: 'Exported successfully',
-            message: `Exported "${path.basename(filePath)}" successfully!`,
+            title: t('notification.exportSuccess'),
+            message: t('notification.exportSuccessMsg', { filename: path.basename(filePath) }),
             showConfirm: true
           })
           .then(() => {

@@ -40,6 +40,7 @@ declare global {
       debug: boolean
       windowId: number
       type: string
+      language: string
       theme: string
       codeFontFamily: string
       codeFontSize: string

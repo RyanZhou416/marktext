@@ -296,17 +296,18 @@ class ImageSelector extends BaseFloat {
   }
 
   renderHeader () {
+    const _t = (this.muya && this.muya._t) ? this.muya._t : (k) => k
     const tabs = [{
-      label: 'Select',
+      label: _t('editor.imageSelector.select'),
       value: 'select'
     }, {
-      label: 'Embed link',
+      label: _t('editor.imageSelector.embedLink'),
       value: 'link'
     }]
 
     if (this.unsplash) {
       tabs.push({
-        label: 'Unsplash',
+        label: _t('editor.imageSelector.unsplash'),
         value: 'unsplash'
       })
     }
@@ -439,7 +440,8 @@ class ImageSelector extends BaseFloat {
         const loadingCom = h('div.ag-plugin-loading')
         bodyContent.push(loadingCom)
       } else if (this.photoList.length === 0) {
-        const noDataCom = h('div.no-data', 'No result...')
+        const _t = (this.muya && this.muya._t) ? this.muya._t : (k) => k
+        const noDataCom = h('div.no-data', _t('editor.quickInsert.noResult'))
         bodyContent.push(noDataCom)
       } else {
         const photos = this.photoList.map(photo => {

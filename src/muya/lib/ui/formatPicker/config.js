@@ -12,58 +12,67 @@ import clearIcon from '../../assets/pngicon/format_clear/2.png'
 
 const COMMAND_KEY = isOsx ? '⌘' : 'Ctrl'
 
-const icons = [
+// Translation function - injected from outside, defaults to identity
+let _t = (key) => key
+
+export const setFormatTranslator = (t) => {
+  _t = t
+}
+
+export const getIcons = () => [
   {
     type: 'strong',
-    tooltip: 'Bold',
+    tooltip: _t('editor.format.bold'),
     shortcut: `${COMMAND_KEY}+B`,
     icon: strongIcon
   }, {
     type: 'em',
-    tooltip: 'Italic',
+    tooltip: _t('editor.format.italic'),
     shortcut: `${COMMAND_KEY}+I`,
     icon: emphasisIcon
   }, {
     type: 'u',
-    tooltip: 'Underline',
+    tooltip: _t('editor.format.underline'),
     shortcut: `${COMMAND_KEY}+U`,
     icon: underlineIcon
   }, {
     type: 'del',
-    tooltip: 'Strikethrough',
+    tooltip: _t('editor.format.strikethrough'),
     shortcut: `${COMMAND_KEY}+D`,
     icon: strikeIcon
   }, {
     type: 'mark',
-    tooltip: 'Highlight',
+    tooltip: _t('editor.format.highlight'),
     shortcut: `⇧+${COMMAND_KEY}+H`,
     icon: highlightIcon
   }, {
     type: 'inline_code',
-    tooltip: 'Inline Code',
+    tooltip: _t('editor.format.inlineCode'),
     shortcut: `${COMMAND_KEY}+\``,
     icon: codeIcon
   }, {
     type: 'inline_math',
-    tooltip: 'Inline Math',
+    tooltip: _t('editor.format.inlineMath'),
     shortcut: `⇧+${COMMAND_KEY}+M`,
     icon: mathIcon
   }, {
     type: 'link',
-    tooltip: 'Link',
+    tooltip: _t('editor.format.link'),
     shortcut: `${COMMAND_KEY}+L`,
     icon: linkIcon
   }, {
     type: 'image',
-    tooltip: 'Image',
+    tooltip: _t('editor.format.image'),
     shortcut: `⇧+${COMMAND_KEY}+I`,
     icon: imageIcon
   }, {
     type: 'clear',
-    tooltip: 'Clear Formatting',
+    tooltip: _t('editor.format.clearFormatting'),
     shortcut: `⇧+${COMMAND_KEY}+R`,
     icon: clearIcon
   }
 ]
+
+const icons = getIcons()
 
 export default icons

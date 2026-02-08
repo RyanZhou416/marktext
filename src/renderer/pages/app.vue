@@ -58,7 +58,7 @@ import { useAutoUpdatesStore } from '@/stores/autoUpdates'
 import { useNotificationStore } from '@/stores/notification'
 import bus from '@/bus'
 import { DEFAULT_STYLE } from '@/config'
-import { ipcRenderer } from '../util/tauri'
+import { ipcRenderer, initMenuEvents, initDragDrop } from '../util/tauri'
 
 export default {
   name: 'marktext',
@@ -172,6 +172,12 @@ export default {
 
     // module: notification
     notificationStore.LISTEN_FOR_NOTIFICATION()
+
+    // Initialize Tauri native menu event handling
+    initMenuEvents(bus)
+
+    // Initialize Tauri native drag-and-drop file handling
+    initDragDrop(bus)
 
     // Tauri auto-initialization: Electron sends mt::bootstrap-editor from main process,
     // but in Tauri we need to self-initialize since there's no Electron main process.

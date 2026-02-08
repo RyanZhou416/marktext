@@ -5,6 +5,7 @@
 
 use serde::{Deserialize, Serialize};
 use tauri::Manager;
+use crate::commands::preferences::PreferencesState;
 
 #[derive(Debug, Serialize, Deserialize)]
 #[allow(dead_code)]
@@ -22,7 +23,36 @@ pub async fn create_editor_window(
 ) -> Result<String, String> {
     let window_id = format!("editor_{}", uuid_simple());
 
-    let builder = tauri::WebviewWindowBuilder::new(
+    // Prepare environment injection BEFORE building the window
+    let user_data_path = app.path().app_data_dir()
+        .map(|p| p.to_string_lossy().to_string())
+        .unwrap_or_default();
+
+    // Read saved language preference for early i18n initialization
+    let language = app.try_state::<PreferencesState>()
+        .and_then(|state| {
+            let prefs = state.preferences.lock().ok()?;
+            prefs.get("language").and_then(|v| v.as_str().map(|s| s.to_string()))
+        })
+        .unwrap_or_else(|| "en".to_string());
+
+    let file_info = if let Some(ref fp) = file_path {
+        format!(", filePath: '{}'", fp.replace('\\', "\\\\").replace('\'', "\\'"))
+    } else {
+        String::new()
+    };
+
+    let js = format!(
+        "window.__TAURI_ENV__ = {{ userDataPath: '{}', debug: {}, windowId: {}, type: 'editor', language: '{}', theme: 'light', codeFontFamily: 'DejaVu Sans Mono', codeFontSize: '14', hideScrollbar: false, titleBarStyle: 'custom'{} }};",
+        user_data_path.replace('\\', "\\\\").replace('\'', "\\'"),
+        if cfg!(debug_assertions) { "true" } else { "false" },
+        1,
+        language,
+        file_info,
+    );
+
+    // Use initialization_script (runs BEFORE page JS) to guarantee __TAURI_ENV__ availability
+    let window = tauri::WebviewWindowBuilder::new(
         &app,
         &window_id,
         tauri::WebviewUrl::App("index.html".into()),
@@ -32,30 +62,12 @@ pub async fn create_editor_window(
     .min_inner_size(600.0, 400.0)
     .resizable(true)
     .decorations(true)
-    .focused(true);
+    .focused(true)
+    .initialization_script(&js)
+    .build()
+    .map_err(|e| format!("Failed to create window: {}", e))?;
 
-    let window = builder.build().map_err(|e| format!("Failed to create window: {}", e))?;
-
-    // Inject environment and file info
-    let user_data_path = app.path().app_data_dir()
-        .map(|p| p.to_string_lossy().to_string())
-        .unwrap_or_default();
-
-    let file_info = if let Some(ref fp) = file_path {
-        format!(", filePath: '{}'", fp.replace('\\', "\\\\").replace('\'', "\\'"))
-    } else {
-        String::new()
-    };
-
-    let js = format!(
-        "window.__TAURI_ENV__ = {{ userDataPath: '{}', debug: {}, windowId: {}, type: 'editor', theme: 'light', codeFontFamily: 'DejaVu Sans Mono', codeFontSize: '14', hideScrollbar: false, titleBarStyle: 'custom'{} }};",
-        user_data_path.replace('\\', "\\\\").replace('\'', "\\'"),
-        if cfg!(debug_assertions) { "true" } else { "false" },
-        1, // Window IDs are managed by Tauri
-        file_info,
-    );
-
-    let _ = window.eval(&js);
+    let _ = &window; // suppress unused warning
     Ok(window_id)
 }
 
@@ -76,6 +88,26 @@ pub async fn create_settings_window(
     let page_param = page.unwrap_or_else(|| "general".to_string());
     let url = format!("index.html#/preference/{}", page_param);
 
+    // Read saved preferences for early injection
+    let user_data_path = app.path().app_data_dir()
+        .map(|p| p.to_string_lossy().to_string())
+        .unwrap_or_default();
+
+    let language = app.try_state::<PreferencesState>()
+        .and_then(|state| {
+            let prefs = state.preferences.lock().ok()?;
+            prefs.get("language").and_then(|v| v.as_str().map(|s| s.to_string()))
+        })
+        .unwrap_or_else(|| "en".to_string());
+
+    let js = format!(
+        "window.__TAURI_ENV__ = {{ userDataPath: '{}', debug: {}, windowId: 2, type: 'settings', language: '{}', theme: 'light', codeFontFamily: 'DejaVu Sans Mono', codeFontSize: '14', hideScrollbar: false, titleBarStyle: 'custom' }};",
+        user_data_path.replace('\\', "\\\\").replace('\'', "\\'"),
+        if cfg!(debug_assertions) { "true" } else { "false" },
+        language,
+    );
+
+    // Use initialization_script (runs BEFORE page JS) instead of eval (race condition)
     let window = tauri::WebviewWindowBuilder::new(
         &app,
         window_id,
@@ -87,21 +119,16 @@ pub async fn create_settings_window(
     .resizable(true)
     .decorations(true)
     .focused(true)
+    .initialization_script(&js)
     .build()
     .map_err(|e| format!("Failed to create settings window: {}", e))?;
 
-    // Inject environment
-    let user_data_path = app.path().app_data_dir()
-        .map(|p| p.to_string_lossy().to_string())
-        .unwrap_or_default();
+    // Open devtools in debug builds for easier debugging
+    #[cfg(debug_assertions)]
+    {
+        window.open_devtools();
+    }
 
-    let js = format!(
-        "window.__TAURI_ENV__ = {{ userDataPath: '{}', debug: {}, windowId: 2, type: 'settings', theme: 'light', codeFontFamily: 'DejaVu Sans Mono', codeFontSize: '14', hideScrollbar: false, titleBarStyle: 'custom' }};",
-        user_data_path.replace('\\', "\\\\").replace('\'', "\\'"),
-        if cfg!(debug_assertions) { "true" } else { "false" },
-    );
-
-    let _ = window.eval(&js);
     Ok(window_id.to_string())
 }
 
@@ -109,15 +136,16 @@ pub async fn create_settings_window(
 #[tauri::command]
 pub async fn close_window_confirm(
     app: tauri::AppHandle,
+    i18n: tauri::State<'_, crate::i18n::I18n>,
     _window_label: Option<String>,
     unsaved_count: u32,
 ) -> Result<String, String> {
     use tauri_plugin_dialog::DialogExt;
 
     let message = if unsaved_count == 1 {
-        "Do you want to save the changes you made?".to_string()
+        i18n.t("dialog.unsavedChanges")
     } else {
-        format!("You have {} unsaved files. Do you want to save changes?", unsaved_count)
+        i18n.t("dialog.unsavedMultiple").replace("{count}", &unsaved_count.to_string())
     };
 
     // Use Tauri dialog

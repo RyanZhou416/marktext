@@ -124,6 +124,11 @@ export const usePreferencesStore = defineStore('preferences', {
     },
 
     SET_SINGLE_PREFERENCE ({ type, value }: { type: string; value: any }) {
+      // Update local state immediately so UI reflects the change
+      if (typeof (this as any)[type] !== 'undefined') {
+        (this as any)[type] = value
+      }
+      // Persist to backend
       ipcRenderer.send('mt::set-user-preference', { [type]: value })
     },
 

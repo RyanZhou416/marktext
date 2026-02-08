@@ -1,4 +1,7 @@
 import * as contextMenu from './actions'
+import i18n from '@/i18n'
+
+const t = (key) => i18n.global.t(key)
 
 // NOTE: This are mutable fields that may change at runtime.
 
@@ -7,7 +10,7 @@ export const SEPARATOR = {
 }
 
 export const CLOSE_THIS = {
-  label: 'Close',
+  get label () { return t('contextMenu.tabs.close') },
   id: 'closeThisTab',
   click (menuItem, browserWindow) {
     contextMenu.closeThis(menuItem._tabId)
@@ -15,7 +18,7 @@ export const CLOSE_THIS = {
 }
 
 export const CLOSE_OTHERS = {
-  label: 'Close others',
+  get label () { return t('contextMenu.tabs.closeOthers') },
   id: 'closeOtherTabs',
   click (menuItem, browserWindow) {
     contextMenu.closeOthers(menuItem._tabId)
@@ -23,7 +26,7 @@ export const CLOSE_OTHERS = {
 }
 
 export const CLOSE_SAVED = {
-  label: 'Close saved tabs',
+  get label () { return t('contextMenu.tabs.closeSaved') },
   id: 'closeSavedTabs',
   click (menuItem, browserWindow) {
     contextMenu.closeSaved()
@@ -31,7 +34,7 @@ export const CLOSE_SAVED = {
 }
 
 export const CLOSE_ALL = {
-  label: 'Close all tabs',
+  get label () { return t('contextMenu.tabs.closeAll') },
   id: 'closeAllTabs',
   click (menuItem, browserWindow) {
     contextMenu.closeAll()
@@ -39,7 +42,7 @@ export const CLOSE_ALL = {
 }
 
 export const RENAME = {
-  label: 'Rename',
+  get label () { return t('contextMenu.tabs.rename') },
   id: 'renameFile',
   click (menuItem, browserWindow) {
     contextMenu.rename(menuItem._tabId)
@@ -47,7 +50,7 @@ export const RENAME = {
 }
 
 export const COPY_PATH = {
-  label: 'Copy path',
+  get label () { return t('contextMenu.tabs.copyPath') },
   id: 'copyPath',
   click (menuItem, browserWindow) {
     contextMenu.copyPath(menuItem._tabId)
@@ -55,7 +58,7 @@ export const COPY_PATH = {
 }
 
 export const SHOW_IN_FOLDER = {
-  label: 'Show in folder',
+  get label () { return t('contextMenu.tabs.showInFolder') },
   id: 'showInFolder',
   click (menuItem, browserWindow) {
     contextMenu.showInFolder(menuItem._tabId)

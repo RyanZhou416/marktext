@@ -1,8 +1,8 @@
 <template>
   <section class="image-folder">
-    <h5>Global or relative image folder</h5>
+    <h5>{{ $t('settings.image.globalFolder') }}</h5>
     <text-box
-      description="Global image folder"
+      :description="$t('settings.image.globalImageFolder')"
       :input="imageFolderPath"
       :regexValidator="/^(?:$|([a-zA-Z]:)?[\/\\].*$)/"
       :defaultValue="folderPathPlaceholder"
@@ -10,14 +10,14 @@
     ></text-box>
     <div>
       <el-button size="mini" @click="modifyImageFolderPath(undefined)"
-        >Open...</el-button
+        >{{ $t('settings.image.open') }}</el-button
       >
-      <el-button size="mini" @click="openImageFolder">Show in Folder</el-button>
+      <el-button size="mini" @click="openImageFolder">{{ $t('settings.image.showInFolder') }}</el-button>
     </div>
     <compound>
       <template #head>
         <bool
-          description="Prefer relative assets folder"
+          :description="$t('settings.image.preferRelative')"
           more="https://github.com/marktext/marktext/blob/develop/docs/IMAGES.md"
           :bool="imagePreferRelativeDirectory"
           :onChange="
@@ -27,7 +27,7 @@
       </template>
       <template #children>
         <text-box
-          description="Relative image folder name"
+          :description="$t('settings.image.relativeFolderName')"
           :input="imageRelativeDirectoryName"
           :regexValidator="/^(?:$|(?![a-zA-Z]:)[^\/\\].*$)/"
           :defaultValue="relativeDirectoryNamePlaceholder"
@@ -36,8 +36,7 @@
           "
         ></text-box>
         <div class="footnote">
-          Include <code>${filename}</code> in the text-box above to
-          automatically insert the document file name.
+          {{ $t('settings.image.filenameNote') }}
         </div>
       </template>
     </compound>

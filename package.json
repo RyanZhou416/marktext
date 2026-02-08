@@ -69,12 +69,14 @@
     "vega-embed": "^6.20.8",
     "vega-lite": "^5.2.0",
     "vue": "^3.4.0",
+    "vue-i18n": "^10",
     "vue-router": "^4.2.0",
     "webfontloader": "^1.6.28"
   },
   "devDependencies": {
     "@babel/core": "^7.17.9",
     "@babel/eslint-parser": "^7.17.0",
+    "@intlify/unplugin-vue-i18n": "^11.0.3",
     "@markedjs/html-differ": "^3.0.4",
     "@playwright/test": "^1.21.0",
     "@tauri-apps/cli": "^2.0.0",

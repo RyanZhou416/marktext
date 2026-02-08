@@ -1,14 +1,11 @@
 <template>
   <div class="pref-image-uploader">
-    <h5>Uploader</h5>
+    <h5>{{ $t('settings.image.uploader') }}</h5>
     <section class="current-uploader">
       <div v-if="isValidUploaderService(currentUploader)">
-        The current image uploader is {{ getServiceNameById(currentUploader) }}.
+        {{ $t('settings.image.currentUploader', { name: getServiceNameById(currentUploader) }) }}
       </div>
-      <span v-else
-        >Currently no uploader is selected. Please select an uploader and config
-        it.</span
-      >
+      <span v-else>{{ $t('settings.image.noUploader') }}</span>
     </section>
     <section class="configration">
       <cur-select
@@ -18,26 +15,25 @@
       ></cur-select>
       <div class="picgo" v-if="currentUploader === 'picgo'">
         <div v-if="!picgoExists" class="warning">
-          Your system does not have
+          {{ $t('settings.image.noPicgo') }}
           <span
             class="link"
             @click="open('https://github.com/PicGo/PicGo-Core')"
             >picgo</span
           >
-          installed, please install it before use.
         </div>
       </div>
       <div class="github" v-if="currentUploader === 'github'">
         <div class="warning">
-          Github will be removed in a future version, please use picgo
+          {{ $t('settings.image.githubDeprecation') }}
         </div>
         <div class="form-group">
           <div class="label">
-            GitHub token:
+            {{ $t('settings.image.githubToken') }}
             <el-tooltip
               class="item"
               effect="dark"
-              content="The token is saved by Keychain on macOS, Secret Service API/libsecret on Linux and Credential Vault on Windows"
+              :content="$t('settings.image.tokenStorageNote')"
               placement="top-start"
             >
               <i class="el-icon-info"></i>
@@ -45,31 +41,31 @@
           </div>
           <el-input
             v-model="githubToken"
-            placeholder="Input token"
+            :placeholder="$t('settings.image.inputToken')"
             size="mini"
           ></el-input>
         </div>
         <div class="form-group">
-          <div class="label">Owner name:</div>
+          <div class="label">{{ $t('settings.image.ownerName') }}</div>
           <el-input
             v-model="github.owner"
-            placeholder="owner"
+            :placeholder="$t('settings.image.owner')"
             size="mini"
           ></el-input>
         </div>
         <div class="form-group">
-          <div class="label">Repo name:</div>
+          <div class="label">{{ $t('settings.image.repoName') }}</div>
           <el-input
             v-model="github.repo"
-            placeholder="repo"
+            :placeholder="$t('settings.image.repo')"
             size="mini"
           ></el-input>
         </div>
         <div class="form-group">
-          <div class="label">Branch name (optional):</div>
+          <div class="label">{{ $t('settings.image.branchName') }}</div>
           <el-input
             v-model="github.branch"
-            placeholder="branch"
+            :placeholder="$t('settings.image.branch')"
             size="mini"
           ></el-input>
         </div>
@@ -83,21 +79,19 @@
             size="mini"
             :disabled="githubDisable"
             @click="save('github')"
-            >Save
+            >{{ $t('settings.image.saveConfig') }}
           </el-button>
         </div>
       </div>
       <div class="script" v-else-if="currentUploader === 'cliScript'">
         <div class="description">
-          The script will be executed with the image file path as its only
-          argument and it should output any valid value for the
-          <code>src</code> attribute of a <em>HTMLImageElement</em>.
+          {{ $t('settings.image.scriptNote') }}
         </div>
         <div class="form-group">
-          <div class="label">Shell script location:</div>
+          <div class="label">{{ $t('settings.image.shellScriptLocation') }}</div>
           <el-input
             v-model="cliScript"
-            placeholder="Script absolute path"
+            :placeholder="$t('settings.image.scriptPath')"
             size="mini"
           ></el-input>
         </div>
@@ -106,7 +100,7 @@
             size="mini"
             :disabled="cliScriptDisable"
             @click="save('cliScript')"
-            >Save
+            >{{ $t('settings.image.saveConfig') }}
           </el-button>
         </div>
       </div>
@@ -242,11 +236,11 @@ export default {
         })
       }
       notice.notify({
-        title: 'Save Config',
+        title: this.$t('settings.image.saveConfig'),
         message:
           type === 'github'
-            ? 'The Github configration has been saved.'
-            : 'The command line script configuration has been saved',
+            ? this.$t('settings.image.configSaved')
+            : this.$t('settings.image.scriptConfigSaved'),
         type: 'primary'
       })
     },

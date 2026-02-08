@@ -20,6 +20,7 @@ pub struct ContextMenuItem {
 /// Get editor context menu items based on selection state
 #[tauri::command]
 pub fn get_editor_context_menu(
+    i18n: tauri::State<'_, crate::i18n::I18n>,
     has_selection: bool,
     is_link: bool,
     is_image: bool,
@@ -29,14 +30,14 @@ pub fn get_editor_context_menu(
     if has_selection {
         items.push(ContextMenuItem {
             id: "cut".to_string(),
-            label: "Cut".to_string(),
+            label: i18n.t("contextMenu.editor.cut"),
             enabled: true,
             separator: false,
             accelerator: Some("CmdOrCtrl+X".to_string()),
         });
         items.push(ContextMenuItem {
             id: "copy".to_string(),
-            label: "Copy".to_string(),
+            label: i18n.t("contextMenu.editor.copy"),
             enabled: true,
             separator: false,
             accelerator: Some("CmdOrCtrl+C".to_string()),
@@ -45,7 +46,7 @@ pub fn get_editor_context_menu(
 
     items.push(ContextMenuItem {
         id: "paste".to_string(),
-        label: "Paste".to_string(),
+        label: i18n.t("contextMenu.editor.paste"),
         enabled: true,
         separator: false,
         accelerator: Some("CmdOrCtrl+V".to_string()),
@@ -62,14 +63,14 @@ pub fn get_editor_context_menu(
     if has_selection {
         items.push(ContextMenuItem {
             id: "copy-as-markdown".to_string(),
-            label: "Copy as Markdown".to_string(),
+            label: i18n.t("contextMenu.editor.copyAsMarkdown"),
             enabled: true,
             separator: false,
             accelerator: None,
         });
         items.push(ContextMenuItem {
             id: "copy-as-html".to_string(),
-            label: "Copy as HTML".to_string(),
+            label: i18n.t("contextMenu.editor.copyAsHtml"),
             enabled: true,
             separator: false,
             accelerator: None,
@@ -85,7 +86,7 @@ pub fn get_editor_context_menu(
 
     items.push(ContextMenuItem {
         id: "select-all".to_string(),
-        label: "Select All".to_string(),
+        label: i18n.t("contextMenu.editor.selectAll"),
         enabled: true,
         separator: false,
         accelerator: Some("CmdOrCtrl+A".to_string()),
@@ -101,14 +102,14 @@ pub fn get_editor_context_menu(
         });
         items.push(ContextMenuItem {
             id: "open-link".to_string(),
-            label: "Open Link".to_string(),
+            label: i18n.t("contextMenu.editor.openLink"),
             enabled: true,
             separator: false,
             accelerator: None,
         });
         items.push(ContextMenuItem {
             id: "copy-link".to_string(),
-            label: "Copy Link".to_string(),
+            label: i18n.t("contextMenu.editor.copyLink"),
             enabled: true,
             separator: false,
             accelerator: None,
@@ -125,14 +126,14 @@ pub fn get_editor_context_menu(
         });
         items.push(ContextMenuItem {
             id: "copy-image".to_string(),
-            label: "Copy Image".to_string(),
+            label: i18n.t("contextMenu.editor.copyImage"),
             enabled: true,
             separator: false,
             accelerator: None,
         });
         items.push(ContextMenuItem {
             id: "save-image".to_string(),
-            label: "Save Image As...".to_string(),
+            label: i18n.t("contextMenu.editor.saveImageAs"),
             enabled: true,
             separator: false,
             accelerator: None,
@@ -145,6 +146,7 @@ pub fn get_editor_context_menu(
 /// Get sidebar context menu items
 #[tauri::command]
 pub fn get_sidebar_context_menu(
+    i18n: tauri::State<'_, crate::i18n::I18n>,
     _file_path: String,
     is_directory: bool,
 ) -> Vec<ContextMenuItem> {
@@ -153,14 +155,14 @@ pub fn get_sidebar_context_menu(
     if is_directory {
         items.push(ContextMenuItem {
             id: "new-file".to_string(),
-            label: "New File".to_string(),
+            label: i18n.t("contextMenu.sidebar.newFile"),
             enabled: true,
             separator: false,
             accelerator: None,
         });
         items.push(ContextMenuItem {
             id: "new-folder".to_string(),
-            label: "New Folder".to_string(),
+            label: i18n.t("contextMenu.sidebar.newDirectory"),
             enabled: true,
             separator: false,
             accelerator: None,
@@ -176,7 +178,7 @@ pub fn get_sidebar_context_menu(
 
     items.push(ContextMenuItem {
         id: "rename".to_string(),
-        label: "Rename".to_string(),
+        label: i18n.t("contextMenu.sidebar.rename"),
         enabled: true,
         separator: false,
         accelerator: None,
@@ -184,7 +186,7 @@ pub fn get_sidebar_context_menu(
 
     items.push(ContextMenuItem {
         id: "delete".to_string(),
-        label: "Move to Trash".to_string(),
+        label: i18n.t("contextMenu.sidebar.moveToTrash"),
         enabled: true,
         separator: false,
         accelerator: None,
@@ -200,7 +202,7 @@ pub fn get_sidebar_context_menu(
 
     items.push(ContextMenuItem {
         id: "reveal-in-explorer".to_string(),
-        label: "Reveal in File Explorer".to_string(),
+        label: i18n.t("dialog.revealInExplorer"),
         enabled: true,
         separator: false,
         accelerator: None,
@@ -208,7 +210,7 @@ pub fn get_sidebar_context_menu(
 
     items.push(ContextMenuItem {
         id: "copy-path".to_string(),
-        label: "Copy Path".to_string(),
+        label: i18n.t("contextMenu.tabs.copyPath"),
         enabled: true,
         separator: false,
         accelerator: None,
@@ -220,6 +222,7 @@ pub fn get_sidebar_context_menu(
 /// Get tab context menu items
 #[tauri::command]
 pub fn get_tab_context_menu(
+    i18n: tauri::State<'_, crate::i18n::I18n>,
     has_path: bool,
     is_saved: bool,
 ) -> Vec<ContextMenuItem> {
@@ -227,7 +230,7 @@ pub fn get_tab_context_menu(
 
     items.push(ContextMenuItem {
         id: "close-tab".to_string(),
-        label: "Close".to_string(),
+        label: i18n.t("contextMenu.tabs.close"),
         enabled: true,
         separator: false,
         accelerator: Some("CmdOrCtrl+W".to_string()),
@@ -235,7 +238,7 @@ pub fn get_tab_context_menu(
 
     items.push(ContextMenuItem {
         id: "close-others".to_string(),
-        label: "Close Others".to_string(),
+        label: i18n.t("contextMenu.tabs.closeOthers"),
         enabled: true,
         separator: false,
         accelerator: None,
@@ -243,7 +246,7 @@ pub fn get_tab_context_menu(
 
     items.push(ContextMenuItem {
         id: "close-all".to_string(),
-        label: "Close All".to_string(),
+        label: i18n.t("contextMenu.tabs.closeAll"),
         enabled: true,
         separator: false,
         accelerator: None,
@@ -260,7 +263,7 @@ pub fn get_tab_context_menu(
     if has_path {
         items.push(ContextMenuItem {
             id: "copy-path".to_string(),
-            label: "Copy Path".to_string(),
+            label: i18n.t("contextMenu.tabs.copyPath"),
             enabled: true,
             separator: false,
             accelerator: None,
@@ -268,7 +271,7 @@ pub fn get_tab_context_menu(
 
         items.push(ContextMenuItem {
             id: "reveal-in-explorer".to_string(),
-            label: "Reveal in File Explorer".to_string(),
+            label: i18n.t("dialog.revealInExplorer"),
             enabled: true,
             separator: false,
             accelerator: None,
@@ -285,7 +288,7 @@ pub fn get_tab_context_menu(
 
     items.push(ContextMenuItem {
         id: "rename".to_string(),
-        label: "Rename".to_string(),
+        label: i18n.t("contextMenu.tabs.rename"),
         enabled: has_path,
         separator: false,
         accelerator: None,
@@ -294,7 +297,7 @@ pub fn get_tab_context_menu(
     if !is_saved {
         items.push(ContextMenuItem {
             id: "save".to_string(),
-            label: "Save".to_string(),
+            label: i18n.t("contextMenu.tabs.save"),
             enabled: true,
             separator: false,
             accelerator: Some("CmdOrCtrl+S".to_string()),

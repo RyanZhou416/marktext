@@ -1,24 +1,23 @@
 <template>
   <div class="pref-keybindings">
-    <h4>Key Bindings</h4>
+    <h4>{{ $t('settings.keybindings.title') }}</h4>
     <section class="keybindings">
       <div class="text">
-        Customize MarkText shortcuts and click on the save button below to apply
-        all changes (requires a restart). All available and default key binding
-        can be found <a class="link" @click="openKeybindingWiki">online</a>.
+        {{ $t('settings.keybindings.description') }}
+        <a class="link" @click="openKeybindingWiki">{{ $t('settings.keybindings.descriptionLink') }}</a>.
       </div>
       <el-table :data="keybindingList" style="width: 100%">
-        <el-table-column prop="description" label="Description">
+        <el-table-column prop="description" :label="$t('settings.keybindings.colDescription')">
         </el-table-column>
-        <el-table-column prop="accelerator" label="Key Combination" width="220">
+        <el-table-column prop="accelerator" :label="$t('settings.keybindings.colKeyCombination')" width="220">
         </el-table-column>
-        <el-table-column fixed="right" label="Options" width="90">
+        <el-table-column fixed="right" :label="$t('settings.keybindings.colOptions')" width="90">
           <template #default="scope">
             <el-button
               @click="handleEditClick(scope.$index, scope.row)"
               type="text"
               size="small"
-              title="Edit"
+              :title="$t('common.edit')"
             >
               <i class="el-icon-edit"></i>
             </el-button>
@@ -26,7 +25,7 @@
               @click="handleResetClick(scope.$index, scope.row)"
               type="text"
               size="small"
-              title="Reset"
+              :title="$t('common.reset')"
             >
               <i class="el-icon-refresh-right"></i>
             </el-button>
@@ -34,7 +33,7 @@
               @click="handleUnbindClick(scope.$index, scope.row)"
               type="text"
               size="small"
-              title="Unbind"
+              :title="$t('common.unbind')"
             >
               <i class="el-icon-delete"></i>
             </el-button>
@@ -44,16 +43,16 @@
     </section>
     <section class="footer">
       <separator></separator>
-      <el-button size="medium" @click="saveKeybindings">Save</el-button>
+      <el-button size="medium" @click="saveKeybindings">{{ $t('common.save') }}</el-button>
       <el-button size="medium" @click="restoreDefaults"
-        >Restore default key bindings</el-button
+        >{{ $t('settings.keybindings.restoreDefaults') }}</el-button
       >
     </section>
     <section v-if="showDebugTools" class="keyboard-debug">
       <separator></separator>
-      <div><strong>Debug options:</strong></div>
+      <div><strong>{{ $t('settings.keybindings.debugOptions') }}</strong></div>
       <el-button size="medium" @click="dumpKeyboardInformation"
-        >Dump keyboard information</el-button
+        >{{ $t('settings.keybindings.dumpKeyboard') }}</el-button
       >
     </section>
     <key-input-dialog
@@ -143,9 +142,9 @@ export default {
           .then((success) => {
             if (!success) {
               notice.notify({
-                title: 'Failed to save',
+                title: this.$t('settings.keybindings.failedSave'),
                 type: 'error',
-                message: 'An unexpected error occurred while saving.'
+                message: this.$t('settings.keybindings.saveError')
               })
             }
           })
@@ -158,9 +157,9 @@ export default {
         .then((success) => {
           if (!success) {
             notice.notify({
-              title: 'Failed to save',
+              title: this.$t('settings.keybindings.failedSave'),
               type: 'error',
-              message: 'An unexpected error occurred while saving.'
+              message: this.$t('settings.keybindings.saveError')
             })
           }
         })
@@ -197,9 +196,9 @@ export default {
     },
     handleDuplicateShortcut (id, accelerator) {
       notice.notify({
-        title: 'Shortcut already in use',
+        title: this.$t('settings.keybindings.shortcutInUse'),
         type: 'warning',
-        message: `The shortcut "${accelerator}" is already in use. Please unset the shortcut and try again.`
+        message: this.$t('settings.keybindings.shortcutInUseMsg', { accelerator })
       })
     },
     dumpKeyboardInformation () {

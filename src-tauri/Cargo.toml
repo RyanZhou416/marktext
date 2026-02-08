@@ -71,9 +71,24 @@ winapi = { version = "0.3", features = ["winuser"] }
 default = []
 custom-protocol = ["tauri/custom-protocol"]
 
+# Dev profile: optimize dependencies for faster runtime without slowing down recompiles
+[profile.dev]
+opt-level = 0            # No optimization for your code (fast compile)
+
+[profile.dev.package."*"]
+opt-level = 2            # Optimize dependencies (they rarely change, so this is cached)
+
+# Release profile: good balance between build speed and binary quality
 [profile.release]
 panic = "abort"
-codegen-units = 1
-lto = true
-opt-level = "s"
+codegen-units = 16       # Parallel codegen (default); was 1 which serializes everything
+lto = "thin"             # Thin LTO: ~80% of full LTO benefit at ~30% of the build time
+opt-level = "s"          # Optimize for size
 strip = true
+
+# Optional: use this profile for final distribution builds (slower but smaller)
+# Run with: cargo build --profile release-dist
+[profile.release-dist]
+inherits = "release"
+codegen-units = 1        # Maximum optimization (slow!)
+lto = true               # Full LTO (slow!)

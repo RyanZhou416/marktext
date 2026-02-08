@@ -9,6 +9,7 @@ import { execSync } from 'child_process'
 import { defineConfig } from 'vite'
 import vue from '@vitejs/plugin-vue'
 import { nodePolyfills } from 'vite-plugin-node-polyfills'
+import VueI18nPlugin from '@intlify/unplugin-vue-i18n/vite'
 import { createRequire } from 'module'
 
 const require = createRequire(import.meta.url)
@@ -49,6 +50,9 @@ export default defineConfig({
   publicDir: resolve(__dirname, 'src/renderer/public'),
   plugins: [
     vue(),
+    VueI18nPlugin({
+      include: [resolve(__dirname, 'src/locales/en.json'), resolve(__dirname, 'src/locales/zh-CN.json')]
+    }),
     nodePolyfills({
       include: ['buffer', 'process', 'util', 'stream', 'events', 'path', 'os', 'crypto', 'assert', 'url', 'zlib', 'http', 'https', 'string_decoder', 'constants', 'timers', 'querystring', 'vm'],
       globals: {
@@ -102,6 +106,16 @@ export default defineConfig({
       'katex',
       'prismjs',
       'mitt'
+    ],
+    exclude: [
+      '@tauri-apps/api',
+      '@tauri-apps/plugin-shell',
+      '@tauri-apps/plugin-dialog',
+      '@tauri-apps/plugin-clipboard-manager',
+      '@tauri-apps/plugin-fs',
+      '@tauri-apps/plugin-os',
+      '@tauri-apps/plugin-process',
+      '@tauri-apps/plugin-window-state'
     ],
     esbuildOptions: {
       target: 'es2020',

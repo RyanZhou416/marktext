@@ -12,26 +12,35 @@ const wholeSubMenu = Object.keys(quickInsertObj).reduce((acc, key) => {
 
 const COMMAND_KEY = isOsx ? '⌘' : '⌃'
 
-export const menu = [{
+// Translation function - injected from outside, defaults to identity
+let _t = (key) => key
+
+export const setFrontMenuTranslator = (t) => {
+  _t = t
+}
+
+export const getMenu = () => [{
   icon: copyIcon,
   label: 'duplicate',
-  text: 'Duplicate',
+  text: _t('editor.frontMenu.duplicate'),
   shortCut: `⇧${COMMAND_KEY}P`
 }, {
   icon: turnIcon,
   label: 'turnInto',
-  text: 'Turn Into'
+  text: _t('editor.frontMenu.turnInto')
 }, {
   icon: newIcon,
   label: 'new',
-  text: 'New Paragraph',
+  text: _t('editor.frontMenu.newParagraph'),
   shortCut: `⇧${COMMAND_KEY}N`
 }, {
   icon: deleteIcon,
   label: 'delete',
-  text: 'Delete',
+  text: _t('editor.frontMenu.delete'),
   shortCut: `⇧${COMMAND_KEY}D`
 }]
+
+export const menu = getMenu()
 
 export const getLabel = block => {
   const { type, functionType, listType } = block

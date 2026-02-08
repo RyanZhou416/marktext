@@ -33,137 +33,164 @@ const SHIFT_KEY = isOsx ? '⇧' : 'Shift'
 // Caps Lock ⇪
 // Fn
 
-export const quickInsertObj = {
-  'basic block': [{
-    title: 'Paragraph',
+// Translation function - injected from outside, defaults to identity
+let _t = (key) => key
+
+export const setTranslator = (t) => {
+  _t = t
+}
+
+export const getQuickInsertObj = () => ({
+  [_t('editor.quickInsert.basicBlock')]: [{
+    title: _t('editor.quickInsert.paragraph'),
     subTitle: 'Lorem Ipsum is simply dummy text',
     label: 'paragraph',
     shortCut: `${COMMAND_KEY}+0`,
     icon: paragraphIcon
   }, {
-    title: 'Horizontal Line',
+    title: _t('editor.quickInsert.horizontalLine'),
     subTitle: '---',
     label: 'hr',
     shortCut: `${OPTION_KEY}+${COMMAND_KEY}+-`,
     icon: hrIcon
   }, {
-    title: 'Front Matter',
+    title: _t('editor.quickInsert.frontMatter'),
     subTitle: '--- Lorem Ipsum ---',
     label: 'front-matter',
     shortCut: `${OPTION_KEY}+${COMMAND_KEY}+Y`,
     icon: frontMatterIcon
   }],
-  header: [{
-    title: 'Header 1',
+  [_t('editor.quickInsert.header')]: [{
+    title: _t('editor.quickInsert.header1'),
     subTitle: '# Lorem Ipsum is simply ...',
     label: 'heading 1',
     shortCut: `${COMMAND_KEY}+1`,
     icon: header1Icon
   }, {
-    title: 'Header 2',
+    title: _t('editor.quickInsert.header2'),
     subTitle: '## Lorem Ipsum is simply ...',
     label: 'heading 2',
     shortCut: `${COMMAND_KEY}+2`,
     icon: header2Icon
   }, {
-    title: 'Header 3',
+    title: _t('editor.quickInsert.header3'),
     subTitle: '### Lorem Ipsum is simply ...',
     label: 'heading 3',
     shortCut: `${COMMAND_KEY}+3`,
     icon: header3Icon
   }, {
-    title: 'Header 4',
+    title: _t('editor.quickInsert.header4'),
     subTitle: '#### Lorem Ipsum is simply ...',
     label: 'heading 4',
     shortCut: `${COMMAND_KEY}+4`,
     icon: header4Icon
   }, {
-    title: 'Header 5',
+    title: _t('editor.quickInsert.header5'),
     subTitle: '##### Lorem Ipsum is simply ...',
     label: 'heading 5',
     shortCut: `${COMMAND_KEY}+5`,
     icon: header5Icon
   }, {
-    title: 'Header 6',
+    title: _t('editor.quickInsert.header6'),
     subTitle: '###### Lorem Ipsum is simply ...',
     label: 'heading 6',
     shortCut: `${COMMAND_KEY}+6`,
     icon: header6Icon
   }],
-  'advanced block': [{
-    title: 'Table Block',
+  [_t('editor.quickInsert.advancedBlock')]: [{
+    title: _t('editor.quickInsert.tableBlock'),
     subTitle: '|Lorem | Ipsum is simply |',
     label: 'table',
     shortCut: `${SHIFT_KEY}+${COMMAND_KEY}+T`,
     icon: newTableIcon
   }, {
-    title: 'Display Math',
+    title: _t('editor.quickInsert.displayMath'),
     subTitle: '$$ Lorem Ipsum is simply $$',
     label: 'mathblock',
     shortCut: `${OPTION_KEY}+${COMMAND_KEY}+M`,
     icon: mathblockIcon
   }, {
-    title: 'HTML Block',
+    title: _t('editor.quickInsert.htmlBlock'),
     subTitle: '<div> Lorem Ipsum is simply </div>',
     label: 'html',
     shortCut: `${OPTION_KEY}+${COMMAND_KEY}+J`,
     icon: htmlIcon
   }, {
-    title: 'Code Block',
+    title: _t('editor.quickInsert.codeBlock'),
     subTitle: '```java Lorem Ipsum is simply ```',
     label: 'pre',
     shortCut: `${OPTION_KEY}+${COMMAND_KEY}+C`,
     icon: codeIcon
   }, {
-    title: 'Quote Block',
+    title: _t('editor.quickInsert.quoteBlock'),
     subTitle: '>Lorem Ipsum is simply ...',
     label: 'blockquote',
     shortCut: `${OPTION_KEY}+${COMMAND_KEY}+Q`,
     icon: quoteIcon
   }],
-  'list block': [{
-    title: 'Order List',
+  [_t('editor.quickInsert.listBlock')]: [{
+    title: _t('editor.quickInsert.orderList'),
     subTitle: '1. Lorem Ipsum is simply ...',
     label: 'ol-order',
     shortCut: `${OPTION_KEY}+${COMMAND_KEY}+O`,
     icon: orderListIcon
   }, {
-    title: 'Bullet List',
+    title: _t('editor.quickInsert.bulletList'),
     subTitle: '- Lorem Ipsum is simply ...',
     label: 'ul-bullet',
     shortCut: `${OPTION_KEY}+${COMMAND_KEY}+U`,
     icon: bulletListIcon
   }, {
-    title: 'To-do List',
+    title: _t('editor.quickInsert.todoList'),
     subTitle: '- [x] Lorem Ipsum is simply ...',
     label: 'ul-task',
     shortCut: `${OPTION_KEY}+${COMMAND_KEY}+X`,
     icon: todoListIcon
   }],
-  diagram: [{
-    title: 'Vega Chart',
+  [_t('editor.quickInsert.diagram')]: [{
+    title: _t('editor.quickInsert.vegaChart'),
     subTitle: 'Render flow chart by vega-lite.js.',
     label: 'vega-lite',
     icon: vegaIcon
   }, {
-    title: 'Flow Chart',
+    title: _t('editor.quickInsert.flowChart'),
     subTitle: 'Render flow chart by flowchart.js.',
     label: 'flowchart',
     icon: flowchartIcon
   }, {
-    title: 'Sequence Diagram',
+    title: _t('editor.quickInsert.sequenceDiagram'),
     subTitle: 'Render sequence diagram by js-sequence.',
     label: 'sequence',
     icon: sequenceIcon
   }, {
-    title: 'PlantUML Diagram',
+    title: _t('editor.quickInsert.plantUml'),
     subTitle: 'Render PlantUML diagrams',
     label: 'plantuml',
     icon: plantumlIcon
   }, {
-    title: 'Mermaid',
+    title: _t('editor.quickInsert.mermaid'),
     subTitle: 'Render Diagram by mermaid.',
     label: 'mermaid',
     icon: mermaidIcon
   }]
-}
+})
+
+// Keep backward-compatible static export (uses current _t)
+export const quickInsertObj = new Proxy({}, {
+  get (target, prop) {
+    return getQuickInsertObj()[prop]
+  },
+  ownKeys () {
+    return Object.keys(getQuickInsertObj())
+  },
+  getOwnPropertyDescriptor (target, prop) {
+    const obj = getQuickInsertObj()
+    if (prop in obj) {
+      return { configurable: true, enumerable: true, value: obj[prop] }
+    }
+    return undefined
+  },
+  has (target, prop) {
+    return prop in getQuickInsertObj()
+  }
+})

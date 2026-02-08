@@ -17,13 +17,13 @@ pub struct ImageInfo {
 
 /// Pick image file dialog
 #[tauri::command]
-pub async fn pick_image_dialog(app: tauri::AppHandle) -> Result<Option<String>, String> {
+pub async fn pick_image_dialog(app: tauri::AppHandle, i18n: tauri::State<'_, crate::i18n::I18n>) -> Result<Option<String>, String> {
     use tauri_plugin_dialog::DialogExt;
 
     let result = app
         .dialog()
         .file()
-        .add_filter("Images", &["jpg", "jpeg", "png", "gif", "svg", "webp", "bmp"])
+        .add_filter(&i18n.t("dialog.images"), &["jpg", "jpeg", "png", "gif", "svg", "webp", "bmp"])
         .blocking_pick_file();
 
     match result {

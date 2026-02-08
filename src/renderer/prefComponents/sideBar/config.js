@@ -8,38 +8,38 @@ import KeyBindingIcon from '@/assets/icons/pref_key_binding.svg'
 
 import preferences from 'common/preferences-schema.json'
 
-export const category = [{
-  name: 'General',
+export const category = (t) => [{
+  name: t('settings.general'),
   label: 'general',
   icon: GeneralIcon,
   path: '/preference/general'
 }, {
-  name: 'Editor',
+  name: t('settings.editor'),
   label: 'editor',
   icon: EditorIcon,
   path: '/preference/editor'
 }, {
-  name: 'Markdown',
+  name: t('settings.markdown'),
   label: 'markdown',
   icon: MarkdownIcon,
   path: '/preference/markdown'
 }, {
-  name: 'Spelling',
+  name: t('settings.spelling'),
   label: 'spelling',
   icon: SpellIcon,
   path: '/preference/spelling'
 }, {
-  name: 'Theme',
+  name: t('settings.theme'),
   label: 'theme',
   icon: ThemeIcon,
   path: '/preference/theme'
 }, {
-  name: 'Image',
+  name: t('settings.image'),
   label: 'image',
   icon: ImageIcon,
   path: '/preference/image'
 }, {
-  name: 'Key Bindings',
+  name: t('settings.keyBindings'),
   label: 'keybindings',
   icon: KeyBindingIcon,
   path: '/preference/keybindings'
@@ -56,4 +56,7 @@ export const searchContent = Object.keys(preferences).map(k => {
     preference
   }
 })
-  .filter(({ category: ca }) => category.some(c => c.label === ca.toLowerCase()))
+  .filter(({ category: ca }) => {
+    const validLabels = ['general', 'editor', 'markdown', 'spelling', 'theme', 'image', 'keybindings']
+    return validLabels.includes(ca.toLowerCase())
+  })
