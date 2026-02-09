@@ -298,7 +298,10 @@ export default {
     margin-bottom: 10px;
   }
   & .el-input__inner {
-    background: transparent;
+    background: var(--inputBgColor);
+  }
+  & .el-input__wrapper {
+    background-color: var(--inputBgColor);
   }
   & .el-button.btn-reset,
   & .button-group {

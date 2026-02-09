@@ -28,8 +28,8 @@ export default function loadImageAsync (imageInfo, attrs, className, imageClass)
         const img = document.createElement('img')
         let dispMsec = Date.now()
         let touchMsec = dispMsec
-        if (/^file:\/\//.test(src)) {
-          domsrc = url + '?msec=' + dispMsec
+        if (/^file:\/\//.test(src) || /^https:\/\/asset\.localhost\//.test(src) || /^asset:\/\/localhost\//.test(src)) {
+          domsrc = url + (url.includes('?') ? '&' : '?') + 'msec=' + dispMsec
         } else {
           domsrc = url
         }

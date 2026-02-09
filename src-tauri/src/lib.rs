@@ -178,6 +178,14 @@ pub fn run() {
                         .unwrap_or(14)
                         .to_string()
                 };
+                let title_bar_style = {
+                    let prefs = prefs_state.preferences.lock().unwrap();
+                    prefs.get("titleBarStyle")
+                        .and_then(|v| v.as_str())
+                        .unwrap_or("custom")
+                        .to_string()
+                };
+                let use_custom_titlebar = title_bar_style == "custom";
 
                 // Build file path list from CLI
                 let files_json = if cli_args.files.is_empty() {
@@ -192,13 +200,14 @@ pub fn run() {
                 // Inject Tauri environment info into the webview
                 let is_debug = cli_args.debug || cfg!(debug_assertions);
                 let js = format!(
-                    "window.__TAURI_ENV__ = {{ userDataPath: '{}', debug: {}, windowId: 1, type: 'editor', language: '{}', theme: '{}', codeFontFamily: '{}', codeFontSize: '{}', hideScrollbar: false, titleBarStyle: 'custom', portable: {}, safeMode: {}{} }};",
+                    "window.__TAURI_ENV__ = {{ userDataPath: '{}', debug: {}, windowId: 1, type: 'editor', language: '{}', theme: '{}', codeFontFamily: '{}', codeFontSize: '{}', hideScrollbar: false, titleBarStyle: '{}', portable: {}, safeMode: {}{} }};",
                     user_data_path.replace('\\', "\\\\").replace('\'', "\\'"),
                     if is_debug { "true" } else { "false" },
                     locale,
                     theme,
                     code_font_family,
                     code_font_size,
+                    title_bar_style,
                     if portable_dir.is_some() { "true" } else { "false" },
                     if cli_args.safe_mode { "true" } else { "false" },
                     files_json,
@@ -213,13 +222,32 @@ pub fn run() {
                 .inner_size(1280.0, 800.0)
                 .min_inner_size(600.0, 400.0)
                 .resizable(true)
-                .decorations(true)
-                .focused(true)
+                .decorations(!use_custom_titlebar)
+                .visible(false) // Start hidden to avoid flash; frontend calls show_main_window when ready
                 .initialization_script(&js)
                 .build()
                 .expect("Failed to create main window");
 
-                log::info!("Main window created");
+                log::info!("Main window created (titleBarStyle={})", title_bar_style);
+
+                // When using custom title bar, hide the native menu bar.
+                // MarkText uses a custom title bar with a hamburger button that shows the menu as a popup.
+                if use_custom_titlebar {
+                    let _ = window.hide_menu();
+                }
+
+                // Intercept window close to check for unsaved files first.
+                // The frontend handles the unsaved-files dialog and calls
+                // close_window (which uses destroy()) when ready.
+                {
+                    let handle = app.handle().clone();
+                    window.on_window_event(move |event| {
+                        if let tauri::WindowEvent::CloseRequested { api, .. } = event {
+                            api.prevent_close();
+                            let _ = handle.emit("mt::ask-for-close", ());
+                        }
+                    });
+                }
 
                 #[cfg(debug_assertions)]
                 {
@@ -288,13 +316,16 @@ pub fn run() {
             commands::window::create_editor_window,
             commands::window::create_settings_window,
             menu::show_app_menu,
+            menu::rebuild_menu,
             commands::window::close_window_confirm,
+            commands::window::show_main_window,
             commands::window::minimize_window,
             commands::window::maximize_window,
             commands::window::close_window,
             commands::window::set_fullscreen,
             commands::window::set_always_on_top,
             commands::window::get_window_state,
+            commands::window::set_title_bar_style,
             // Keybindings
             commands::keybindings::get_default_keybindings,
             commands::keybindings::get_user_keybindings,

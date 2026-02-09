@@ -31,7 +31,6 @@
         <cur-select
           v-if="!isOsx"
           :description="$t('settings.general.titleBarStyle')"
-          :notes="$t('common.requiresRestart')"
           :value="titleBarStyle"
           :options="titleBarStyleOpts"
           :onChange="value => onSelectChange('titleBarStyle', value)"
@@ -135,7 +134,8 @@ import {
 import meta from '../../../locales/_meta.json'
 import i18n from '@/i18n'
 import { loadLocale } from '@/i18n/loader'
-import { ElMessage } from 'element-plus'
+import { isTauriAvailable } from '@/util/tauri'
+
 
 export default {
   components: {
@@ -196,11 +196,14 @@ export default {
       const preferencesStore = usePreferencesStore()
       preferencesStore.SET_SINGLE_PREFERENCE({ type: 'language', value })
       await loadLocale(i18n, value)
-      // Native menus require restart to update
-      ElMessage.info({
-        message: this.$t('common.requiresRestart'),
-        duration: 5000
-      })
+      // Rebuild native menu with new locale
+      if (isTauriAvailable()) {
+        import('@tauri-apps/api/core').then(({ invoke }) => {
+          invoke('rebuild_menu', { locale: value }).catch((e) => {
+            console.error('Failed to rebuild menu:', e)
+          })
+        })
+      }
     },
     selectDefaultDirectoryToOpen () {
       const preferencesStore = usePreferencesStore()

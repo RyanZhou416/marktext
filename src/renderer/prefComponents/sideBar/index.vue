@@ -151,9 +151,12 @@ export default {
 .el-autocomplete {
   width: 100%;
   & .el-input__inner {
-    background: transparent;
+    background: var(--inputBgColor);
     height: 35px;
     line-height: 35px;
+  }
+  & .el-input__wrapper {
+    background-color: var(--inputBgColor);
   }
 }
 .pref-autocomplete.el-autocomplete-suggestion {

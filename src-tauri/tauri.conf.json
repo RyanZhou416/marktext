@@ -14,7 +14,10 @@
     "windows": [],
     "security": {
       "csp": null,
-      "dangerousDisableAssetCspModification": true
+      "dangerousDisableAssetCspModification": true,
+      "assetProtocol": {
+        "scope": ["**"]
+      }
     }
   },
   "bundle": {

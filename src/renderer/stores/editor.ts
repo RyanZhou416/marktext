@@ -1135,8 +1135,9 @@ export const useEditorStore = defineStore('editor', {
     },
 
     SELECTION_CHANGE (changes: any) {
+      if (!changes || !changes.start || !changes.end) return
       const { start, end } = changes
-      if (start.key === end.key && start.block.text) {
+      if (start.key === end.key && start.block && start.block.text) {
         const value = start.block.text.substring(start.offset, end.offset)
         this.SET_SEARCH({
           matches: [],

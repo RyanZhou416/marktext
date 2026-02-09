@@ -58,7 +58,7 @@ import { useAutoUpdatesStore } from '@/stores/autoUpdates'
 import { useNotificationStore } from '@/stores/notification'
 import bus from '@/bus'
 import { DEFAULT_STYLE } from '@/config'
-import { ipcRenderer, initMenuEvents, initDragDrop } from '../util/tauri'
+import { ipcRenderer, initMenuEvents, initDragDrop, initOpenFilesListener } from '../util/tauri'
 
 export default {
   name: 'marktext',
@@ -179,10 +179,13 @@ export default {
     // Initialize Tauri native drag-and-drop file handling
     initDragDrop(bus)
 
+    // Listen for open-files events from Rust (file association, command-line args)
+    initOpenFilesListener()
+
     // Tauri auto-initialization: Electron sends mt::bootstrap-editor from main process,
     // but in Tauri we need to self-initialize since there's no Electron main process.
     if (typeof window !== 'undefined' && window.__TAURI_INTERNALS__) {
-      this.$nextTick(() => {
+      this.$nextTick(async () => {
         // Set initialized flag (renders editor area)
         appStore.SEND_INITIALIZED()
         // Set default layout
@@ -193,6 +196,13 @@ export default {
         })
         // Create a blank editor tab
         editorStore.NEW_UNTITLED_TAB({})
+        // Show the window now that UI is ready (avoids startup flash)
+        try {
+          const { invoke } = await import('@tauri-apps/api/core')
+          await invoke('show_main_window')
+        } catch (e) {
+          console.error('Failed to show main window:', e)
+        }
       })
     }
 

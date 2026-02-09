@@ -12,14 +12,12 @@
     :dir="textDirection"
   >
     <div ref="editor" class="editor-component"></div>
-    <div class="image-viewer" v-show="imageViewerVisible">
-      <span class="icon-close" @click="setImageViewerVisible(false)">
-        <svg :viewBox="CloseIcon.viewBox">
-          <use :xlink:href="CloseIcon.url"></use>
-        </svg>
-      </span>
-      <div ref="imageViewer"></div>
-    </div>
+    <el-image-viewer
+      v-if="imageViewerVisible"
+      :url-list="imageViewerUrls"
+      :initial-index="0"
+      @close="setImageViewerVisible(false)"
+    />
     <el-dialog
       v-model="dialogTableVisible"
       :show-close="isShowClose"
@@ -73,7 +71,7 @@ import { mapState } from 'pinia'
 import { usePreferencesStore } from '@/stores/preferences'
 import { useEditorStore } from '@/stores/editor'
 import { useProjectStore } from '@/stores/project'
-// import ViewImage from 'view-image'
+import { ElImageViewer } from 'element-plus'
 import { isChildOfDirectory } from 'common/filesystem/paths'
 import Muya from 'muya/lib'
 import TablePicker from 'muya/lib/ui/tablePicker'
@@ -108,14 +106,15 @@ import { addCommonStyle, setEditorWidth } from '@/util/theme'
 
 import 'muya/themes/default.css'
 import '@/assets/themes/codemirror/one-dark.css'
-// import 'view-image/lib/imgViewer.css'
+import 'element-plus/es/components/image-viewer/style/css'
 import CloseIcon from '@/assets/icons/close.svg'
 
 const STANDAR_Y = 320
 
 export default {
   components: {
-    Search
+    Search,
+    ElImageViewer
   },
 
   props: {
@@ -162,6 +161,7 @@ export default {
       isShowClose: false,
       dialogTableVisible: false,
       imageViewerVisible: false,
+      imageViewerUrls: [],
       tableChecker: {
         rows: 4,
         columns: 3
@@ -602,35 +602,18 @@ export default {
             dirname: window.DIRNAME
           })
         } else if (formatType === 'image' && ctrlOrMeta) {
-          if (this.imageViewer) {
-            this.imageViewer.destroy()
-          }
-
-          // Disabled due to #2120.
-          // this.imageViewer = new ViewImage(this.$refs.imageViewer, {
-          //   url: data,
-          //   snapView: true
-          // })
-
+          this.imageViewerUrls = [data]
           this.setImageViewerVisible(true)
         }
       })
 
-      // Disabled due to #2120.
-      // this.editor.on('preview-image', ({ data }) => {
-      //   if (this.imageViewer) {
-      //     this.imageViewer.destroy()
-      //   }
-      //
-      //   this.imageViewer = new ViewImage(this.$refs.imageViewer, {
-      //     url: data,
-      //     snapView: true
-      //   })
-      //
-      //   this.setImageViewerVisible(true)
-      // })
+      this.editor.on('preview-image', ({ data }) => {
+        this.imageViewerUrls = [data]
+        this.setImageViewerVisible(true)
+      })
 
       this.editor.on('selectionChange', (changes) => {
+        if (!changes || !changes.cursorCoords) return
         const { y } = changes.cursorCoords
         if (this.typewriter) {
           const startPosition = container.scrollTop
@@ -1239,41 +1222,8 @@ export default {
   padding-bottom: calc(50vh - 54px);
 }
 
-.image-viewer {
-  position: fixed;
-  backdrop-filter: blur(5px);
-  top: 0;
-  right: 0;
-  left: 0;
-  bottom: 0;
-  background: rgba(0, 0, 0, 0.8);
-  z-index: 11;
-  & .icon-close {
-    z-index: 1000;
-    width: 30px;
-    height: 30px;
-    position: absolute;
-    top: 50px;
-    left: 50px;
-    display: block;
-    & svg {
-      fill: #efefef;
-      width: 100%;
-      height: 100%;
-    }
-  }
-}
-
-.iv-container {
-  width: 100%;
-  height: 100%;
-}
-
-.iv-snap-view {
-  opacity: 1;
-  bottom: 20px;
-  right: 20px;
-  top: auto;
-  left: auto;
+/* Element Plus image viewer overrides */
+:deep(.el-image-viewer__wrapper) {
+  z-index: 2100;
 }
 </style>

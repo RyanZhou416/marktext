@@ -4,6 +4,22 @@ export { getUniqueId, getLongUniqueId } from './random'
 
 const TIMEOUT = 1500
 
+/**
+ * Convert a local file path to a URL that Tauri's webview can load.
+ * In Tauri v2, `file://` protocol is blocked — use the `asset` protocol instead.
+ * Falls back to `file://` for non-Tauri environments (Electron / browser).
+ */
+export const toLocalFileUrl = (filePath) => {
+  if (typeof window !== 'undefined' && window.__TAURI_INTERNALS__) {
+    // Tauri v2 asset protocol
+    const encoded = encodeURIComponent(filePath)
+    return navigator.userAgent.includes('Windows')
+      ? `https://asset.localhost/${encoded}`
+      : `asset://localhost/${encoded}`
+  }
+  return 'file://' + filePath
+}
+
 const HTML_TAG_REPLACEMENTS = {
   '&': '&amp;',
   '<': '&lt;',
@@ -255,7 +271,8 @@ export const checkImageContentType = url => {
  */
 export const getImageInfo = (src, baseUrl = window.DIRNAME) => {
   const imageExtension = IMAGE_EXT_REG.test(src)
-  const isUrl = URL_REG.test(src) || (imageExtension && /^file:\/\/.+/.test(src))
+  const isAssetUrl = /^https:\/\/asset\.localhost\//.test(src) || /^asset:\/\/localhost\//.test(src)
+  const isUrl = URL_REG.test(src) || (imageExtension && (/^file:\/\/.+/.test(src) || isAssetUrl))
 
   // Treat an URL with valid extension as image.
   if (imageExtension) {
@@ -273,15 +290,14 @@ export const getImageInfo = (src, baseUrl = window.DIRNAME) => {
       }
     } else {
       // Correct relative path on desktop. If we resolve a absolute path "path.resolve" doesn't do anything.
-      // NOTE: We don't need to convert Windows styled path to UNIX style because Chromium handels this internal.
-      // 使用 electronAPI.path 在渲染进程中
       // Use electronAPI.path (provided by Tauri bridge or Electron preload)
       const pathModule = (typeof window !== 'undefined' && window.electronAPI && window.electronAPI.path)
         ? window.electronAPI.path
         : { resolve: (...args) => args.filter(Boolean).join('/') }
+      const resolvedPath = pathModule.resolve(baseUrl, src)
       return {
         isUnknownType: false,
-        src: 'file://' + pathModule.resolve(baseUrl, src)
+        src: toLocalFileUrl(resolvedPath)
       }
     }
   } else if (isUrl && !imageExtension) {

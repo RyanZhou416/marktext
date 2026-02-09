@@ -75,9 +75,13 @@ export default {
   }
   & input.el-input__inner {
     height: 30px;
-    background: transparent;
+    background: var(--inputBgColor);
     color: var(--editorColor);
     border-color: var(--editorColor10);
+  }
+  & .el-input__wrapper,
+  & .el-select__wrapper {
+    background-color: var(--inputBgColor);
   }
   & .el-input__icon,
   & .el-input__inner {

@@ -28,13 +28,22 @@ pub async fn create_editor_window(
         .map(|p| p.to_string_lossy().to_string())
         .unwrap_or_default();
 
-    // Read saved language preference for early i18n initialization
-    let language = app.try_state::<PreferencesState>()
-        .and_then(|state| {
-            let prefs = state.preferences.lock().ok()?;
-            prefs.get("language").and_then(|v| v.as_str().map(|s| s.to_string()))
+    // Read saved preferences for early injection
+    let (language, title_bar_style) = app.try_state::<PreferencesState>()
+        .map(|state| {
+            let prefs = state.preferences.lock().unwrap();
+            let lang = prefs.get("language")
+                .and_then(|v| v.as_str())
+                .unwrap_or("en")
+                .to_string();
+            let tbs = prefs.get("titleBarStyle")
+                .and_then(|v| v.as_str())
+                .unwrap_or("custom")
+                .to_string();
+            (lang, tbs)
         })
-        .unwrap_or_else(|| "en".to_string());
+        .unwrap_or_else(|| ("en".to_string(), "custom".to_string()));
+    let use_custom_titlebar = title_bar_style == "custom";
 
     let file_info = if let Some(ref fp) = file_path {
         format!(", filePath: '{}'", fp.replace('\\', "\\\\").replace('\'', "\\'"))
@@ -43,11 +52,12 @@ pub async fn create_editor_window(
     };
 
     let js = format!(
-        "window.__TAURI_ENV__ = {{ userDataPath: '{}', debug: {}, windowId: {}, type: 'editor', language: '{}', theme: 'light', codeFontFamily: 'DejaVu Sans Mono', codeFontSize: '14', hideScrollbar: false, titleBarStyle: 'custom'{} }};",
+        "window.__TAURI_ENV__ = {{ userDataPath: '{}', debug: {}, windowId: {}, type: 'editor', language: '{}', theme: 'light', codeFontFamily: 'DejaVu Sans Mono', codeFontSize: '14', hideScrollbar: false, titleBarStyle: '{}'{} }};",
         user_data_path.replace('\\', "\\\\").replace('\'', "\\'"),
         if cfg!(debug_assertions) { "true" } else { "false" },
         1,
         language,
+        title_bar_style,
         file_info,
     );
 
@@ -61,13 +71,15 @@ pub async fn create_editor_window(
     .inner_size(1280.0, 800.0)
     .min_inner_size(600.0, 400.0)
     .resizable(true)
-    .decorations(true)
+    .decorations(!use_custom_titlebar)
     .focused(true)
     .initialization_script(&js)
     .build()
     .map_err(|e| format!("Failed to create window: {}", e))?;
 
-    let _ = &window; // suppress unused warning
+    if use_custom_titlebar {
+        let _ = window.hide_menu();
+    }
     Ok(window_id)
 }
 
@@ -93,18 +105,28 @@ pub async fn create_settings_window(
         .map(|p| p.to_string_lossy().to_string())
         .unwrap_or_default();
 
-    let language = app.try_state::<PreferencesState>()
-        .and_then(|state| {
-            let prefs = state.preferences.lock().ok()?;
-            prefs.get("language").and_then(|v| v.as_str().map(|s| s.to_string()))
+    let (language, title_bar_style) = app.try_state::<PreferencesState>()
+        .map(|state| {
+            let prefs = state.preferences.lock().unwrap();
+            let lang = prefs.get("language")
+                .and_then(|v| v.as_str())
+                .unwrap_or("en")
+                .to_string();
+            let tbs = prefs.get("titleBarStyle")
+                .and_then(|v| v.as_str())
+                .unwrap_or("custom")
+                .to_string();
+            (lang, tbs)
         })
-        .unwrap_or_else(|| "en".to_string());
+        .unwrap_or_else(|| ("en".to_string(), "custom".to_string()));
+    let use_custom_titlebar = title_bar_style == "custom";
 
     let js = format!(
-        "window.__TAURI_ENV__ = {{ userDataPath: '{}', debug: {}, windowId: 2, type: 'settings', language: '{}', theme: 'light', codeFontFamily: 'DejaVu Sans Mono', codeFontSize: '14', hideScrollbar: false, titleBarStyle: 'custom' }};",
+        "window.__TAURI_ENV__ = {{ userDataPath: '{}', debug: {}, windowId: 2, type: 'settings', language: '{}', theme: 'light', codeFontFamily: 'DejaVu Sans Mono', codeFontSize: '14', hideScrollbar: false, titleBarStyle: '{}' }};",
         user_data_path.replace('\\', "\\\\").replace('\'', "\\'"),
         if cfg!(debug_assertions) { "true" } else { "false" },
         language,
+        title_bar_style,
     );
 
     // Use initialization_script (runs BEFORE page JS) instead of eval (race condition)
@@ -117,7 +139,7 @@ pub async fn create_settings_window(
     .inner_size(900.0, 650.0)
     .min_inner_size(600.0, 400.0)
     .resizable(true)
-    .decorations(true)
+    .decorations(!use_custom_titlebar)
     .focused(true)
     .initialization_script(&js)
     .build()
@@ -129,6 +151,9 @@ pub async fn create_settings_window(
         window.open_devtools();
     }
 
+    if use_custom_titlebar {
+        let _ = window.hide_menu();
+    }
     Ok(window_id.to_string())
 }
 
@@ -179,10 +204,10 @@ pub async fn maximize_window(window: tauri::WebviewWindow) -> Result<(), String>
     }
 }
 
-/// Close the current window
+/// Close the current window (force — bypasses close_requested interception)
 #[tauri::command]
 pub async fn close_window(window: tauri::WebviewWindow) -> Result<(), String> {
-    window.close().map_err(|e| e.to_string())
+    window.destroy().map_err(|e| e.to_string())
 }
 
 /// Set fullscreen
@@ -197,6 +222,14 @@ pub async fn set_always_on_top(window: tauri::WebviewWindow, always_on_top: bool
     window.set_always_on_top(always_on_top).map_err(|e| e.to_string())
 }
 
+/// Show the window (called by frontend when it's ready, to avoid startup flash)
+#[tauri::command]
+pub async fn show_main_window(window: tauri::WebviewWindow) -> Result<(), String> {
+    window.show().map_err(|e| e.to_string())?;
+    window.set_focus().map_err(|e| e.to_string())?;
+    Ok(())
+}
+
 /// Get window state
 #[tauri::command]
 pub async fn get_window_state(window: tauri::WebviewWindow) -> Result<serde_json::Value, String> {
@@ -205,6 +238,25 @@ pub async fn get_window_state(window: tauri::WebviewWindow) -> Result<serde_json
         "isMinimized": window.is_minimized().unwrap_or(false),
         "isFullscreen": window.is_fullscreen().unwrap_or(false),
     }))
+}
+
+/// Hot-switch title bar style for ALL open windows.
+/// `style` is either "custom" or "native".
+#[tauri::command]
+pub async fn set_title_bar_style(app: tauri::AppHandle, style: String) -> Result<(), String> {
+    let use_custom = style == "custom";
+
+    // Iterate over every open webview window
+    for (_label, window) in app.webview_windows() {
+        // decorations(false) = custom title bar, decorations(true) = native
+        let _ = window.set_decorations(!use_custom);
+        if use_custom {
+            let _ = window.hide_menu();
+        } else {
+            let _ = window.show_menu();
+        }
+    }
+    Ok(())
 }
 
 /// Simple UUID generator (no external dep needed)

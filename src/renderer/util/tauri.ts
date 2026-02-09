@@ -237,13 +237,24 @@ const eventListeners: Map<string, EventListener[]> = new Map()
 // IPC Renderer emulation - maps Electron IPC channels to Tauri commands/events
 // ============================================================================
 
+/**
+ * Extract the encoding string from the file state.
+ * The encoding can be either a string ('utf-8') or an object ({ encoding: 'utf8', isBom: false }).
+ */
+function getEncodingString (encoding: any): string | null {
+  if (!encoding) return null
+  if (typeof encoding === 'string') return encoding
+  if (typeof encoding === 'object' && typeof encoding.encoding === 'string') return encoding.encoding
+  return null
+}
+
 // High-level IPC channel handlers that map to specific Tauri commands
 const ipcChannelHandlers: Record<string, IpcChannelHandler> = {
   // File operations
   'mt::response-file-save': async (args: any[]): Promise<SaveResult | undefined> => {
     const [data] = args as [FileSaveData | undefined]
     if (!data) return
-    const { pathname, markdown, filename, defaultPath, options } = data
+    const { id, pathname, markdown, filename, defaultPath, options } = data
     let savePath = pathname
     if (!savePath) {
       // New file - show save dialog
@@ -255,18 +266,24 @@ const ipcChannelHandlers: Record<string, IpcChannelHandler> = {
     }
     const result: SaveResult = await tauriCore!.invoke('save_markdown_file', {
       filePath: savePath,
-      content: markdown,
-      encoding: options?.encoding || null
+      content: markdown ?? '',
+      encoding: getEncodingString(options?.encoding)
     })
-    if (result.success) {
+    if (result.success && result.path) {
       await tauriCore!.invoke('add_recent_document', { filePath: result.path })
+      // Notify editor that save succeeded (update pathname, filename, saved state)
+      ipcRenderer.emit('mt::set-pathname', null, {
+        id,
+        pathname: result.path,
+        filename: pathPolyfill.basename(result.path)
+      })
     }
     return result
   },
   'mt::response-file-save-as': async (args: any[]): Promise<SaveResult | null | undefined> => {
     const [data] = args as [FileSaveData | undefined]
     if (!data) return
-    const { pathname, markdown, filename, options } = data
+    const { id, pathname, markdown, filename, options } = data
     const dir = pathname ? pathPolyfill.dirname(pathname) : null
     const savePath: string | null = await tauriCore!.invoke('save_file_dialog', {
       defaultPath: dir,
@@ -275,11 +292,17 @@ const ipcChannelHandlers: Record<string, IpcChannelHandler> = {
     if (!savePath) return null
     const result: SaveResult = await tauriCore!.invoke('save_markdown_file', {
       filePath: savePath,
-      content: markdown,
-      encoding: options?.encoding || null
+      content: markdown ?? '',
+      encoding: getEncodingString(options?.encoding)
     })
-    if (result.success) {
+    if (result.success && result.path) {
       await tauriCore!.invoke('add_recent_document', { filePath: result.path })
+      // Notify editor that save-as succeeded
+      ipcRenderer.emit('mt::set-pathname', null, {
+        id,
+        pathname: result.path,
+        filename: pathPolyfill.basename(result.path)
+      })
     }
     return result
   },
@@ -287,10 +310,11 @@ const ipcChannelHandlers: Record<string, IpcChannelHandler> = {
     const [unsavedFiles] = args as [UnsavedFile[] | undefined]
     if (!unsavedFiles || !unsavedFiles.length) return
     for (const file of unsavedFiles) {
-      if (file.pathname) {
+      if (file.pathname && typeof file.markdown === 'string') {
         await tauriCore!.invoke('save_markdown_file', {
           filePath: file.pathname,
-          content: file.markdown
+          content: file.markdown,
+          encoding: getEncodingString(file.options?.encoding)
         })
       }
     }
@@ -299,10 +323,11 @@ const ipcChannelHandlers: Record<string, IpcChannelHandler> = {
     const [unsavedFiles] = args as [UnsavedFile[] | undefined]
     if (!unsavedFiles) return
     for (const file of unsavedFiles) {
-      if (file.pathname) {
+      if (file.pathname && typeof file.markdown === 'string') {
         await tauriCore!.invoke('save_markdown_file', {
           filePath: file.pathname,
-          content: file.markdown
+          content: file.markdown,
+          encoding: getEncodingString(file.options?.encoding)
         })
       }
     }
@@ -346,17 +371,40 @@ const ipcChannelHandlers: Record<string, IpcChannelHandler> = {
   'mt::cmd-close-window': async (): Promise<any> => {
     return await tauriCore!.invoke('close_window')
   },
-  // Move to trash
+  // Rename file on disk and notify editor
+  'mt::rename': async (args: any[]): Promise<void> => {
+    const [data] = args as [{ id: string; pathname: string; newPathname: string } | undefined]
+    if (!data) return
+    const { id, pathname, newPathname } = data
+    try {
+      await tauriCore!.invoke('rename', { oldPath: pathname, newPath: newPathname })
+      // Notify the editor that rename succeeded
+      ipcRenderer.emit('mt::set-pathname', null, {
+        id,
+        pathname: newPathname,
+        filename: pathPolyfill.basename(newPathname)
+      })
+    } catch (e) {
+      console.error('Failed to rename file:', e)
+    }
+  },
+  // Move file to a new location
   'mt::response-file-move-to': async (args: any[]): Promise<string | null | undefined> => {
     const [data] = args as [FileMoveData | undefined]
     if (!data) return
-    const { pathname } = data
+    const { id, pathname } = data
     const dest: string | null = await tauriCore!.invoke('save_file_dialog', {
       defaultPath: pathPolyfill.dirname(pathname),
       filename: pathPolyfill.basename(pathname)
     })
     if (!dest) return null
-    await tauriCore!.invoke('rename', { old_path: pathname, new_path: dest })
+    await tauriCore!.invoke('rename', { oldPath: pathname, newPath: dest })
+    // Update editor state with the new pathname
+    ipcRenderer.emit('mt::set-pathname', null, {
+      id,
+      pathname: dest,
+      filename: pathPolyfill.basename(dest)
+    })
     return dest
   },
   // Export
@@ -389,11 +437,22 @@ const ipcChannelHandlers: Record<string, IpcChannelHandler> = {
     const [data] = args
     if (data && typeof data === 'object') {
       await tauriCore!.invoke('set_preferences', { preferences: data })
+      // Update ALL windows (local + other windows via Tauri global event)
+      ipcRenderer.emit('mt::user-preference', null, data)
+      if (tauriEvent) {
+        tauriEvent.emit('mt::user-preference-changed', data)
+      }
     }
   },
   'mt::cmd-set-single-preference': async (args: any[]): Promise<void> => {
     const [key, value] = args as [string, any]
     await tauriCore!.invoke('set_preference', { key, value })
+    // Update ALL windows
+    const data = { [key]: value }
+    ipcRenderer.emit('mt::user-preference', null, data)
+    if (tauriEvent) {
+      tauriEvent.emit('mt::user-preference-changed', data)
+    }
   },
   // Recent documents
   'mt::get-recent-documents': async (): Promise<any> => {
@@ -527,12 +586,85 @@ const ipcChannelHandlers: Record<string, IpcChannelHandler> = {
   'mt::renderer-log': async (): Promise<void> => {
     // No-op: log.error/warn/info already writes to console before calling this.
   },
+  // Close window confirm: shows a 3-option dialog (Save / Don't Save / Cancel)
+  // Mirrors old Electron: ipcMain.on('mt::close-window-confirm') in file.js
+  'mt::close-window-confirm': async (args: any[]): Promise<void> => {
+    const [unsavedFiles] = args as [any[]]
+    if (!unsavedFiles || !unsavedFiles.length) {
+      // No unsaved files — just close
+      await tauriCore!.invoke('close_window')
+      return
+    }
+
+    const { ElMessageBox } = await import('element-plus')
+    const count = unsavedFiles.length
+    const message = count === 1
+      ? 'Do you want to save the changes you made?'
+      : `You have ${count} unsaved files. Do you want to save changes?`
+
+    try {
+      await ElMessageBox.confirm(message, 'MarkText', {
+        confirmButtonText: 'Save',
+        cancelButtonText: "Don't Save",
+        distinguishCancelAndClose: true,
+        type: 'warning'
+      })
+      // User clicked "Save" → save files then close
+      for (const file of unsavedFiles) {
+        if (file.pathname && typeof file.markdown === 'string') {
+          await tauriCore!.invoke('save_markdown_file', {
+            filePath: file.pathname,
+            content: file.markdown,
+            encoding: getEncodingString(file.options?.encoding)
+          })
+        }
+      }
+      await tauriCore!.invoke('close_window')
+    } catch (action) {
+      if (action === 'cancel') {
+        // User clicked "Don't Save" → close without saving
+        await tauriCore!.invoke('close_window')
+      }
+      // action === 'close' (X button or ESC) → do nothing (cancel)
+    }
+  },
+  // Check for updates — uses Tauri core invoke to avoid needing the npm package
+  'mt::check-for-update': async (): Promise<void> => {
+    if (!tauriCore) return
+    try {
+      const update = await tauriCore.invoke('plugin:updater|check')
+      if (update) {
+        ipcRenderer.emit('mt::UPDATE_AVAILABLE', null,
+          'A new version is available.')
+      } else {
+        ipcRenderer.emit('mt::UPDATE_NOT_AVAILABLE', null,
+          'You are using the latest version.')
+      }
+    } catch (e: any) {
+      // Updater plugin may not be configured — show a friendly message
+      ipcRenderer.emit('mt::UPDATE_NOT_AVAILABLE', null,
+        'Update check is not available in this build.')
+    }
+  },
   // No-op handlers for channels that don't need backend interaction
   'mt::set-title': async (): Promise<void> => {},
   'mt::send-initialized': async (): Promise<void> => {},
   'mt::editor-ready': async (): Promise<void> => {},
   'mt::update-line-ending-menu': async (): Promise<void> => {},
-  'mt::update-text-direction-menu': async (): Promise<void> => {}
+  'mt::update-text-direction-menu': async (): Promise<void> => {},
+  'mt::update-format-menu': async (): Promise<void> => {},
+  'mt::view-layout-changed': async (): Promise<void> => {},
+  'mt::window-tab-closed': async (): Promise<void> => {},
+  // Print: In Electron, main process called webContents.print(). In Tauri, use window.print().
+  'mt::response-print': async (): Promise<void> => {
+    try {
+      window.print()
+    } catch (e) {
+      console.error('Failed to print:', e)
+    }
+    // Notify editor to clean up the print container
+    ipcRenderer.emit('mt::print-service-clearup', null)
+  }
 }
 
 // Convert mt:: channel names to Tauri command names (fallback)
@@ -1017,7 +1149,7 @@ export const fs: Record<string, any> = {
     if (!isTauri()) return Promise.reject(new Error('Tauri API not available'))
     await tauriReady
     try {
-      await tauriCore!.invoke('rename', { old_path: oldPath, new_path: newPath })
+      await tauriCore!.invoke('rename', { oldPath, newPath })
     } catch (e: any) {
       throw new Error(`Failed to rename: ${e.message}`)
     }
@@ -1383,6 +1515,36 @@ export function initDragDrop (bus: any): void {
 }
 
 // ============================================================================
+// Open-files handler - listens for Rust 'open-files' events (from command-line
+// args, file association, or single-instance second launch). Opens each file
+// as a new tab.
+// ============================================================================
+
+let openFilesInitialized = false
+
+export function initOpenFilesListener (): void {
+  if (openFilesInitialized || !isTauri()) return
+  openFilesInitialized = true
+
+  tauriReady.then(async () => {
+    if (!tauriEvent || !tauriCore) return
+    await tauriEvent.listen('open-files', async (event: any) => {
+      const files: string[] = event.payload || []
+      for (const filePath of files) {
+        if (hasMarkdownExtension(filePath)) {
+          try {
+            const doc = await tauriCore!.invoke('read_markdown_file', { filePath })
+            ipcRenderer.emit('mt::open-new-tab', null, doc, {}, true)
+          } catch (e) {
+            console.warn(`Failed to open file from open-files event: ${filePath}`, e)
+          }
+        }
+      }
+    })
+  })
+}
+
+// ============================================================================
 // Menu event handler - listens for Tauri menu events and dispatches them
 // Uses the same bus/ipcRenderer patterns as commands/index.js (Pinia-compatible)
 // ============================================================================
@@ -1416,30 +1578,54 @@ function handleMenuAction (menuId: string): void {
     'file.open-folder': () => ipcRenderer.send('mt::cmd-open-folder'),
     'file.save': () => ipcRenderer.emit('mt::editor-ask-file-save', null),
     'file.save-as': () => ipcRenderer.emit('mt::editor-ask-file-save-as', null),
+    'file.auto-save': () => {
+      // Toggle auto-save preference
+      ipcRenderer.send('mt::cmd-set-single-preference', 'autoSave', true)
+    },
+    'file.move-to': () => ipcRenderer.emit('mt::editor-move-file', null),
+    'file.rename': () => _bus && _bus.$emit('rename'),
+    'file.import': () => _bus && _bus.$emit('importDialog', true),
+    'file.export-html': () => _bus && _bus.$emit('showExportDialog', 'styledHtml'),
+    'file.export-pdf': () => _bus && _bus.$emit('showExportDialog', 'pdf'),
+    'file.print': () => _bus && _bus.$emit('showExportDialog', 'print'),
     'file.close-tab': () => ipcRenderer.emit('mt::editor-close-tab', null),
-    'file.close-window': () => ipcRenderer.send('mt::cmd-close-window'),
+    'file.close-window': () => ipcRenderer.emit('mt::ask-for-close', null),
     'file.preferences': () => ipcRenderer.send('mt::open-setting-window'),
     // Edit
+    'edit.copy-as-markdown': () => _bus && _bus.$emit('copyAsMarkdown'),
+    'edit.copy-as-html': () => _bus && _bus.$emit('copyAsHtml'),
+    'edit.paste-as-plain-text': () => _bus && _bus.$emit('pasteAsPlainText'),
+    'edit.duplicate': () => _bus && _bus.$emit('duplicate', 'duplicate'),
+    'edit.create-paragraph': () => _bus && _bus.$emit('createParagraph', 'createParagraph'),
+    'edit.delete-paragraph': () => _bus && _bus.$emit('deleteParagraph', 'deleteParagraph'),
     'edit.find': () => _bus && _bus.$emit('find', 'find'),
+    'edit.find-next': () => _bus && _bus.$emit('findNext', 'findNext'),
+    'edit.find-previous': () => _bus && _bus.$emit('findPrev', 'findPrev'),
     'edit.replace': () => _bus && _bus.$emit('replace', 'replace'),
     'edit.find-in-folder': () => ipcRenderer.emit('mt::editor-edit-action', null, 'findInFolder'),
-    // Paragraph
-    'paragraph.heading-1': () => _bus && _bus.$emit('format', 'heading 1'),
-    'paragraph.heading-2': () => _bus && _bus.$emit('format', 'heading 2'),
-    'paragraph.heading-3': () => _bus && _bus.$emit('format', 'heading 3'),
-    'paragraph.heading-4': () => _bus && _bus.$emit('format', 'heading 4'),
-    'paragraph.heading-5': () => _bus && _bus.$emit('format', 'heading 5'),
-    'paragraph.heading-6': () => _bus && _bus.$emit('format', 'heading 6'),
-    'paragraph.paragraph': () => _bus && _bus.$emit('format', 'paragraph'),
-    'paragraph.order-list': () => _bus && _bus.$emit('format', 'order-list'),
-    'paragraph.bullet-list': () => _bus && _bus.$emit('format', 'bullet-list'),
-    'paragraph.task-list': () => _bus && _bus.$emit('format', 'task-list'),
-    'paragraph.code-fence': () => _bus && _bus.$emit('format', 'pre'),
-    'paragraph.quote-block': () => _bus && _bus.$emit('format', 'blockquote'),
-    'paragraph.math-formula': () => _bus && _bus.$emit('format', 'mathblock'),
-    'paragraph.html-block': () => _bus && _bus.$emit('format', 'html'),
-    'paragraph.table': () => _bus && _bus.$emit('format', 'table'),
-    'paragraph.horizontal-line': () => _bus && _bus.$emit('format', 'hr'),
+    'edit.line-ending-crlf': () => ipcRenderer.emit('mt::set-line-ending', null, 'crlf'),
+    'edit.line-ending-lf': () => ipcRenderer.emit('mt::set-line-ending', null, 'lf'),
+    // Paragraph — block-level operations use 'paragraph' event → editor.updateParagraph(type)
+    'paragraph.heading-1': () => _bus && _bus.$emit('paragraph', 'heading 1'),
+    'paragraph.heading-2': () => _bus && _bus.$emit('paragraph', 'heading 2'),
+    'paragraph.heading-3': () => _bus && _bus.$emit('paragraph', 'heading 3'),
+    'paragraph.heading-4': () => _bus && _bus.$emit('paragraph', 'heading 4'),
+    'paragraph.heading-5': () => _bus && _bus.$emit('paragraph', 'heading 5'),
+    'paragraph.heading-6': () => _bus && _bus.$emit('paragraph', 'heading 6'),
+    'paragraph.upgrade-heading': () => _bus && _bus.$emit('paragraph', 'upgrade heading'),
+    'paragraph.degrade-heading': () => _bus && _bus.$emit('paragraph', 'degrade heading'),
+    'paragraph.paragraph': () => _bus && _bus.$emit('paragraph', 'paragraph'),
+    'paragraph.order-list': () => _bus && _bus.$emit('paragraph', 'ol-order'),
+    'paragraph.bullet-list': () => _bus && _bus.$emit('paragraph', 'ul-bullet'),
+    'paragraph.task-list': () => _bus && _bus.$emit('paragraph', 'ul-task'),
+    'paragraph.loose-list-item': () => _bus && _bus.$emit('paragraph', 'loose-list-item'),
+    'paragraph.code-fence': () => _bus && _bus.$emit('paragraph', 'pre'),
+    'paragraph.quote-block': () => _bus && _bus.$emit('paragraph', 'blockquote'),
+    'paragraph.math-formula': () => _bus && _bus.$emit('paragraph', 'mathblock'),
+    'paragraph.html-block': () => _bus && _bus.$emit('paragraph', 'html'),
+    'paragraph.front-matter': () => _bus && _bus.$emit('paragraph', 'front-matter'),
+    'paragraph.table': () => _bus && _bus.$emit('paragraph', 'table'),
+    'paragraph.horizontal-line': () => _bus && _bus.$emit('paragraph', 'hr'),
     // Format
     'format.strong': () => _bus && _bus.$emit('format', 'strong'),
     'format.emphasis': () => _bus && _bus.$emit('format', 'em'),
@@ -1455,8 +1641,12 @@ function handleMenuAction (menuId: string): void {
     'format.clear-format': () => _bus && _bus.$emit('format', 'clear'),
     // View
     'view.source-code-mode': () => _bus && _bus.$emit('view:toggle-view-entry', 'sourceCode'),
+    'view.typewriter-mode': () => _bus && _bus.$emit('view:toggle-view-entry', 'typewriter'),
+    'view.focus-mode': () => _bus && _bus.$emit('view:toggle-view-entry', 'focus'),
     'view.toggle-sidebar': () => _bus && _bus.$emit('view:toggle-layout-entry', 'showSideBar'),
     'view.toggle-tabbar': () => _bus && _bus.$emit('view:toggle-layout-entry', 'showTabBar'),
+    'view.toggle-toc': () => ipcRenderer.emit('mt::set-view-layout', null, { rightColumn: 'toc' }),
+    'view.reload-images': () => _bus && _bus.$emit('invalidate-image-cache'),
     'view.command-palette': () => _bus && _bus.$emit('show-command-palette'),
     'view.zoom-in': () => {
       const current = webFrame.getZoomFactor()
@@ -1466,23 +1656,26 @@ function handleMenuAction (menuId: string): void {
       const current = webFrame.getZoomFactor()
       webFrame.setZoomFactor(Math.max(current - 0.1, 0.5))
     },
+    // Theme
+    'theme.cadmium-light': () => ipcRenderer.send('mt::set-user-preference', { theme: 'light' }),
+    'theme.dark': () => ipcRenderer.send('mt::set-user-preference', { theme: 'dark' }),
+    'theme.graphite-light': () => ipcRenderer.send('mt::set-user-preference', { theme: 'graphite' }),
+    'theme.material-dark': () => ipcRenderer.send('mt::set-user-preference', { theme: 'material-dark' }),
+    'theme.one-dark': () => ipcRenderer.send('mt::set-user-preference', { theme: 'one-dark' }),
+    'theme.ulysses-light': () => ipcRenderer.send('mt::set-user-preference', { theme: 'ulysses' }),
     // Window
     'window.toggle-always-on-top': () => ipcRenderer.send('mt::window-toggle-always-on-top', true),
     // Help
     'help.quick-start': () => shell.openExternal('https://github.com/marktext/marktext/blob/develop/docs/QUICKSTART.md'),
     'help.markdown-reference': () => shell.openExternal('https://github.com/marktext/marktext/blob/develop/docs/MARKDOWN_SYNTAX.md'),
     'help.changelog': () => shell.openExternal('https://github.com/marktext/marktext/blob/develop/.github/CHANGELOG.md'),
-    'help.about': () => {
-      tauriReady.then(async () => {
-        if (!tauriCore) return
-        try {
-          const version: string = await tauriCore.invoke('get_app_version')
-          alert(`MarkText v${version}\n\nA simple and elegant markdown editor.`)
-        } catch {
-          alert(`MarkText\n\nA simple and elegant markdown editor.`)
-        }
-      })
-    }
+    'help.donate': () => shell.openExternal('https://opencollective.com/marktext'),
+    'help.report-issue': () => shell.openExternal('https://github.com/marktext/marktext/issues'),
+    'help.website': () => shell.openExternal('https://github.com/marktext/marktext'),
+    'help.watch-on-github': () => shell.openExternal('https://github.com/marktext/marktext'),
+    'help.license': () => shell.openExternal('https://github.com/marktext/marktext/blob/develop/LICENSE'),
+    'help.check-update': () => ipcRenderer.send('mt::check-for-update'),
+    'help.about': () => _bus && _bus.$emit('aboutDialog'),
   }
 
   const action = menuActions[menuId]

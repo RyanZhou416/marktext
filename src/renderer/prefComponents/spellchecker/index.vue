@@ -269,9 +269,12 @@ li.el-select-dropdown__item:hover {
 }
 .pref-spellchecker input.el-input__inner {
   height: 30px;
-  background: transparent;
+  background: var(--inputBgColor);
   color: var(--editorColor);
   border-color: var(--editorColor10);
+}
+.pref-spellchecker .el-input__wrapper {
+  background-color: var(--inputBgColor);
 }
 .pref-spellchecker .el-input__icon,
 .pref-spellchecker .el-input__inner {

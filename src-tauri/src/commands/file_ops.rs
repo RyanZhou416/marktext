@@ -7,6 +7,7 @@ use serde::{Deserialize, Serialize};
 use std::path::{Path, PathBuf};
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
+#[serde(rename_all = "camelCase")]
 pub struct MarkdownDocument {
     pub id: Option<String>,
     pub filename: Option<String>,
@@ -20,6 +21,9 @@ pub struct MarkdownDocument {
     pub adjust_line_ending_on_save: bool,
     #[serde(default)]
     pub trim_trailing_newline: i32,
+    /// Whether the file had mixed line endings (CRLF + LF)
+    #[serde(default)]
+    pub is_mixed_line_endings: bool,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -123,22 +127,32 @@ pub async fn read_markdown_file(file_path: String) -> Result<MarkdownDocument, S
         .map(|n| n.to_string_lossy().to_string())
         .unwrap_or_default();
 
-    // Detect line ending
-    let line_ending = if content.contains("\r\n") {
-        "crlf".to_string()
+    // Detect line ending and mixed line endings
+    let has_crlf = content.contains("\r\n");
+    // Check for bare LF (not preceded by CR) — strip CRLF first to count bare LFs
+    let bare_lf_content = content.replace("\r\n", "");
+    let has_lf = bare_lf_content.contains('\n');
+    let is_mixed = has_crlf && has_lf;
+
+    let line_ending = if has_crlf { "crlf".to_string() } else { "lf".to_string() };
+
+    // Normalize mixed line endings to the dominant one
+    let normalized_content = if is_mixed {
+        content.replace("\r\n", "\n") // normalize to LF
     } else {
-        "lf".to_string()
+        content
     };
 
     Ok(MarkdownDocument {
         id: None,
         filename: Some(filename),
         pathname: Some(file_path),
-        markdown: content,
+        markdown: normalized_content,
         encoding: "utf-8".to_string(),
-        line_ending,
+        line_ending: if is_mixed { "lf".to_string() } else { line_ending },
         adjust_line_ending_on_save: false,
         trim_trailing_newline: 2,
+        is_mixed_line_endings: is_mixed,
     })
 }
 

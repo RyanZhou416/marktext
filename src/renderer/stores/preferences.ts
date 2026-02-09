@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia'
-import { ipcRenderer } from '../util/tauri'
+import { ipcRenderer, isTauriAvailable } from '../util/tauri'
 import bus from '../bus'
 
 export const usePreferencesStore = defineStore('preferences', {
@@ -96,6 +96,7 @@ export const usePreferencesStore = defineStore('preferences', {
 
   actions: {
     SET_USER_PREFERENCE (preference: Record<string, any>) {
+      const oldTitleBarStyle = this.titleBarStyle
       Object.keys(preference).forEach((key) => {
         if (
           typeof preference[key] !== 'undefined' &&
@@ -104,6 +105,10 @@ export const usePreferencesStore = defineStore('preferences', {
           (this as any)[key] = preference[key]
         }
       })
+      // Hot-switch title bar style when it changes
+      if (preference.titleBarStyle && preference.titleBarStyle !== oldTitleBarStyle) {
+        this._applyTitleBarStyle(preference.titleBarStyle)
+      }
     },
 
     SET_MODE ({ type, checked }: { type: string; checked: boolean }) {
@@ -111,7 +116,17 @@ export const usePreferencesStore = defineStore('preferences', {
     },
 
     TOGGLE_VIEW_MODE (entryName: string) {
-      (this as any)[entryName] = !(this as any)[entryName]
+      const current = (this as any)[entryName]
+      // Mutual exclusion: when activating a mode, turn off the others
+      const viewModes = ['sourceCode', 'typewriter', 'focus']
+      if (!current && viewModes.includes(entryName)) {
+        for (const mode of viewModes) {
+          if (mode !== entryName) {
+            (this as any)[mode] = false
+          }
+        }
+      }
+      (this as any)[entryName] = !current
     },
 
     ASK_FOR_USER_PREFERENCE () {
@@ -121,6 +136,17 @@ export const usePreferencesStore = defineStore('preferences', {
       ipcRenderer.on('mt::user-preference', (e: any, preferences: any) => {
         this.SET_USER_PREFERENCE(preferences)
       })
+
+      // Listen for cross-window preference changes (from other Tauri windows)
+      if (isTauriAvailable()) {
+        import('@tauri-apps/api/event').then(({ listen }) => {
+          listen('mt::user-preference-changed', (event: any) => {
+            if (event.payload) {
+              this.SET_USER_PREFERENCE(event.payload)
+            }
+          })
+        }).catch(() => {})
+      }
     },
 
     SET_SINGLE_PREFERENCE ({ type, value }: { type: string; value: any }) {
@@ -164,6 +190,17 @@ export const usePreferencesStore = defineStore('preferences', {
     DISPATCH_EDITOR_VIEW_STATE (viewState: Record<string, any>) {
       const { windowId } = (window as any).marktext.env
       ipcRenderer.send('mt::view-layout-changed', windowId, viewState)
+    },
+
+    /** Call Rust to toggle native window decorations + menu visibility */
+    _applyTitleBarStyle (style: string) {
+      if (isTauriAvailable()) {
+        import('@tauri-apps/api/core').then(({ invoke }) => {
+          invoke('set_title_bar_style', { style }).catch((e: any) => {
+            console.error('Failed to set title bar style:', e)
+          })
+        }).catch(() => {})
+      }
     }
   }
 })
