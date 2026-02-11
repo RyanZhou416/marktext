@@ -19,7 +19,8 @@ thumbs.db
 .eslintcache
 
 # Cursor files
-.cursor/
+.cursor/*
+!.cursor/rules/
 terminals/
 
 # Temporary/debug files

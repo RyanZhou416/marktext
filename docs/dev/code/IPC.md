@@ -1,41 +1,66 @@
 # Inter-Process Communication (IPC)
 
-[Electron](https://electronjs.org/docs/api/ipc-main) provides `ipcMain` and `ipcRenderer` to communicate asynchronously between the main process and renderer processes. The event name/channel must be prefixed with `mt::` if used between main process and renderer processes. The default argument list will be `(event, ...args)`. The event name/channel is not prefixed when using `ipcMain` to emit events to the main process directly and emitted events don't have an `event` parameter. The parameter list will only be `(...args)`! When simulate a renderer event you must specify a [event](https://electronjs.org/docs/api/ipc-main#event-object) parameter (`null` or `undefined` may lead to unexpected exceptions).
+> For the archived Electron-era IPC documentation, see [../archive/IPC_ELECTRON.md](../archive/IPC_ELECTRON.md).
 
-## Examples
+## Tauri IPC Model
 
-Listening to a renderer event in the main process:
+MarkText uses [Tauri's IPC system](https://v2.tauri.app/develop/calling-rust/) for communication between the Vue frontend (WebView) and the Rust backend.
 
-```js
-import { ipcMain } from 'electron'
+### Frontend → Backend (Commands)
 
-// Listen for renderer events
-ipcMain.on('mt::some-event-name', (event, arg1, arg2) => {
-  // ...
+The frontend invokes Rust functions using `@tauri-apps/api`:
 
-  // Send a direct response to the renderer process
-  event.sender.send('mt::some-event-name-response', 'pong')
-})
+```typescript
+import { invoke } from '@tauri-apps/api/core'
 
-// Listen for main events
-ipcMain.on('some-event-name', (arg1, arg2) => {
-  // ...
-})
-
-
-ipcMain.emit('some-event-name', 'arg 1', 'arg 2')
-// ipcMain.emit('mt::some-event-name-response', undefined, 'arg 1', 'arg 2') // crash because event is used
+// Call a Tauri command
+const result = await invoke('command_name', { arg1: 'value', arg2: 42 })
 ```
 
-Listening to a main event in the renderer process:
+Commands are defined in `src-tauri/src/commands/`:
 
-```js
-import { ipcRenderer } from 'electron'
-
-// Listen for main events
-ipcRenderer.on('mt::some-event-name-response', (event, arg1, arg2) => {
-  // ...
-})
-
-ipcRenderer.send('mt::some-event-name-response', 'arg 1', 'arg 2')
+```rust
+#[tauri::command]
+fn command_name(arg1: String, arg2: i32) -> Result<String, String> {
+    // Handle the command
+    Ok("result".to_string())
+}
 ```
+
+### Backend → Frontend (Events)
+
+The Rust backend can emit events to the frontend:
+
+```rust
+use tauri::Manager;
+
+app.emit("event-name", payload)?;
+```
+
+The frontend listens for events:
+
+```typescript
+import { listen } from '@tauri-apps/api/event'
+
+const unlisten = await listen('event-name', event => {
+  console.log('Received:', event.payload)
+})
+```
+
+### Tauri Plugins
+
+For common OS operations, MarkText uses official Tauri plugins instead of raw IPC:
+
+| Plugin                                 | Usage                            |
+| -------------------------------------- | -------------------------------- |
+| `@tauri-apps/plugin-fs`                | File system operations           |
+| `@tauri-apps/plugin-dialog`            | Native file/message dialogs      |
+| `@tauri-apps/plugin-shell`             | Shell command execution          |
+| `@tauri-apps/plugin-clipboard-manager` | Clipboard read/write             |
+| `@tauri-apps/plugin-window-state`      | Window position/size persistence |
+| `@tauri-apps/plugin-process`           | Process management               |
+| `@tauri-apps/plugin-os`                | OS information                   |
+
+### Permissions
+
+Tauri commands and plugin access require explicit permissions configured in `src-tauri/capabilities/default.json`.

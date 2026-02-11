@@ -1,5 +1,7 @@
 # MarkText 项目结构与技术栈分析
 
+> **注意**: 本文档部分内容（尤其是 Electron 架构、Vuex、Webpack 相关描述）尚未更新至最新状态。项目已迁移到 **Tauri 2.0 + Vue 3 + Vite + Pinia + TypeScript**。最新的架构信息请参考 [UPGRADE_ROADMAP.md](./UPGRADE_ROADMAP.md)。
+
 > 本文档旨在帮助开发者快速了解 MarkText 项目的整体架构、技术栈和代码组织方式，为后续的改进和开发工作提供参考。
 
 ## 1. 项目概述
@@ -26,12 +28,13 @@ MarkText 是一款开源的 Markdown 编辑器，专注于速度和可用性。�
 
 ### 2.1 核心框架
 
-| 技术           | 版本    | 用途               |
-| -------------- | ------- | ------------------ |
-| **Electron**   | ^18.0.4 | 跨平台桌面应用框架 |
-| **Vue.js**     | ^2.6.14 | 前端 UI 框架       |
-| **Vuex**       | ^3.6.2  | 状态管理           |
-| **Vue Router** | ^3.5.3  | 路由管理           |
+| 技术           | 版本   | 用途               |
+| -------------- | ------ | ------------------ |
+| **Tauri**      | 2.0    | 跨平台桌面应用框架 |
+| **Vue.js**     | ^3.4.0 | 前端 UI 框架       |
+| **Pinia**      | ^2.1.0 | 状态管理           |
+| **Vue Router** | ^4.2.0 | 路由管理           |
+| **TypeScript** | ^5.9.3 | 类型系统           |
 
 ### 2.2 编辑器引擎
 
@@ -54,19 +57,24 @@ MarkText 是一款开源的 Markdown 编辑器，专注于速度和可用性。�
 
 ### 2.4 UI 组件库
 
-| 技术                    | 版本    | 用途          |
-| ----------------------- | ------- | ------------- |
-| **Element UI**          | ^2.15.8 | Vue UI 组件库 |
-| **github-markdown-css** | ^3.0.1  | Markdown 样式 |
+| 技术                    | 版本   | 用途            |
+| ----------------------- | ------ | --------------- |
+| **Element Plus**        | ^2.5.0 | Vue 3 UI 组件库 |
+| **github-markdown-css** | ^3.0.1 | Markdown 样式   |
 
 ### 2.5 构建工具
 
-| 技术                 | 版本    | 用途            |
-| -------------------- | ------- | --------------- |
-| **Webpack**          | ^5.72.0 | 模块打包        |
-| **Babel**            | ^7.17.9 | JavaScript 编译 |
-| **electron-builder** | ^23.0.6 | 应用打包分发    |
-| **ESLint**           | ^8.13.0 | 代码检查        |
+| 技术            | 版本    | 用途                |
+| --------------- | ------- | ------------------- |
+| **Vite**        | ^5.4.0  | 前端构建工具        |
+| **Tauri CLI**   | ^2.0.0  | 应用打包分发        |
+| **Webpack**     | (Muya)  | Muya 编辑器库打包   |
+| **Babel**       | ^7.17.9 | JavaScript 编译     |
+| **ESLint**      | ^8.13.0 | 代码检查            |
+| **Prettier**    | ^3.8.1  | 代码格式化          |
+| **Husky**       | ^9.1.7  | Git hooks 管理      |
+| **lint-staged** | ^16.2.7 | 暂存文件 lint       |
+| **commitlint**  | ^20.4.1 | Commit 信息规范检查 |
 
 ### 2.6 测试框架
 
@@ -79,376 +87,109 @@ MarkText 是一款开源的 Markdown 编辑器，专注于速度和可用性。�
 
 ### 2.7 其他重要依赖
 
-| 技术                      | 用途           |
-| ------------------------- | -------------- |
-| **chokidar**              | 文件监听       |
-| **electron-store**        | 持久化存储     |
-| **electron-window-state** | 窗口状态管理   |
-| **keytar**                | 系统密钥链访问 |
-| **vscode-ripgrep**        | 全文搜索       |
-| **DOMPurify**             | XSS 防护       |
-| **axios**                 | HTTP 请求      |
-| **Unsplash API**          | 图片搜索       |
+| 技术                                | 用途         |
+| ----------------------------------- | ------------ |
+| **@tauri-apps/plugin-fs**           | 文件系统操作 |
+| **@tauri-apps/plugin-dialog**       | 系统对话框   |
+| **@tauri-apps/plugin-shell**        | Shell 命令   |
+| **@tauri-apps/plugin-clipboard**    | 剪贴板管理   |
+| **@tauri-apps/plugin-window-state** | 窗口状态管理 |
+| **DOMPurify**                       | XSS 防护     |
+| **axios**                           | HTTP 请求    |
+| **Unsplash API**                    | 图片搜索     |
 
 ## 3. 项目结构
 
+> Electron 时代的项目结构和架构详解已归档至 [archive/PROJECT_STRUCTURE_ELECTRON.md](archive/PROJECT_STRUCTURE_ELECTRON.md)。
+
 ```
 marktext/
-├── .electron-vue/          # Webpack 构建配置
-│   ├── build.js            # 生产构建脚本
-│   ├── dev-runner.js       # 开发服务器
-│   ├── webpack.main.config.js      # 主进程 Webpack 配置
-│   └── webpack.renderer.config.js  # 渲染进程 Webpack 配置
+├── src-tauri/              # Tauri 后端 (Rust)
+│   ├── src/
+│   │   ├── main.rs         # 应用入口
+│   │   ├── lib.rs          # Tauri 初始化
+│   │   └── commands/       # Tauri 命令处理
+│   ├── capabilities/       # 权限配置
+│   ├── Cargo.toml          # Rust 依赖
+│   └── tauri.conf.json     # Tauri 配置
 │
-├── docs/                   # 文档目录
-│   ├── dev/               # 开发文档
-│   └── i18n/              # 多语言文档
+├── src/
+│   ├── renderer/           # Vue 3 前端
+│   │   ├── main.js         # 前端入口
+│   │   ├── components/     # Vue 组件
+│   │   ├── pages/          # 页面视图
+│   │   ├── stores/         # Pinia 状态管理 (TypeScript)
+│   │   ├── router/         # Vue Router 配置
+│   │   ├── i18n/           # 国际化
+│   │   ├── assets/         # 样式、图标、主题
+│   │   └── util/           # 工具函数
+│   │
+│   ├── muya/               # Muya 编辑器引擎
+│   │   ├── lib/            # 核心库
+│   │   └── themes/         # 编辑器主题
+│   │
+│   ├── common/             # 共享代码 (TypeScript)
+│   └── locales/            # 翻译文件
 │
-├── resources/              # 应用资源（图标等）
-│
-├── src/                    # 源代码
-│   ├── common/            # 主进程/渲染进程共享代码
-│   ├── main/              # Electron 主进程
-│   ├── muya/              # Muya 编辑器引擎
-│   └── renderer/          # Electron 渲染进程 (Vue 应用)
-│
-├── static/                 # 静态资源
-│
-├── test/                   # 测试文件
-│   ├── e2e/               # E2E 测试
-│   ├── specs/             # CommonMark/GFM 规范测试
-│   └── unit/              # 单元测试
-│
-├── tools/                  # 工具脚本
-│
-├── electron-builder.yml    # 打包配置
+├── test/                   # 测试
+├── resources/              # 应用资源
+├── docs/                   # 文档
+├── tools/                  # 构建工具脚本
+├── scripts/                # 平台环境脚本
 └── package.json
 ```
 
-## 4. 架构详解
+## 4. 架构简述
 
-### 4.1 Electron 架构
+详细架构文档请参考 [ARCHITECTURE.md](ARCHITECTURE.md)。
 
-MarkText 采用标准的 Electron 双进程架构：
+项目采用 Tauri 2.0 架构，由三个核心部分组成：
 
-```
-┌─────────────────────────────────────────────────────────────┐
-│                      Main Process                            │
-│  ┌─────────┐  ┌──────────┐  ┌────────────┐  ┌────────────┐ │
-│  │   App   │  │  Window  │  │    Menu    │  │  Keyboard  │ │
-│  │ Manager │  │ Manager  │  │   System   │  │  Shortcuts │ │
-│  └─────────┘  └──────────┘  └────────────┘  └────────────┘ │
-│  ┌──────────┐  ┌───────────┐  ┌────────────┐               │
-│  │ FileSystem│  │Preferences│  │Spellchecker│               │
-│  │  Watcher │  │   Store   │  │   System   │               │
-│  └──────────┘  └───────────┘  └────────────┘               │
-└─────────────────────────┬───────────────────────────────────┘
-                          │ IPC
-┌─────────────────────────┴───────────────────────────────────┐
-│                    Renderer Process                          │
-│  ┌─────────────────────────────────────────────────────────┐│
-│  │                    Vue.js Application                   ││
-│  │  ┌─────────┐  ┌────────┐  ┌──────────┐  ┌───────────┐ ││
-│  │  │ Vuex    │  │ Router │  │Components│  │  Services │ ││
-│  │  │ Store   │  │        │  │          │  │           │ ││
-│  │  └─────────┘  └────────┘  └──────────┘  └───────────┘ ││
-│  └─────────────────────────────────────────────────────────┘│
-│  ┌─────────────────────────────────────────────────────────┐│
-│  │                   Muya Editor Engine                    ││
-│  │  ┌──────────┐  ┌────────┐  ┌────────┐  ┌───────────┐  ││
-│  │  │ Content  │  │ Parser │  │  UI    │  │ Selection │  ││
-│  │  │  State   │  │        │  │Floats  │  │  System   │  ││
-│  │  └──────────┘  └────────┘  └────────┘  └───────────┘  ││
-│  └─────────────────────────────────────────────────────────┘│
-└─────────────────────────────────────────────────────────────┘
-```
+1. **Tauri 后端** (`src-tauri/`): Rust 进程，负责文件 I/O、系统对话框、窗口管理、OS 集成
+2. **Vue 前端** (`src/renderer/`): WebView 中的 Vue 3 应用，使用 Pinia 状态管理
+3. **Muya 引擎** (`src/muya/`): 纯 JavaScript 的 Markdown 编辑器引擎
 
-### 4.2 主进程 (src/main/)
+前后端通过 Tauri IPC 通信（`invoke()` 调用和事件系统），详见 [IPC 文档](code/IPC.md)。
 
-主进程负责系统级交互和窗口管理：
-
-```
-src/main/
-├── app/                    # 应用核心
-│   ├── index.js           # 应用入口
-│   ├── windowManager.js   # 窗口管理器
-│   └── accessor.js        # 全局服务访问器
-│
-├── cli/                    # 命令行接口
-│   ├── index.js
-│   └── parser.js
-│
-├── commands/               # IPC 命令处理
-│   ├── file.js            # 文件操作命令
-│   └── tab.js             # 标签页命令
-│
-├── contextMenu/            # 右键菜单
-│   └── editor/            # 编辑器右键菜单
-│
-├── dataCenter/             # 数据中心（状态持久化）
-│
-├── filesystem/             # 文件系统操作
-│   ├── encoding.js        # 编码检测
-│   ├── markdown.js        # Markdown 文件处理
-│   └── watcher.js         # 文件监听
-│
-├── keyboard/               # 快捷键系统
-│   ├── keybindingsDarwin.js
-│   ├── keybindingsLinux.js
-│   └── keybindingsWindows.js
-│
-├── menu/                   # 应用菜单
-│   ├── actions/           # 菜单动作处理
-│   └── templates/         # 菜单模板
-│
-├── preferences/            # 偏好设置
-│
-├── spellchecker/           # 拼写检查
-│
-├── utils/                  # 工具函数
-│
-└── windows/                # 窗口类
-    ├── base.js            # 基础窗口类
-    ├── editor.js          # 编辑器窗口
-    └── setting.js         # 设置窗口
-```
-
-### 4.3 渲染进程 (src/renderer/)
-
-渲染进程是基于 Vue.js 的前端应用：
-
-```
-src/renderer/
-├── assets/                 # 静态资源
-│   ├── icons/             # SVG 图标
-│   ├── themes/            # 主题样式文件
-│   └── styles/            # 全局样式
-│
-├── components/             # Vue 组件
-│   ├── editorWithTabs/    # 编辑器+标签页组件
-│   │   ├── editor.vue     # 主编辑器
-│   │   ├── tabs.vue       # 标签页
-│   │   └── sourceCode.vue # 源码模式
-│   ├── sideBar/           # 侧边栏
-│   ├── titleBar/          # 标题栏
-│   ├── search/            # 搜索组件
-│   └── commandPalette/    # 命令面板
-│
-├── prefComponents/         # 偏好设置组件
-│   ├── general/           # 通用设置
-│   ├── editor/            # 编辑器设置
-│   ├── markdown/          # Markdown 设置
-│   ├── theme/             # 主题设置
-│   ├── image/             # 图片设置
-│   ├── keybindings/       # 快捷键设置
-│   └── spellchecker/      # 拼写检查设置
-│
-├── store/                  # Vuex 状态管理
-│   ├── index.js           # Store 入口
-│   ├── editor.js          # 编辑器状态
-│   ├── project.js         # 项目状态
-│   ├── layout.js          # 布局状态
-│   ├── preferences.js     # 偏好设置状态
-│   └── listenForMain.js   # 监听主进程事件
-│
-├── services/               # 服务
-│   ├── printService.js    # 打印/导出服务
-│   └── notification/      # 通知服务
-│
-├── util/                   # 工具函数
-│   ├── clipboard.js       # 剪贴板操作
-│   ├── pdf.js             # PDF 生成
-│   └── markdownToHtml.js  # Markdown 转 HTML
-│
-├── contextMenu/            # 右键菜单
-│
-├── router/                 # Vue Router 配置
-│
-└── pages/                  # 页面
-    ├── app.vue            # 主应用页面
-    └── preference.vue     # 设置页面
-```
-
-### 4.4 Muya 编辑器引擎 (src/muya/)
-
-Muya 是 MarkText 自研的核心 Markdown 编辑器引擎：
-
-```
-src/muya/
-├── lib/
-│   ├── index.js            # 编辑器入口
-│   │
-│   ├── contentState/       # 内容状态管理（核心）
-│   │   ├── index.js        # ContentState 类
-│   │   ├── core.js         # 核心状态操作
-│   │   ├── history.js      # 撤销/重做
-│   │   ├── inputCtrl.js    # 输入控制
-│   │   ├── formatCtrl.js   # 格式化控制
-│   │   ├── pasteCtrl.js    # 粘贴处理
-│   │   ├── copyCutCtrl.js  # 复制/剪切处理
-│   │   ├── enterCtrl.js    # 回车处理
-│   │   ├── backspaceCtrl.js# 退格处理
-│   │   ├── deleteCtrl.js   # 删除处理
-│   │   ├── arrowCtrl.js    # 方向键处理
-│   │   ├── tabCtrl.js      # Tab 键处理
-│   │   ├── paragraphCtrl.js# 段落控制
-│   │   ├── codeBlockCtrl.js# 代码块控制
-│   │   ├── tableBlockCtrl.js# 表格控制
-│   │   ├── imageCtrl.js    # 图片控制
-│   │   ├── linkCtrl.js     # 链接控制
-│   │   └── searchCtrl.js   # 搜索控制
-│   │
-│   ├── parser/             # Markdown 解析器
-│   │   └── [22 个解析模块]
-│   │
-│   ├── selection/          # 选区管理
-│   │   ├── index.js        # Selection 类
-│   │   ├── cursor.js       # 光标操作
-│   │   └── dom.js          # DOM 选区操作
-│   │
-│   ├── eventHandler/       # 事件处理
-│   │   ├── keyboard.js     # 键盘事件
-│   │   ├── clickEvent.js   # 点击事件
-│   │   ├── clipboard.js    # 剪贴板事件
-│   │   ├── dragDrop.js     # 拖放事件
-│   │   └── mouseEvent.js   # 鼠标事件
-│   │
-│   ├── ui/                 # UI 浮层组件
-│   │   ├── formatPicker/   # 格式选择器
-│   │   ├── quickInsert/    # 快速插入菜单
-│   │   ├── tablePicker/    # 表格选择器
-│   │   ├── imageSelector/  # 图片选择器
-│   │   ├── codePicker/     # 代码语言选择
-│   │   ├── emojiPicker/    # Emoji 选择器
-│   │   ├── linkTools/      # 链接工具
-│   │   └── tooltip/        # 工具提示
-│   │
-│   ├── renderers/          # 渲染器
-│   │   └── index.js        # Snabbdom 渲染
-│   │
-│   ├── utils/              # 工具函数
-│   │   ├── exportHtml.js   # 导出 HTML
-│   │   ├── exportMarkdown.js# 导出 Markdown
-│   │   └── importMarkdown.js# 导入 Markdown
-│   │
-│   └── assets/             # 资源文件
-│       ├── icons/          # SVG 图标
-│       ├── pngicon/        # PNG 图标
-│       └── styles/         # 样式
-│
-├── themes/                 # Muya 主题
-│   └── default.css
-│
-└── package.json            # 独立包配置
-```
-
-## 5. 数据流架构
-
-### 5.1 Vuex Store 模块
-
-```javascript
-// src/renderer/store/index.js
-const store = new Vuex.Store({
-  modules: {
-    listenForMain, // 监听主进程事件
-    autoUpdates, // 自动更新
-    notification, // 通知
-    tweet, // 分享功能
-    project, // 项目管理
-    preferences, // 用户偏好
-    editor, // 编辑器状态
-    layout, // 布局状态
-    commandCenter, // 命令中心
-  },
-});
-```
-
-### 5.2 IPC 通信模式
-
-```
-Main Process                    Renderer Process
-┌──────────────┐               ┌──────────────────┐
-│              │  ipcMain.on   │                  │
-│   Handlers   │◄──────────────│  ipcRenderer.send│
-│              │               │                  │
-│              │  webContents  │                  │
-│              │  .send()      │                  │
-│              │──────────────►│  ipcRenderer.on  │
-│              │               │                  │
-└──────────────┘               └──────────────────┘
-```
-
-常用 IPC 通道前缀：
-
-- `mt::` - MarkText 主进程发送到渲染进程
-- `ficus::` - 偏好设置相关
-- `AGANI::` - 编辑器/Muya 相关
-
-## 6. 构建与打包
-
-### 6.1 开发环境
+## 5. 构建与开发
 
 ```bash
 # 安装依赖
 yarn install
 
-# 启动开发服务器
-yarn dev
-```
+# 开发模式（Vite + Tauri）
+yarn tauri:dev
 
-### 6.2 生产构建
+# 生产构建
+yarn tauri:build
 
-```bash
-# 构建当前平台
-yarn build
-
-# 仅构建二进制（不打包）
-yarn build:bin
-
-# 平台特定构建
-yarn release:win    # Windows
-yarn release:mac    # macOS
-yarn release:linux  # Linux
-```
-
-### 6.3 Webpack 配置
-
-- **主进程配置**: `.electron-vue/webpack.main.config.js`
-  - 入口: `src/main/index.js`
-  - 目标: `electron-main`
-
-- **渲染进程配置**: `.electron-vue/webpack.renderer.config.js`
-  - 入口: `src/renderer/main.js`
-  - 目标: `electron-renderer`
-  - Vue Loader、CSS 处理、SVG Sprite 等
-
-### 6.4 打包配置 (electron-builder.yml)
-
-支持的输出格式：
-
-- **Windows**: NSIS 安装程序、ZIP
-- **macOS**: DMG、ZIP (x64 + arm64)
-- **Linux**: AppImage、DEB、RPM、tar.gz
+# 代码检查与格式化
+yarn lint          # ESLint 检查 (JS, TS, Vue)
+yarn lint:fix      # 自动修复
+yarn format        # Prettier 格式化
+yarn format:check  # 检查格式
 
 ## 7. 测试结构
 
 ```
+
 test/
-├── e2e/                    # E2E 测试 (Playwright)
-│   ├── playwright.config.js
-│   ├── launch.spec.js      # 启动测试
-│   └── xss.spec.js         # XSS 安全测试
+├── e2e/ # E2E 测试 (Playwright)
+│ ├── playwright.config.js
+│ ├── launch.spec.js # 启动测试
+│ └── xss.spec.js # XSS 安全测试
 │
-├── specs/                  # 规范符合性测试
-│   ├── commonMark/         # CommonMark 0.30 测试
-│   └── gfm/                # GFM 0.29 测试
+├── specs/ # 规范符合性测试
+│ ├── commonMark/ # CommonMark 0.30 测试
+│ └── gfm/ # GFM 0.29 测试
 │
-└── unit/                   # 单元测试 (Karma + Mocha)
-    ├── karma.conf.js
-    └── specs/
-        ├── markdown-*.spec.js
-        └── extract-word.spec.js
-```
+└── unit/ # 单元测试 (Karma + Mocha)
+├── karma.conf.js
+└── specs/
+├── markdown-\*.spec.js
+└── extract-word.spec.js
+
+````
 
 ## 8. 关键技术实现
 
@@ -459,7 +200,7 @@ Muya 使用 Snabbdom 实现虚拟 DOM，提供高效的编辑器渲染：
 ```javascript
 // 使用 Snabbdom 进行差异化更新
 import { h, init, classModule, styleModule, propsModule } from "snabbdom";
-```
+````
 
 ### 8.2 Markdown 解析
 
@@ -483,14 +224,17 @@ import { h, init, classModule, styleModule, propsModule } from "snabbdom";
 
 ## 9. 改进建议
 
-### 9.1 技术栈升级考虑
+### 9.1 技术栈升级状态
 
-| 当前版本    | 建议升级          | 原因                   |
-| ----------- | ----------------- | ---------------------- |
-| Vue 2.6     | Vue 3.x           | Vue 2 已 EOL，性能提升 |
-| Electron 18 | Electron 最新 LTS | 安全更新、性能改进     |
-| Webpack 5   | Vite              | 更快的开发构建体验     |
-| Element UI  | Element Plus      | 适配 Vue 3             |
+| 升级项           | 状态      | 说明                                       |
+| ---------------- | --------- | ------------------------------------------ |
+| Electron → Tauri | ✅ 已完成 | 迁移至 Tauri 2.0                           |
+| Vue 2 → Vue 3    | ✅ 已完成 | 含 Element Plus、Pinia、Vue Router 4       |
+| Webpack → Vite   | ✅ 已完成 | 前端构建已迁移至 Vite（Muya 仍用 Webpack） |
+| TypeScript 迁移  | ✅ 已完成 | 32 个文件已迁移                            |
+| i18n 国际化      | ✅ 已完成 | Vue I18n v10                               |
+| 代码规范化       | ✅ 已完成 | Prettier + Husky + commitlint              |
+| Muya → Milkdown  | 📋 计划中 | 编辑器引擎替换                             |
 
 ### 9.2 架构优化方向
 
@@ -510,12 +254,13 @@ import { h, init, classModule, styleModule, propsModule } from "snabbdom";
 
 ## 10. 开发环境要求
 
-- **Node.js**: >=16 且 <17
-- **Python**: >=3.6（用于 node-gyp 编译原生模块）
+- **Node.js**: v18+（推荐使用 nvm 管理版本，项目根目录有 `.nvmrc`）
+- **Rust**: stable toolchain（通过 [rustup](https://rustup.rs/) 安装）
+- **Yarn**: >=1.22
 - **C++ 编译工具链**:
-  - Windows: Visual Studio 2019
+  - Windows: Visual Studio 2022
   - macOS: Xcode Command Line Tools
-  - Linux: build-essential
+  - Linux: build-essential + WebKit2GTK 开发库
 
 ## 11. 相关资源
 
@@ -527,4 +272,4 @@ import { h, init, classModule, styleModule, propsModule } from "snabbdom";
 
 ---
 
-_文档更新日期: 2026-01-29_
+_文档更新日期: 2026-02-11_

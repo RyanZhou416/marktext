@@ -6,12 +6,13 @@
 
 ### 必需软件
 
-| 软件          | 版本要求    | 说明                          |
-| ------------- | ----------- | ----------------------------- |
-| Node.js       | >=16 且 <17 | 推荐使用 nvm-windows 管理版本 |
-| Yarn          | 最新版      | `npm install -g yarn`         |
-| Python        | >=3.6       | 用于 node-gyp 编译原生模块    |
-| Visual Studio | 2019+       | 需要 C++ 构建工具             |
+| 软件          | 版本要求 | 说明                                   |
+| ------------- | -------- | -------------------------------------- |
+| Node.js       | v18+     | 推荐使用 nvm-windows 管理版本          |
+| Yarn          | >=1.22   | `npm install -g yarn`                  |
+| Rust          | stable   | 通过 [rustup](https://rustup.rs/) 安装 |
+| Visual Studio | 2022+    | 需要 C++ 构建工具                      |
+| WebView2      | 最新版   | Windows 10/11 通常已预装               |
 
 ### 安装 Visual Studio 构建工具
 
@@ -151,11 +152,17 @@ yarn run release:win
 
 ### 5. 网络问题
 
-如果下载 Electron 失败，可以设置镜像：
+如果下载 Rust crates 或 npm 包失败，可以配置镜像加速：
 
 ```powershell
-$env:ELECTRON_MIRROR="https://npmmirror.com/mirrors/electron/"
-yarn install
+# npm 镜像
+yarn config set registry https://registry.npmmirror.com
+
+# Rust crates 镜像（编辑 %USERPROFILE%\.cargo\config.toml）
+# [source.crates-io]
+# replace-with = 'ustc'
+# [source.ustc]
+# registry = "sparse+https://mirrors.ustc.edu.cn/crates.io-index/"
 ```
 
 ## 开发构建
@@ -186,4 +193,4 @@ yarn run release:win
 
 - [通用构建说明](./BUILD.md)
 - [项目结构分析](./PROJECT_ANALYSIS.md)
-- [Electron Builder 文档](https://www.electron.build/)
+- [Tauri 2.0 文档](https://v2.tauri.app/)

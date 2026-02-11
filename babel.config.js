@@ -1,46 +1,51 @@
-const proposalClassProperties = require('@babel/plugin-proposal-class-properties')
-const syntaxClassProperties = require('@babel/plugin-syntax-class-properties')
-const transformRuntime = require('@babel/plugin-transform-runtime')
-const syntaxDynamicImport = require('@babel/plugin-syntax-dynamic-import')
-const functionBind = require('@babel/plugin-proposal-function-bind')
-const exportDefault = require('@babel/plugin-proposal-export-default-from')
-const isTanbul = require('babel-plugin-istanbul')
-const presetEnv = require('@babel/preset-env')
-
 const presetsHash = {
   test: [
-    [presetEnv,
-    {
-      targets: { 'node': 16 }
-    }]
+    [
+      '@babel/preset-env',
+      {
+        targets: { node: 18 }
+      }
+    ]
   ],
   main: [
-    [presetEnv,
-    {
-      targets: { 'node': 16 }
-    }]
-  ],
-  renderer: [
-    [presetEnv,
-    {
-      useBuiltIns: false,
-      targets: {
-        electron: require('electron/package.json').version,
-        node: 16
+    [
+      '@babel/preset-env',
+      {
+        targets: { node: 18 }
       }
-    }]
+    ]
+  ],
+  // Tauri uses the system WebView (WebView2 on Windows, WebKit on macOS/Linux)
+  renderer: [
+    [
+      '@babel/preset-env',
+      {
+        useBuiltIns: false,
+        targets: {
+          chrome: '108',
+          safari: '16',
+          firefox: '108'
+        }
+      }
+    ]
   ]
 }
 
 module.exports = function (api) {
-  const plugins = [ proposalClassProperties, syntaxClassProperties, transformRuntime, syntaxDynamicImport, functionBind, exportDefault ]
+  const plugins = [
+    '@babel/plugin-proposal-class-properties',
+    '@babel/plugin-syntax-class-properties',
+    '@babel/plugin-transform-runtime',
+    '@babel/plugin-syntax-dynamic-import',
+    '@babel/plugin-proposal-function-bind',
+    '@babel/plugin-proposal-export-default-from'
+  ]
   const env = api.env()
   const presets = presetsHash[env]
 
   if (env === 'test') {
-    plugins.push(isTanbul)
+    plugins.push('babel-plugin-istanbul')
   }
-  // babel-plugin-component for Element UI removed - using Element Plus with Vite
 
   return {
     presets,

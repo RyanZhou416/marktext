@@ -1,0 +1,9 @@
+node_modules
+out
+dist
+build
+src/muya/dist
+src-tauri/target
+src-tauri/gen
+*.min.js
+*.min.css

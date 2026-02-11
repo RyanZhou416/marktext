@@ -1,33 +1,102 @@
 # Debugging
 
-## Use Visual Studio Code
+> For the archived Electron-era debugging guide, see [archive/DEBUGGING_ELECTRON.md](archive/DEBUGGING_ELECTRON.md).
 
-The most simplest way is to debug using the `Debug MarkText` configuration. You can set breakpoints and use the `debugger` statement.
+## Development Mode
 
-**Prerequisites:**
+Start the application in development mode:
 
-- [Debugger for Chrome](https://marketplace.visualstudio.com/itemdetails?itemName=msjsdiag.debugger-for-chrome)
-
-## Use Chrome Developer Tools
-
-You can use the built-in developer tools via `View -> Toggle Developer Tools` in debug mode or connect via `chrome://inspect` using port `5858` for the main process and `8315` for the renderer process when launched via `yarn run dev`.
-
-### Debug built application
-
-You can use the default Electron command-line parameters to enable debug mode as described above.
-
-```shell
-$ marktext --inspect=5858 --remote-debugging-port=8315
+```bash
+yarn tauri:dev
 ```
 
-## Debug slow startup performance
+This launches:
 
-Regardless of whether you are using the built or development version, you can use the [node-profiler](https://github.com/fxha/node-profiler) to analysis startup issues. Please follow the tool description for setup. Afterwards, launch the following commands in parallel (e.g. use three terminal windows and launch MarkText last).
+- **Vite dev server** on `http://localhost:5173` (frontend with HMR)
+- **Tauri application** loading the dev server URL
 
-```shell
-$ node-profiler main
-$ node-profiler renderer
-$ marktext --inspect=5858 --remote-debugging-port=8315
+## Frontend Debugging (WebView)
+
+### Browser Developer Tools
+
+Open the WebView developer tools:
+
+- Use the menu: `View -> Toggle Developer Tools`
+- Or press `Ctrl+Shift+I` (Windows/Linux) / `Cmd+Option+I` (macOS)
+
+From the DevTools you can:
+
+- Inspect DOM elements and Vue components
+- Debug JavaScript with breakpoints
+- Profile rendering performance
+- Monitor network requests
+
+### Vue DevTools
+
+Install the [Vue DevTools](https://devtools.vuejs.org/) browser extension for inspecting:
+
+- Component tree and props
+- Pinia store state
+- Vue Router routes
+- Event timeline
+
+## Rust Backend Debugging
+
+### Console Output
+
+Rust `println!` and `eprintln!` output appears in the terminal where `yarn tauri:dev` was launched. Use Tauri's logging:
+
+```rust
+use tauri::Manager;
+println!("Debug: {:?}", some_value);
 ```
 
-After the successful launch of MarkText, press `Ctrl+C` on both `node-profiler` instances. The tools created two files named `main.cpuprofile` and `renderer.cpuprofile`. You can now analyse these files via *Chrome Developer Tools* or *Visual Studio Code*.
+### VS Code Debugging
+
+1. Install the [CodeLLDB](https://marketplace.visualstudio.com/items?itemName=vadimcn.vscode-lldb) extension
+2. Add a launch configuration in `.vscode/launch.json`:
+
+```json
+{
+  "type": "lldb",
+  "request": "launch",
+  "name": "Debug Tauri",
+  "cargo": {
+    "args": ["build", "--manifest-path=./src-tauri/Cargo.toml"]
+  },
+  "preLaunchTask": "ui:dev"
+}
+```
+
+3. Set breakpoints in Rust source files and start debugging
+
+### Tauri Logs
+
+Set the `RUST_LOG` environment variable for detailed Tauri logging:
+
+```bash
+# Windows PowerShell
+$env:RUST_LOG="debug"
+yarn tauri:dev
+
+# Linux/macOS
+RUST_LOG=debug yarn tauri:dev
+```
+
+## Performance Profiling
+
+### Frontend Performance
+
+1. Open DevTools → Performance tab
+2. Record a session while performing the action to profile
+3. Analyze the flame chart for bottlenecks
+
+### Rust Performance
+
+Use `cargo flamegraph` for Rust-side profiling:
+
+```bash
+cd src-tauri
+cargo install flamegraph
+cargo flamegraph
+```

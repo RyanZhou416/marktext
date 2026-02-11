@@ -18,21 +18,18 @@ module.exports = {
     'eslint:recommended',
     'plugin:vue/base',
     'plugin:import/errors',
-    'plugin:import/warnings'
+    'plugin:import/warnings',
+    'plugin:prettier/recommended'
   ],
   globals: {
     __static: true
   },
   plugins: ['html', 'vue'],
   rules: {
-    // Two spaces but disallow semicolons
-    indent: ['error', 2, { 'SwitchCase': 1, 'ignoreComments': true }],
-    semi: [2, 'never'],
+    // Code quality rules (formatting is handled by Prettier)
     'no-return-await': 'error',
     'no-return-assign': 'error',
     'no-new': 'error',
-    // allow paren-less arrow functions
-    'arrow-parens': 'off',
     // allow console
     'no-console': 'off',
     // allow debugger during development
@@ -43,9 +40,12 @@ module.exports = {
     'no-mixed-operators': 'off',
     'no-prototype-builtins': 'off',
     // Ignore Vite-specific import suffixes (?raw, ?inline, ?url, etc.)
-    'import/no-unresolved': ['error', {
-      ignore: ['\\?raw$', '\\?inline$', '\\?url$', '\\?worker$']
-    }]
+    'import/no-unresolved': [
+      'error',
+      {
+        ignore: ['\\?raw$', '\\?inline$', '\\?url$', '\\?worker$']
+      }
+    ]
   },
   settings: {
     'import/resolver': {
@@ -60,21 +60,14 @@ module.exports = {
       }
     },
     // Ignore Vite-specific import suffixes (?raw, ?inline, etc.)
-    'import/ignore': [
-      '\\?raw$',
-      '\\?inline$',
-      '\\?url$',
-      '\\?worker$'
-    ]
+    'import/ignore': ['\\?raw$', '\\?inline$', '\\?url$', '\\?worker$']
   },
   overrides: [
     {
       files: ['*.ts', '*.tsx'],
       parser: '@typescript-eslint/parser',
       plugins: ['@typescript-eslint'],
-      extends: [
-        'plugin:@typescript-eslint/recommended'
-      ],
+      extends: ['plugin:@typescript-eslint/recommended', 'plugin:prettier/recommended'],
       rules: {
         // Gradual adoption - relax some strict rules initially
         '@typescript-eslint/no-explicit-any': 'off',
@@ -86,9 +79,5 @@ module.exports = {
       }
     }
   ],
-  ignorePatterns: [
-    'node_modules',
-    'src/muya/dist/**/*',
-    'src/muya/webpack.config.js'
-  ]
+  ignorePatterns: ['node_modules', 'src/muya/dist/**/*', 'src/muya/webpack.config.js']
 }

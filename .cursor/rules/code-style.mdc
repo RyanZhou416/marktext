@@ -1,0 +1,28 @@
+---
+description: Code style rules for JS/TS/Vue files
+globs: "**/*.{js,ts,vue}"
+alwaysApply: false
+---
+
+# Code Style
+
+- No semicolons
+- Single quotes for strings
+- 2-space indentation
+- No trailing commas
+- Arrow parens: avoid when possible (`x => x` not `(x) => x`)
+- Line width: 100 characters max
+- LF line endings (not CRLF)
+
+## TypeScript
+
+- Use TypeScript for new files in `src/renderer/stores/` and `src/common/`
+- Prefer explicit types for function parameters and return values
+- `any` is allowed during gradual migration but avoid in new code
+- Use path aliases: `@/` for `src/renderer/`, `common/` for `src/common/`
+
+## Vue
+
+- Use `<script setup>` for new Vue components
+- Use Composition API (not Options API)
+- Component names: PascalCase in templates, kebab-case filenames

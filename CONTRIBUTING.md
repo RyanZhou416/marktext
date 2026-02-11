@@ -14,16 +14,16 @@ We are really excited that you are interested in contributing to MarkText :tada:
 
 ## Philosophy
 
-🔑 Our philosophy is to keep things clean, simple and minimal. 
-MarkText is constantly changing and we want these improvements to align with our philosophy. For example, look at the side bar and tabs; these two panels provide awesome functionality *and* aren't distracting to the user. We'll continue adding more features (like plugins) that can be activated via 'settings' to improve MarkText. This will allow everyone to customize MarkText for their needs and provide a minimal default interface.
+🔑 Our philosophy is to keep things clean, simple and minimal.
+MarkText is constantly changing and we want these improvements to align with our philosophy. For example, look at the side bar and tabs; these two panels provide awesome functionality _and_ aren't distracting to the user. We'll continue adding more features (like plugins) that can be activated via 'settings' to improve MarkText. This will allow everyone to customize MarkText for their needs and provide a minimal default interface.
 
 ## Issue Reporting Guidelines
 
-Please search for similar issues before opening an issue and always follow the [issue template](.github/ISSUE_TEMPLATE/). Please review the following Pull Request guidelines before making your own PR. 
+Please search for similar issues before opening an issue and always follow the [issue template](.github/ISSUE_TEMPLATE/). Please review the following Pull Request guidelines before making your own PR.
 
 ## Pull Request Guidelines
 
-**In *all* Pull Requests:** provide a detailed description of the problem, as well as a demonstration with screen recordings and/or screenshots.
+**In _all_ Pull Requests:** provide a detailed description of the problem, as well as a demonstration with screen recordings and/or screenshots.
 
 Please make sure the following is done before submitting a PR:
 
@@ -43,7 +43,7 @@ If you add new feature:
 If you fix a bug:
 
 - If you are resolving a special issue, please add `fix: #<issue number> <short message>` in your PR title (e.g.`fix: #3899 update entities encoding/decoding`).
-- Provide a detailed description of the bug in your PR and/or link to the issue. 
+- Provide a detailed description of the bug in your PR and/or link to the issue.
 
 ### Where should I start?
 
@@ -79,6 +79,7 @@ If there are conflicts or you want to update your local branch, please do the fo
 MarkText uses **Tauri 2.0** with a Rust backend and Vue 3 frontend.
 
 Prerequisites:
+
 - [Rust](https://rustup.rs/) (stable toolchain)
 - [Node.js](https://nodejs.org/) (v18+)
 - [Yarn](https://yarnpkg.com/) (v1.x)
@@ -98,12 +99,44 @@ For detailed instructions, see [Build Instructions](docs/dev/BUILD.md).
 
 ### Style Guide
 
-You can run ESLint (`yarn run lint`) to help you to follow the style guide.
+Code formatting is handled automatically by **Prettier** and enforced by **ESLint**.
 
-- ES6 and "best practices"
+- ES6+ and "best practices"
 - 2 space indent
-- no semicolons
-- documentation: [JSDoc](https://github.com/jsdoc/jsdoc) 
+- No semicolons
+- Single quotes
+- Documentation: [JSDoc](https://github.com/jsdoc/jsdoc)
+
+Available commands:
+
+```bash
+yarn lint          # Check for lint errors
+yarn lint:fix      # Auto-fix lint errors
+yarn format        # Format code with Prettier
+yarn format:check  # Check formatting without writing
+```
+
+**Pre-commit hooks** are set up via [Husky](https://typicode.github.io/husky/) and [lint-staged](https://github.com/lint-staged/lint-staged). When you commit, staged files are automatically linted and formatted.
+
+### Commit Message Convention
+
+We follow [Conventional Commits](https://www.conventionalcommits.org/). Each commit message must have the format:
+
+```
+<type>(<scope>): <subject>
+```
+
+Allowed types: `feat`, `fix`, `docs`, `style`, `refactor`, `perf`, `test`, `build`, `ci`, `chore`, `revert`.
+
+Examples:
+
+```
+feat(editor): add table resize support
+fix(sidebar): resolve file tree rendering issue
+docs: update contributing guide
+```
+
+A `commit-msg` hook validates your commit messages automatically.
 
 ## Developer Documentation
 

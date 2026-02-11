@@ -1,71 +1,126 @@
 # Project Architecture
 
+> For the archived Electron-era architecture documentation, see [archive/ARCHITECTURE_ELECTRON.md](archive/ARCHITECTURE_ELECTRON.md).
+
 ## Overview
 
-- `.`: Configuration files
-- `package.json`: Project settings
-- `build/`: Contains generated binaries
-- `dist/`: Build files for deployment
-- `docs/`: Documentation and assets
-- `resources/`: Application assets using at build time
-- `node_modules/`: Dependencies
-- `src`: MarkText source code
-  - `common/`: Common source files that only require Node.js APIs. Code from this folder can be used in all other folders except `muya`.
-  - `main/`: Main process source files that require Electron main-process APIs. `main` files can use `common` source code.
-  - `muya/`: MarkTexts backend that only allow pure JavaScript, BOM and DOM APIs. Don't use Electron or Node.js APIs!
-  - `renderer`: Frontend that require Electron renderer-process APIs and may use `common` or `muya` source code.
-- `static/`: Application assets (images, themes, etc)
-- `test/`: Contains (unit) tests
+MarkText is a cross-platform desktop markdown editor built with **Tauri 2.0** (Rust backend) and **Vue 3** (frontend). The application can be split into three parts:
 
-## Introduction to MarkText
+1. **Tauri Backend** (`src-tauri/`): Rust process handling system-level operations (file I/O, dialogs, window management, OS integration)
+2. **Vue Frontend** (`src/renderer/`): The editor UI built with Vue 3, Pinia, and Vue Router
+3. **Muya** (`src/muya/`): The custom markdown editor engine (pure JavaScript, DOM APIs only)
 
-MarkText is a realtime preview (WYSIWYG) editor for markdown with various markdown extensions and our philosophy is to keep things clean, simple and minimal. The application is build with HTML, JS and CSS on top of Electron. Currently we're using a few native node libraries and our UI is build with Vue/Vuex. MarkText can be split in three parts: the core called Muya, the main- and renderer process.
+## Project Structure
 
-Muya provides realtime preview and markdown editing via multiple modules based on a block structure. You can imagine it as the editor backend with modules for markdown parsing, data store as block structure, markdown document transformations according CommonMark and GitHub Flavored Markdown specification with some extra specifications, event listeners and an exporter to generate standalone HTML and markdown files but also to generate the WYSIWYG editor. Muya is single threaded as well as MarkText but use asynchronous functions to boost performance.
+```
+marktext/
+├── src-tauri/                # Tauri backend (Rust)
+│   ├── src/
+│   │   ├── main.rs           # Application entry point
+│   │   ├── lib.rs            # Library entry (Tauri setup)
+│   │   └── commands/         # Tauri command handlers
+│   ├── capabilities/         # Tauri permission config
+│   ├── Cargo.toml            # Rust dependencies
+│   └── tauri.conf.json       # Tauri configuration
+│
+├── src/
+│   ├── renderer/             # Vue 3 frontend
+│   │   ├── main.js           # Frontend entry point
+│   │   ├── App.vue           # Root component
+│   │   ├── components/       # Vue components
+│   │   ├── pages/            # Page views (app, preference)
+│   │   ├── stores/           # Pinia stores (TypeScript)
+│   │   ├── router/           # Vue Router config
+│   │   ├── i18n/             # Internationalization
+│   │   ├── assets/           # Styles, icons, themes
+│   │   └── util/             # Utility functions
+│   │
+│   ├── muya/                 # Muya editor engine
+│   │   ├── lib/              # Core library
+│   │   │   ├── index.js      # Editor entry
+│   │   │   ├── contentState/ # Content state management
+│   │   │   ├── parser/       # Markdown parsing
+│   │   │   ├── selection/    # Selection management
+│   │   │   ├── eventHandler/ # Event handling
+│   │   │   ├── ui/           # UI float components
+│   │   │   └── renderers/    # Snabbdom rendering
+│   │   └── themes/           # Editor themes
+│   │
+│   ├── common/               # Shared code (TS)
+│   │   ├── commands/         # Command constants
+│   │   ├── filesystem/       # File system utilities
+│   │   └── keybinding/       # Keybinding utilities
+│   │
+│   └── locales/              # Translation files
+│
+├── test/                     # Tests
+│   ├── e2e/                  # Playwright E2E tests
+│   ├── specs/                # CommonMark/GFM spec tests
+│   └── unit/                 # Unit tests
+│
+├── resources/                # App resources (icons, etc.)
+├── docs/                     # Documentation
+├── tools/                    # Build/utility scripts
+└── scripts/                  # Platform setup scripts
+```
 
-> NOTE: MarkText's source-code editor is provided by CodeMirror and not well optimized nor feature rich. It's not part of Muya and an editor (renderer process) feature that load the markdown text from Muya (export), operate on it and re-import the text into Muya when switching to preview mode.
+## Architecture Diagram
 
-> NOTE: Muya requires a core refactoring to provide better modularization, APIs and plugins. Furthermore, the data structure need improvements for better performance and stability.
+```
+┌──────────────────────────────────────────────────────────────┐
+│                   Tauri Backend (Rust)                        │
+│  ┌──────────┐  ┌──────────┐  ┌───────────┐  ┌────────────┐ │
+│  │  Window   │  │   File   │  │  Dialog   │  │   Shell    │ │
+│  │ Manager   │  │  System  │  │  System   │  │  Commands  │ │
+│  └──────────┘  └──────────┘  └───────────┘  └────────────┘ │
+│  ┌──────────┐  ┌──────────┐  ┌───────────┐                  │
+│  │Clipboard │  │ OS Info  │  │  Updater  │                  │
+│  └──────────┘  └──────────┘  └───────────┘                  │
+└────────────────────────┬─────────────────────────────────────┘
+                         │ Tauri IPC (invoke / events)
+┌────────────────────────┴─────────────────────────────────────┐
+│                    WebView (Frontend)                         │
+│  ┌─────────────────────────────────────────────────────────┐ │
+│  │                  Vue 3 Application                      │ │
+│  │  ┌─────────┐  ┌────────┐  ┌──────────┐  ┌───────────┐ │ │
+│  │  │ Pinia   │  │ Router │  │Components│  │   i18n    │ │ │
+│  │  │ Stores  │  │        │  │          │  │           │ │ │
+│  │  └─────────┘  └────────┘  └──────────┘  └───────────┘ │ │
+│  └─────────────────────────────────────────────────────────┘ │
+│  ┌─────────────────────────────────────────────────────────┐ │
+│  │                  Muya Editor Engine                      │ │
+│  │  ┌──────────┐  ┌────────┐  ┌────────┐  ┌───────────┐  │ │
+│  │  │ Content  │  │ Parser │  │  UI    │  │ Selection │  │ │
+│  │  │  State   │  │        │  │ Floats │  │  System   │  │ │
+│  │  └──────────┘  └────────┘  └────────┘  └───────────┘  │ │
+│  └─────────────────────────────────────────────────────────┘ │
+└──────────────────────────────────────────────────────────────┘
+```
 
-The editor represents the view and is split into two parts. The first is the main process that have full access to Electron and all OS features. It's mainly used for IO, user interaction with native dialogs and controlls the editor windows. The main process should not (be long) blocked by synchronous operations. The renderer process is the real editor and also a host for Muya. It's responsible for all graphical elements (`src/renderer/components`), data (`src/renderer/store`) and data synchronization. A renderer process is spawned for each window, operates on its own and is controlled by the main process. It contains two text editors: the realtime preview editor provided by Muya and the source-code one by CodeMirror with special features such as tabs, sidebar and editing features.
+## Communication
 
-### Application entry points
+The Tauri backend and frontend communicate via **Tauri IPC**:
 
-There are two entry points to the application:
+- **Frontend → Backend**: `invoke()` calls to Tauri commands defined in `src-tauri/src/commands/`
+- **Backend → Frontend**: Event emission via Tauri's event system
+- **Tauri plugins** provide high-level APIs for common operations (file dialog, clipboard, shell, etc.)
 
-- `src/main/index.js` for the main process that is executed first and only once per instance. Once the application is initialized, it's safe to access all the environment variables and single-instances and the application (`App`) is started (`src/main/app/index.js`). You can use the application after `App::init()` is run successfully.
-- `src/renderer/main.js` for each editor window. At the beginning libraries are loaded, the window is initialized and Vue components are mounted.
+## Muya Editor Engine
 
-### How Muya work
+Muya is the core markdown editing engine. It uses **pure JavaScript and DOM APIs** (no framework dependencies) and provides:
 
-TBD
+- Real-time preview (WYSIWYG) editing
+- Markdown parsing (CommonMark, GFM, partial Pandoc support)
+- Virtual DOM rendering via Snabbdom
+- Content state management
+- Selection and cursor handling
+- UI float components (format picker, quick insert, emoji picker, etc.)
 
-- Overview about Muya components
-- How Muya work internal
-- Data structure
+Muya is bundled separately via Webpack and consumed by the Vue frontend.
 
-### Main- and renderer process communication
+## Build System
 
-Main- and renderer process communicate asynchronously via [inter-process communication (IPC)](code/IPC.md) and it's mainly used for IO and user interaction with native dialogs.
-
-### Editor window (renderer process)
-
-TBD
-
-### Examples
-
-#### Opening a markdown document and render it
-
-`MarkdownDocument` is a document that represents a markdown file on disk or an untitled document. To get a markdown document you can use the `loadMarkdownFile` function that asynchronously returns a `RawMarkdownDocument` (= `MarkdownDocument` with some additional information) in the main process.
-
-**Overall steps to open a file:**
-
-1. Click `File -> Open File` and a file dialog is shown that emit `app-open-file-by-id` with the editor window id to open the file in and resolved absolute file path.
-2. The application (`App` instance) tries to find the specified editor and call `openTab` on the editor window. A new editor window is created if no editor window exists.
-3. The editor window tries to load the markdown file via `loadMarkdownFile` and send the result via the `mt::open-new-tab` event to the renderer process.
-  - Each opened file is also added to the filesystem watcher and the full path is saved to track opened file in the current editor window.
-4. The event is triggered in `src/renderer/store/editor.js` (renderer process), does some checks and create a new document state that represent a markdown document and tab state.
-5. The new created tab is either opened and the `file-changed` event is emitted or just added to the tab state.
-6. Both Muya and the source-code editor listen on this event and change the markdown document accordingly.
-
-> NOTE: We currently have no high level APIs to make changes to the document text or lines automatically. All modifications need user interaction!
+- **Frontend**: Vite (`vite.config.mjs`) → `out/renderer/`
+- **Backend**: Cargo (via Tauri CLI) → `src-tauri/target/`
+- **Muya**: Webpack (`src/muya/webpack.config.js`) → `src/muya/dist/`
+- **Production**: `yarn tauri:build` orchestrates both frontend and backend builds

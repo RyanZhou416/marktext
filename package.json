@@ -4,6 +4,10 @@
   "homepage": "https://github.com/marktext/marktext/",
   "description": "Next generation markdown editor",
   "license": "MIT",
+  "engines": {
+    "node": ">=18.0.0",
+    "yarn": ">=1.22.0"
+  },
   "scripts": {
     "dev": "vite --config vite.config.mjs",
     "build": "vite build --config vite.config.mjs",
@@ -16,13 +20,16 @@
     "vite:preview": "vite preview --config vite.config.mjs",
     "build:clean": "rimraf out dist",
     "e2e": "yarn build && cross-env MARKTEXT_EXIT_ON_ERROR=1 playwright test -c test/e2e/playwright.config.js test/e2e",
-    "lint": "eslint --ext .js,.vue -f ./node_modules/eslint-friendly-formatter src test",
-    "lint:fix": "eslint --ext .js,.vue -f ./node_modules/eslint-friendly-formatter --fix src test",
+    "lint": "eslint --ext .js,.ts,.vue src test",
+    "lint:fix": "eslint --ext .js,.ts,.vue --fix src test",
+    "format": "prettier --write \"src/**/*.{js,ts,vue,css,json}\" \"test/**/*.{js,ts}\"",
+    "format:check": "prettier --check \"src/**/*.{js,ts,vue,css,json}\" \"test/**/*.{js,ts}\"",
     "test": "yarn run e2e",
     "test:specs": "node -r esm test/specs/commonMark/run.spec.js && node -r esm test/specs/gfm/run.spec.js",
     "build:muya": "cd src/muya && webpack --progress --config webpack.config.js",
     "gen-third-party": "node tools/generateThirdPartyLicense.js",
-    "validate-licenses": "node tools/validateLicenses.js"
+    "validate-licenses": "node tools/validateLicenses.js",
+    "prepare": "husky"
   },
   "dependencies": {
     "@element-plus/icons-vue": "^2.3.0",
@@ -76,6 +83,8 @@
   "devDependencies": {
     "@babel/core": "^7.17.9",
     "@babel/eslint-parser": "^7.17.0",
+    "@commitlint/cli": "^20.4.1",
+    "@commitlint/config-conventional": "^20.4.1",
     "@intlify/unplugin-vue-i18n": "^11.0.3",
     "@markedjs/html-differ": "^3.0.4",
     "@playwright/test": "^1.21.0",
@@ -86,25 +95,39 @@
     "@vitejs/plugin-vue": "^5.0.0",
     "cross-env": "^7.0.3",
     "eslint": "^8.13.0",
+    "eslint-config-prettier": "^10.1.8",
     "eslint-config-standard": "^16.0.3",
     "eslint-friendly-formatter": "^4.0.1",
     "eslint-import-resolver-alias": "^1.1.2",
     "eslint-plugin-html": "^6.2.0",
     "eslint-plugin-import": "^2.26.0",
     "eslint-plugin-node": "^11.1.0",
+    "eslint-plugin-prettier": "^5.5.5",
     "eslint-plugin-promise": "^6.0.0",
     "eslint-plugin-standard": "^4.1.0",
     "eslint-plugin-vue": "^9.0.0",
     "esm": "^3.2.25",
+    "husky": "^9.1.7",
+    "lint-staged": "^16.2.7",
     "marked": "^1.2.9",
     "path-browserify": "^1.0.1",
     "playwright": "^1.21.0",
     "postcss": "^8.4.12",
+    "prettier": "^3.8.1",
     "rimraf": "^5.0.0",
     "typescript": "^5.9.3",
     "vite": "^5.4.0",
     "vite-plugin-node-polyfills": "^0.25.0",
     "vue-loader": "^17.4.0"
+  },
+  "lint-staged": {
+    "*.{js,ts,vue}": [
+      "eslint --fix",
+      "prettier --write"
+    ],
+    "*.{json,css,md}": [
+      "prettier --write"
+    ]
   },
   "repository": {
     "type": "git",

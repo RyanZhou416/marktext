@@ -1,0 +1,30 @@
+---
+description: MarkText project overview and tech stack context
+alwaysApply: true
+---
+
+# MarkText Project
+
+MarkText is a cross-platform desktop markdown editor.
+
+## Tech Stack
+
+- **Frontend**: Vue 3 + Vite 5 + TypeScript + Element Plus + Pinia + Vue Router 4 + Vue I18n
+- **Backend**: Tauri 2.0 (Rust)
+- **Editor Engine**: Muya (custom, pure JS, bundled separately via Webpack)
+- **Testing**: Playwright (E2E) + CommonMark/GFM spec tests
+
+## Code Quality
+
+- **ESLint** + **Prettier** for linting and formatting (no semicolons, single quotes, 2-space indent)
+- **Husky** + **lint-staged** for pre-commit hooks
+- **commitlint** enforces Conventional Commits
+- Always respond in Chinese-simplified when communicating with the user
+
+## Key Directories
+
+- `src/renderer/` - Vue 3 frontend
+- `src-tauri/` - Rust backend
+- `src/muya/` - Markdown editor engine (do NOT use Electron or Node.js APIs here)
+- `src/common/` - Shared TypeScript code
+- `src/locales/` - i18n translation files

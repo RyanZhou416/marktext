@@ -1,0 +1,36 @@
+---
+description: Git commit conventions - Conventional Commits format with English messages
+alwaysApply: true
+---
+
+# Git Commit Convention
+
+When creating git commits, always use **Conventional Commits** format:
+
+```
+<type>(<scope>): <subject>
+```
+
+## Rules
+
+- **type** must be one of: `feat`, `fix`, `docs`, `style`, `refactor`, `perf`, `test`, `build`, `ci`, `chore`, `revert`
+- **scope** is optional, describes the affected area (e.g., `editor`, `sidebar`, `muya`)
+- **subject** must be in English, lowercase first letter, no period at end
+- Keep subject under 72 characters
+- Use imperative mood ("add feature" not "added feature")
+
+## Examples
+
+```
+feat(editor): add image drag-and-drop support
+fix(sidebar): resolve file tree collapse issue
+docs: update build instructions
+chore: upgrade dependencies
+refactor(stores): migrate editor store to TypeScript
+```
+
+## Before Committing
+
+- Run `git diff --staged` to review all changes
+- Ensure the commit message accurately reflects ALL staged changes
+- Do NOT commit files that contain secrets (.env, credentials, etc.)
