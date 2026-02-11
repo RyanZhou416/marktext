@@ -1,12 +1,7 @@
 <template>
   <div class="side-bar-search">
     <div class="search-wrapper">
-      <input
-        type="text"
-        v-model="keyword"
-        placeholder="Search in folder..."
-        @keyup="search"
-      />
+      <input type="text" v-model="keyword" placeholder="Search in folder..." @keyup="search" />
       <div class="controls">
         <span
           title="Case Sensitive"
@@ -44,38 +39,44 @@
     <div class="search-message-section" v-if="showNoFolderOpenedMessage">
       <span>No folder open</span>
     </div>
-    <div class="search-message-section" v-if="showNoResultFoundMessage">
-      No results found.
-    </div>
+    <div class="search-message-section" v-if="showNoResultFoundMessage">No results found.</div>
     <div class="search-message-section" v-if="searchErrorString">
       {{ searchErrorString }}
     </div>
 
     <div class="cancel-area" v-show="showSearchCancelArea">
-      <el-button type="primary" size="mini" @click="cancelSearcher">
-        Cancel <i class="el-icon-video-pause"></i>
-      </el-button>
+      <button class="button-primary" @click="cancelSearcher">Cancel</button>
     </div>
     <div v-if="searchResult.length" class="search-result-info">
       {{ searchResultInfo }}
     </div>
-    <div class="search-result" v-if="searchResult.length">
-      <search-result-item
-        v-for="(item, index) of searchResult"
-        :key="index"
-        :searchResult="item"
-      ></search-result-item>
+    <div class="search-result" ref="scrollRef" v-if="searchResult.length">
+      <div
+        :style="{ height: `${virtualizer.getTotalSize()}px`, width: '100%', position: 'relative' }"
+      >
+        <div
+          v-for="virtualRow in virtualizer.getVirtualItems()"
+          :key="virtualRow.key"
+          :ref="el => virtualizer.measureElement(el)"
+          :data-index="virtualRow.index"
+          :style="{
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            width: '100%',
+            transform: `translateY(${virtualRow.start}px)`
+          }"
+        >
+          <search-result-item :searchResult="searchResult[virtualRow.index]"></search-result-item>
+        </div>
+      </div>
     </div>
     <div class="empty" v-else>
       <div class="no-data">
         <svg :viewBox="EmptyIcon.viewBox" aria-hidden="true">
           <use :xlink:href="EmptyIcon.url" />
         </svg>
-        <button
-          class="button-primary"
-          v-if="showNoFolderOpenedMessage"
-          @click="openFolder"
-        >
+        <button class="button-primary" v-if="showNoFolderOpenedMessage" @click="openFolder">
           Open Folder
         </button>
       </div>
@@ -84,11 +85,13 @@
 </template>
 
 <script lang="ts">
+import { ref, computed } from 'vue'
 import { mapState } from 'pinia'
 import { useLayoutStore } from '@/stores/layout'
 import { useEditorStore } from '@/stores/editor'
 import { useProjectStore } from '@/stores/project'
 import { usePreferencesStore } from '@/stores/preferences'
+import { useVirtualizer } from '@tanstack/vue-virtual'
 import bus from '../../bus'
 import log from '../../util/logger'
 import SearchResultItem from './searchResultItem.vue'
@@ -100,7 +103,22 @@ import FindRegexIcon from '@/assets/icons/searchIcons/iconRegex.svg'
 import { MARKDOWN_INCLUSIONS } from '../../../common/filesystem/paths'
 
 export default {
-  data () {
+  setup() {
+    const scrollRef = ref<HTMLElement | null>(null)
+    const resultCount = ref(0)
+
+    const virtualizer = useVirtualizer(
+      computed(() => ({
+        count: resultCount.value,
+        getScrollElement: () => scrollRef.value,
+        estimateSize: () => 40,
+        overscan: 5
+      }))
+    )
+
+    return { scrollRef, resultCount, virtualizer }
+  },
+  data() {
     this.lastKeyword = ''
     this.lastSearchTime = new Date()
     this.keyUpTimer = null
@@ -130,9 +148,12 @@ export default {
       if (value && !oldValue && this.rightColumn === 'search') {
         this.keyword = this.searchMatches.value
       }
+    },
+    'searchResult.length': function (newLen) {
+      this.resultCount = newLen
     }
   },
-  created () {
+  created() {
     this.$nextTick(() => {
       this.keyword = this.searchMatches.value
       bus.$on('findInFolder', this.handleFindInFolder)
@@ -145,11 +166,17 @@ export default {
   computed: {
     ...mapState(useLayoutStore, ['rightColumn', 'showSideBar']),
     ...mapState(useEditorStore, {
-      searchMatches: (store) => store.currentFile.searchMatches
+      searchMatches: store => store.currentFile.searchMatches
     }),
     ...mapState(useProjectStore, ['projectTree']),
-    ...mapState(usePreferencesStore, ['searchExclusions', 'searchMaxFileSize', 'searchIncludeHidden', 'searchNoIgnore', 'searchFollowSymlinks']),
-    searchResultInfo () {
+    ...mapState(usePreferencesStore, [
+      'searchExclusions',
+      'searchMaxFileSize',
+      'searchIncludeHidden',
+      'searchNoIgnore',
+      'searchFollowSymlinks'
+    ]),
+    searchResultInfo() {
       const fileCount = this.searchResult.length
       const matchCount = this.searchResult.reduce((acc, item) => {
         return acc + item.matches.length
@@ -159,19 +186,17 @@ export default {
         matchCount > 1 ? 'matches' : 'match'
       } in ${fileCount} ${fileCount > 1 ? 'files' : 'file'}`
     },
-    showNoFolderOpenedMessage () {
+    showNoFolderOpenedMessage() {
       return !this.projectTree || !this.projectTree.pathname
     },
-    showNoResultFoundMessage () {
+    showNoResultFoundMessage() {
       return (
-        this.searchResult.length === 0 &&
-        this.searcherRunning === false &&
-        this.keyword.length > 0
+        this.searchResult.length === 0 && this.searcherRunning === false && this.keyword.length > 0
       )
     }
   },
   methods: {
-    search () {
+    search() {
       // No root directory is opened.
       if (this.showNoFolderOpenedMessage) {
         return
@@ -208,7 +233,7 @@ export default {
       const newSearchResult = []
       const promises = ripgrepDirectorySearcher
         .search([rootDirectoryPath], keyword, {
-          didMatch: (searchResult) => {
+          didMatch: searchResult => {
             if (canceled) return
 
             // filePath: "<file>"
@@ -225,7 +250,7 @@ export default {
 
             newSearchResult.push(searchResult)
           },
-          didSearchPaths: (numPathsFound) => {
+          didSearchPaths: numPathsFound => {
             // More than 100 files with (multiple) matches were found.
             if (!canceled && numPathsFound > 100) {
               canceled = true
@@ -257,7 +282,7 @@ export default {
           this.searcherCancelCallback = null
           this.stopShowSearchCancelAreaTimer()
         })
-        .catch((err) => {
+        .catch(err => {
           canceled = true
           if (promises.cancel) {
             promises.cancel()
@@ -282,7 +307,7 @@ export default {
      * Slightly delay showing the "cancel search" button so we don't
      * see it after every keypress, but only when a search query is lagging.
      */
-    startShowSearchCancelAreaTimer () {
+    startShowSearchCancelAreaTimer() {
       this.stopShowSearchCancelAreaTimer()
 
       const SHOW_SEARCH_CANCEL_DELAY_MS = 5000
@@ -290,7 +315,7 @@ export default {
         this.showSearchCancelArea = true
       }, SHOW_SEARCH_CANCEL_DELAY_MS)
     },
-    stopShowSearchCancelAreaTimer () {
+    stopShowSearchCancelAreaTimer() {
       this.showSearchCancelArea = false
       if (!this.showSearchCancelAreaTimer) {
         return
@@ -298,34 +323,34 @@ export default {
       window.clearTimeout(this.showSearchCancelAreaTimer)
       this.showSearchCancelAreaTimer = null
     },
-    cancelSearcher () {
+    cancelSearcher() {
       const { searcherCancelCallback } = this
       if (searcherCancelCallback) {
         searcherCancelCallback()
         this.searcherCancelCallback = null
       }
     },
-    caseSensitiveClicked () {
+    caseSensitiveClicked() {
       this.isCaseSensitive = !this.isCaseSensitive
       this.search()
     },
-    wholeWordClicked () {
+    wholeWordClicked() {
       this.isWholeWord = !this.isWholeWord
       this.search()
     },
-    regexpClicked () {
+    regexpClicked() {
       this.isRegexp = !this.isRegexp
       this.search()
     },
-    openFolder () {
+    openFolder() {
       const projectStore = useProjectStore()
       projectStore.ASK_FOR_OPEN_PROJECT()
     },
-    handleFindInFolder () {
+    handleFindInFolder() {
       this.keyword = this.searchMatches.value
     }
   },
-  unmounted () {
+  unmounted() {
     bus.$off('findInFolder', this.handleFindInFolder)
   }
 }

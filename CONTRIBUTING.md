@@ -31,7 +31,7 @@ Please make sure the following is done before submitting a PR:
 - Reference the related issue in the PR comment.
 - Utilize [JSDoc](https://github.com/jsdoc/jsdoc) for better code documentation.
 - Ensure all tests pass.
-- Please lint (`yarn run lint`) your PR.
+- Please lint (`npm run lint`) your PR.
 - All PRs need to pass the **CI** before merged. If it fails, please try to solve the issue(s) and feel free to ask for any help.
 
 If you add new feature:
@@ -82,17 +82,17 @@ Prerequisites:
 
 - [Rust](https://rustup.rs/) (stable toolchain)
 - [Node.js](https://nodejs.org/) (v18+)
-- [Yarn](https://yarnpkg.com/) (v1.x)
+- [npm](https://www.npmjs.com/) (v9+, bundled with Node.js)
 
 ```bash
 # Install dependencies
-yarn install
+npm install
 
 # Development
-yarn tauri:dev
+npm run tauri:dev
 
 # Production build
-yarn tauri:build
+npm run tauri:build
 ```
 
 For detailed instructions, see [Build Instructions](docs/dev/BUILD.md).
@@ -110,10 +110,10 @@ Code formatting is handled automatically by **Prettier** and enforced by **ESLin
 Available commands:
 
 ```bash
-yarn lint          # Check for lint errors
-yarn lint:fix      # Auto-fix lint errors
-yarn format        # Format code with Prettier
-yarn format:check  # Check formatting without writing
+npm run lint          # Check for lint errors
+npm run lint:fix      # Auto-fix lint errors
+npm run format        # Format code with Prettier
+npm run format:check  # Check formatting without writing
 ```
 
 **Pre-commit hooks** are set up via [Husky](https://typicode.github.io/husky/) and [lint-staged](https://github.com/lint-staged/lint-staged). When you commit, staged files are automatically linted and formatted.

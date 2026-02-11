@@ -2,15 +2,17 @@
   <div class="pref-image">
     <h4>{{ $t('settings.image.title') }}</h4>
     <section class="image-ctrl">
-      <div>{{ $t('settings.image.defaultAction') }}
-        <el-tooltip class='item' effect='dark'
-          :content="$t('settings.image.clipboardNote')"
-          placement='top-start'>
+      <div>
+        {{ $t('settings.image.defaultAction') }}
+        <AppTooltip class="item" :content="$t('settings.image.clipboardNote')" side="top">
           <i class="el-icon-info"></i>
-        </el-tooltip>
+        </AppTooltip>
       </div>
-      <CurSelect :value="imageInsertAction" :options="imageActionOpts"
-        :onChange="value => onSelectChange('imageInsertAction', value)"></CurSelect>
+      <CurSelect
+        :value="imageInsertAction"
+        :options="imageActionOpts"
+        :onChange="value => onSelectChange('imageInsertAction', value)"
+      ></CurSelect>
     </section>
     <Separator />
     <FolderSetting v-if="imageInsertAction === 'folder' || imageInsertAction === 'path'" />
@@ -23,6 +25,7 @@ import Separator from '../common/separator'
 import Uploader from './components/uploader'
 import CurSelect from '@/prefComponents/common/select'
 import FolderSetting from './components/folderSetting'
+import AppTooltip from '@/components/common/AppTooltip.vue'
 import { imageActions } from './config'
 import { usePreferencesStore } from '@/stores/preferences'
 
@@ -31,9 +34,10 @@ export default {
     Separator,
     CurSelect,
     FolderSetting,
-    Uploader
+    Uploader,
+    AppTooltip
   },
-  data () {
+  data() {
     return {}
   },
   computed: {
@@ -42,12 +46,12 @@ export default {
         return usePreferencesStore().imageInsertAction
       }
     },
-    imageActionOpts () {
+    imageActionOpts() {
       return imageActions(this.$t)
     }
   },
   methods: {
-    onSelectChange (type, value) {
+    onSelectChange(type, value) {
       const preferencesStore = usePreferencesStore()
       preferencesStore.SET_SINGLE_PREFERENCE({ type, value })
     }

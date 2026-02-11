@@ -4,16 +4,19 @@
       <span>{{ description }}:</span>
       <i class="el-icon-info" v-if="more" @click="handleMoreClick"></i>
     </div>
-    <el-input
-      class="input"
+    <input
+      class="input pref-input"
       :class="{ error: invalidInput }"
+      type="text"
       :placeholder="defaultValue"
-      v-model="inputText"
-      @input="handleInput"
-      size="small"
-      clearable
-    >
-    </el-input>
+      :value="inputText"
+      @input="
+        e => {
+          inputText = e.target.value
+          handleInput(e.target.value)
+        }
+      "
+    />
     <div v-if="notes" class="notes">
       {{ notes }}
     </div>
@@ -24,7 +27,7 @@
 import { shell } from '../../../util/tauri'
 
 export default {
-  data () {
+  data() {
     this.inputTimer = null
     return {
       inputText: this.input,
@@ -51,7 +54,7 @@ export default {
     },
     regexValidator: {
       type: RegExp,
-      default () {
+      default() {
         return /(.*?)/
       }
     }
@@ -64,12 +67,12 @@ export default {
     }
   },
   methods: {
-    handleMoreClick () {
+    handleMoreClick() {
       if (typeof this.more === 'string') {
         shell.openExternal(this.more)
       }
     },
-    handleInput (value) {
+    handleInput(value) {
       const result = this.regexValidator.test(value)
       this.invalidInput = !result
 
@@ -103,18 +106,21 @@ export default {
   margin: 20px 0;
   color: var(--editorColor);
   width: 100%;
-  & input.el-input__inner {
+  & input.pref-input {
     height: 30px;
+    border: 1px solid var(--floatBorderColor);
     background: var(--inputBgColor);
     color: var(--editorColor);
-    border-color: var(--editorColor10);
-    padding-right: 15px;
+    border-radius: 4px;
+    padding: 0 8px;
+    outline: none;
+    font-size: 13px;
     &::placeholder {
-      color: var(--editorColor30);
+      color: var(--editorColor50);
     }
-  }
-  & .el-input__wrapper {
-    background-color: var(--inputBgColor);
+    &:focus {
+      border-color: var(--themeColor);
+    }
   }
   & .notes {
     margin-top: 10px;
@@ -123,14 +129,6 @@ export default {
   }
   & .input {
     width: 100%;
-  }
-  & .el-input.is-active .el-input__inner,
-  & .el-input__inner:focus {
-    border-color: var(--themeColor);
-  }
-  & .el-input__icon,
-  & .el-input__inner {
-    line-height: 30px;
   }
   & .description {
     margin-bottom: 10px;
@@ -144,7 +142,7 @@ export default {
     color: var(--themeColor);
   }
 }
-.pref-text-box-item .el-input.error input {
+.pref-text-box-item .input.error {
   color: #f56c6c;
 }
 </style>

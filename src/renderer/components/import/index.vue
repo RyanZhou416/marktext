@@ -1,12 +1,6 @@
 <template>
   <div class="import-dialog">
-    <el-dialog
-      v-model="showImport"
-      :show-close="false"
-      :modal="true"
-      custom-class="ag-dialog-table"
-      width="450px"
-    >
+    <AppDialog v-model:open="showImport" width="450px">
       <div class="body">
         <div
           class="drop-container"
@@ -29,42 +23,44 @@
           <div>.wiki</div>
         </div>
       </div>
-    </el-dialog>
+    </AppDialog>
   </div>
 </template>
 
 <script lang="ts">
+import AppDialog from '@/components/common/AppDialog.vue'
 import bus from '@/bus'
 import { ipcRenderer, webUtils } from '../../util/tauri'
 import importIcon from '@/assets/icons/import_file.svg'
 
 export default {
-  data () {
+  components: { AppDialog },
+  data() {
     this.importIcon = importIcon
     return {
       showImport: false,
       isOver: false
     }
   },
-  created () {
+  created() {
     bus.$on('importDialog', this.showDialog)
   },
-  beforeUnmount () {
+  beforeUnmount() {
     bus.$off('importDialog', this.showDialog)
   },
   methods: {
-    showDialog (boolean) {
+    showDialog(boolean) {
       if (boolean !== this.showImport) {
         this.showImport = boolean
       }
     },
-    dragOverHandler (e) {
+    dragOverHandler(e) {
       this.isOver = true
     },
-    dragLeaveHandler (e) {
+    dragLeaveHandler(e) {
       this.isOver = false
     },
-    dropHandler (e) {
+    dropHandler(e) {
       e.preventDefault()
       if (e.dataTransfer.files) {
         const fileList = []

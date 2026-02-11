@@ -64,15 +64,15 @@ if errorlevel 1 (
     echo     [OK] Node.js !NODE_VER!
 )
 
-:: ---------- Check Yarn ----------
-echo   Checking Yarn...
-where yarn >nul 2>&1
+:: ---------- Check npm ----------
+echo   Checking npm...
+where npm >nul 2>&1
 if errorlevel 1 (
-    echo     [MISSING] Yarn not installed
+    echo     [MISSING] npm not installed
     set "MISSING_DEPS=1"
 ) else (
-    for /f "tokens=*" %%v in ('yarn --version 2^>nul') do set "YARN_VER=%%v"
-    echo     [OK] Yarn !YARN_VER!
+    for /f "tokens=*" %%v in ('npm --version 2^>nul') do set "NPM_VER=%%v"
+    echo     [OK] npm !NPM_VER!
 )
 
 :: ---------- Check WebView2 (Windows) ----------
@@ -136,13 +136,13 @@ exit /b 1
 :SYSTEM_OK
 echo [Step 2/4] Installing JS dependencies...
 
-if exist "node_modules\.yarn-integrity" (
+if exist "node_modules\.package-lock.json" (
     echo   [SKIP] node_modules already exists
 ) else (
-    echo   Running yarn install...
-    call yarn install
+    echo   Running npm install...
+    call npm install --legacy-peer-deps
     if errorlevel 1 (
-        echo   [ERROR] yarn install failed
+        echo   [ERROR] npm install failed
         goto :ERROR_EXIT
     )
     echo   [OK] JS dependencies installed
@@ -175,7 +175,7 @@ if "!TAURI_FOUND!"=="0" (
 if "!TAURI_FOUND!"=="1" (
     echo     [OK] Tauri CLI !TAURI_VER!
 ) else (
-    echo     [ERROR] Tauri CLI not found even after yarn install
+    echo     [ERROR] Tauri CLI not found even after npm install
     echo             Try: cargo install tauri-cli
     goto :ERROR_EXIT
 )
@@ -209,7 +209,7 @@ echo.
 echo   Rust:       !RUST_VER!
 echo   Tauri CLI:  !TAURI_VER!
 echo   Node.js:    !NODE_VER!
-echo   Yarn:       !YARN_VER!
+echo   npm:        !NPM_VER!
 echo.
 echo   Next steps:
 echo     scripts\dev-tauri.cmd            Debug build + run

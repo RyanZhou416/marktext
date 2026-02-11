@@ -13,7 +13,7 @@ const mapPath = args['--map']
 
 if (!mapPath) {
   console.log('ERROR: -m is a required argument.\n')
-  console.log('USAGE:\n  yarn deobfuscateStackTrace -m <path_to_source_map>')
+  console.log('USAGE:\n  npm run deobfuscateStackTrace -- -m <path_to_source_map>')
   process.exit(1)
 } else if (!fs.existsSync(mapPath)) {
   console.log(`ERROR: Invalid source map path: "${mapPath}".`)
@@ -51,14 +51,16 @@ const deobfuscateStackTrace = stackTraceStr => {
 console.log('Please paste the stack trace and continue with double Enter:')
 
 const lines = []
-readline.createInterface({
-  input: process.stdin,
-  terminal: false
-}).on('line', line => {
-  if (!line || line === '') {
-    console.log('Deobfuscated stack trace:')
-    deobfuscateStackTrace(lines.join('\n'))
-    process.exit(0)
-  }
-  lines.push(line)
-})
+readline
+  .createInterface({
+    input: process.stdin,
+    terminal: false
+  })
+  .on('line', line => {
+    if (!line || line === '') {
+      console.log('Deobfuscated stack trace:')
+      deobfuscateStackTrace(lines.join('\n'))
+      process.exit(0)
+    }
+    lines.push(line)
+  })

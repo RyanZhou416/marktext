@@ -6,13 +6,19 @@
       :input="imageFolderPath"
       :regexValidator="/^(?:$|([a-zA-Z]:)?[\/\\].*$)/"
       :defaultValue="folderPathPlaceholder"
-      :onChange="(value) => modifyImageFolderPath(value)"
+      :onChange="value => modifyImageFolderPath(value)"
     ></text-box>
-    <div>
-      <el-button size="mini" @click="modifyImageFolderPath(undefined)"
-        >{{ $t('settings.image.open') }}</el-button
+    <div class="folder-buttons">
+      <button
+        type="button"
+        class="pref-btn pref-btn-default"
+        @click="modifyImageFolderPath(undefined)"
       >
-      <el-button size="mini" @click="openImageFolder">{{ $t('settings.image.showInFolder') }}</el-button>
+        {{ $t('settings.image.open') }}
+      </button>
+      <button type="button" class="pref-btn pref-btn-default" @click="openImageFolder">
+        {{ $t('settings.image.showInFolder') }}
+      </button>
     </div>
     <compound>
       <template #head>
@@ -20,9 +26,7 @@
           :description="$t('settings.image.preferRelative')"
           more="https://github.com/marktext/marktext/blob/develop/docs/IMAGES.md"
           :bool="imagePreferRelativeDirectory"
-          :onChange="
-            (value) => onSelectChange('imagePreferRelativeDirectory', value)
-          "
+          :onChange="value => onSelectChange('imagePreferRelativeDirectory', value)"
         ></bool>
       </template>
       <template #children>
@@ -31,9 +35,7 @@
           :input="imageRelativeDirectoryName"
           :regexValidator="/^(?:$|(?![a-zA-Z]:)[^\/\\].*$)/"
           :defaultValue="relativeDirectoryNamePlaceholder"
-          :onChange="
-            (value) => onSelectChange('imageRelativeDirectoryName', value)
-          "
+          :onChange="value => onSelectChange('imageRelativeDirectoryName', value)"
         ></text-box>
         <div class="footnote">
           {{ $t('settings.image.filenameNote') }}
@@ -57,7 +59,7 @@ export default {
     Compound,
     TextBox
   },
-  data () {
+  data() {
     return {}
   },
   computed: {
@@ -78,21 +80,19 @@ export default {
     },
     relativeDirectoryNamePlaceholder: {
       get: function () {
-        return (
-          usePreferencesStore().imageRelativeDirectoryName || 'assets'
-        )
+        return usePreferencesStore().imageRelativeDirectoryName || 'assets'
       }
     }
   },
   methods: {
-    openImageFolder () {
+    openImageFolder() {
       shell.openPath(this.imageFolderPath)
     },
-    modifyImageFolderPath (value) {
+    modifyImageFolderPath(value) {
       const preferencesStore = usePreferencesStore()
       return preferencesStore.SET_IMAGE_FOLDER_PATH(value)
     },
-    onSelectChange (type, value) {
+    onSelectChange(type, value) {
       const preferencesStore = usePreferencesStore()
       preferencesStore.SET_SINGLE_PREFERENCE({ type, value })
     }
@@ -106,5 +106,21 @@ export default {
   & code {
     font-size: 13px;
   }
+}
+.image-folder .folder-buttons {
+  display: flex;
+  gap: 8px;
+  margin-top: 10px;
+}
+.image-folder .pref-btn {
+  padding: 6px 16px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 13px;
+}
+.image-folder .pref-btn-default {
+  background: transparent;
+  border: 1px solid var(--floatBorderColor);
+  color: var(--editorColor);
 }
 </style>

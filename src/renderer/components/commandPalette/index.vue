@@ -1,54 +1,47 @@
 <template>
   <div class="command-palette">
-    <el-dialog
-      v-model="showCommandPalette"
-      :show-close="false"
-      :modal="true"
-      @close="handleDialogClose"
-      custom-class="ag-dialog-table"
+    <AppDialog
+      v-model:open="showCommandPalette"
       width="500px"
+      @update:open="
+        val => {
+          if (!val) handleDialogClose()
+        }
+      "
     >
-      <template #header>
-        <div class="search-wrapper">
-          <div class="input-wrapper">
-            <input
-              ref="search"
-              type="text"
-              v-model="query"
-              class="search"
-              @keydown="handleBeforeInput"
-              @keyup="handleInput"
-              :placeholder="placeholderText"
-            />
-          </div>
-          <loading v-if="searcherBusy"></loading>
-          <transition name="fade" v-else-if="availableCommands.length">
-            <ul class="commands">
-              <li
-                v-for="(item, index) of availableCommands"
-                :key="index"
-                ref="command-items"
-                @click="search(item.id)"
-                :class="{ active: index === selectedCommandIndex }"
-              >
-                <span class="title" :title="item.title">{{
-                  item.description
-                }}</span>
-                <span class="shortcut">
-                  <span
-                    class="shortcut"
-                    v-for="(accelerator, index) of item.shortcut"
-                    :key="index"
-                  >
-                    <kbd>{{ accelerator }}</kbd>
-                  </span>
-                </span>
-              </li>
-            </ul>
-          </transition>
+      <div class="search-wrapper">
+        <div class="input-wrapper">
+          <input
+            ref="search"
+            type="text"
+            v-model="query"
+            class="search"
+            @keydown="handleBeforeInput"
+            @keyup="handleInput"
+            :placeholder="placeholderText"
+          />
         </div>
-      </template>
-    </el-dialog>
+        <loading v-if="searcherBusy"></loading>
+        <transition name="fade" v-else-if="availableCommands.length">
+          <ul class="commands">
+            <li
+              v-for="(item, index) of availableCommands"
+              :key="index"
+              ref="command-items"
+              @click="search(item.id)"
+              :class="{ active: index === selectedCommandIndex }"
+            >
+              <span class="title" :title="item.title">{{ item.description }}</span>
+              <span class="shortcut">
+                <span class="shortcut" v-for="(accelerator, index) of item.shortcut" :key="index">
+                  <kbd>{{ accelerator }}</kbd>
+                </span>
+              </span>
+            </li>
+          </ul>
+        </transition>
+      </div>
+    </AppDialog>
   </div>
 </template>
 
@@ -59,14 +52,17 @@ import log from '../../util/logger'
 import bus from '../../bus'
 import loading from '../loading'
 
+import AppDialog from '@/components/common/AppDialog.vue'
+
 export default {
   components: {
-    loading
+    loading,
+    AppDialog
   },
   computed: {
     ...mapState(useCommandCenterStore, ['rootCommand'])
   },
-  data () {
+  data() {
     this.currentCommand = null
     this.defaultPlaceholderText = 'Type a command to execute'
     return {
@@ -78,25 +74,23 @@ export default {
       searcherBusy: false
     }
   },
-  created () {
+  created() {
     this.$nextTick(() => {
       bus.$on('show-command-palette', this.handleShow)
     })
   },
-  beforeUnmount () {
+  beforeUnmount() {
     bus.$off('show-command-palette', this.handleShow)
   },
   methods: {
-    handleShow (command) {
+    handleShow(command) {
       this.currentCommand = command || this.rootCommand
       this.currentCommand
         .run()
         .then(() => {
           this.availableCommands = this.currentCommand.subcommands
-          this.selectedCommandIndex =
-            this.currentCommand.subcommandSelectedIndex
-          this.placeholderText =
-            this.currentCommand.placeholder || this.defaultPlaceholderText
+          this.selectedCommandIndex = this.currentCommand.subcommandSelectedIndex
+          this.placeholderText = this.currentCommand.placeholder || this.defaultPlaceholderText
           this.query = ''
           this.showCommandPalette = true
           bus.$emit('editor-blur')
@@ -115,14 +109,14 @@ export default {
             }
           })
         })
-        .catch((error) => {
+        .catch(error => {
           // Allow to throw new Error(null) to indicate an invalid state.
           if (error && error.message) {
             log.error('Unable to initialize command:', error)
           }
         })
     },
-    handleDialogClose () {
+    handleDialogClose() {
       // Reset all settings
       this.selectedCommandIndex = -1
       this.query = ''
@@ -132,7 +126,7 @@ export default {
       }
       this.currentCommand = null
     },
-    handleBeforeInput (event) {
+    handleBeforeInput(event) {
       const { availableCommands, selectedCommandIndex } = this
       switch (event.key) {
         case 'ArrowUp': {
@@ -146,9 +140,7 @@ export default {
 
           const items = this.$refs['command-items']
           if (items && items.length > 0) {
-            this.$refs['command-items'][
-              this.selectedCommandIndex
-            ].scrollIntoView({ block: 'end' })
+            this.$refs['command-items'][this.selectedCommandIndex].scrollIntoView({ block: 'end' })
           }
           break
         }
@@ -163,15 +155,13 @@ export default {
 
           const items = this.$refs['command-items']
           if (items && items.length > 0) {
-            this.$refs['command-items'][
-              this.selectedCommandIndex
-            ].scrollIntoView({ block: 'end' })
+            this.$refs['command-items'][this.selectedCommandIndex].scrollIntoView({ block: 'end' })
           }
           break
         }
       }
     },
-    handleInput (event) {
+    handleInput(event) {
       if (event.isComposing) {
         return
       }
@@ -201,16 +191,13 @@ export default {
         }
       }
     },
-    search (commandId = null) {
+    search(commandId = null) {
       const { availableCommands, selectedCommandIndex } = this
       if (commandId) {
         // Command selected from dropdown.
         this.executeCommand(commandId)
         return
-      } else if (
-        selectedCommandIndex >= 0 &&
-        selectedCommandIndex < availableCommands.length
-      ) {
+      } else if (selectedCommandIndex >= 0 && selectedCommandIndex < availableCommands.length) {
         // Pressed enter on selected command.
         this.executeCommand(availableCommands[selectedCommandIndex].id)
         return
@@ -219,7 +206,7 @@ export default {
       // Otherwise update list
       this.updateCommands()
     },
-    updateCommands () {
+    updateCommands() {
       const { currentCommand, query } = this
       const queryString = query.trim()
 
@@ -228,12 +215,12 @@ export default {
         this.searcherBusy = true
         currentCommand
           .search(queryString)
-          .then((result) => {
+          .then(result => {
             this.searcherBusy = false
             this.availableCommands = result || []
             this.selectedCommandIndex = this.availableCommands.length ? 0 : -1
           })
-          .catch((error) => {
+          .catch(error => {
             // The query was cancel or restarted if `message` is null.
             if (error && error.message) {
               this.searcherBusy = false
@@ -250,16 +237,14 @@ export default {
         this.availableCommands = currentCommand.subcommands
       } else {
         this.availableCommands = currentCommand.subcommands.filter(
-          (c) =>
-            c.description.toLowerCase().indexOf(queryString.toLowerCase()) !==
-            -1
+          c => c.description.toLowerCase().indexOf(queryString.toLowerCase()) !== -1
         )
       }
       this.selectedCommandIndex = this.availableCommands.length ? 0 : -1
     },
-    executeCommand (commandId) {
+    executeCommand(commandId) {
       const { availableCommands, currentCommand } = this
-      const command = availableCommands.find((c) => c.id === commandId)
+      const command = availableCommands.find(c => c.id === commandId)
       if (!command) {
         log.error(`Cannot find command "${commandId}".`)
         return
@@ -403,17 +388,13 @@ ul.commands li span.shortcut {
   margin-top: 20px;
 }
 
-.command-palette .el-dialog,
-.command-palette .el-dialog.ag-dialog-table {
+.command-palette :deep(.app-dialog-content) {
   box-shadow: none !important;
   border: none !important;
   background: none !important;
 }
-.command-palette .el-dialog__header {
-  margin-bottom: 20px;
+.command-palette :deep(.app-dialog-body) {
   padding: 0 !important;
-}
-.command-palette .el-dialog__body {
-  display: none !important;
+  margin: 0 !important;
 }
 </style>

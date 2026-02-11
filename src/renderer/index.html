@@ -3,6 +3,21 @@
   <head>
     <meta charset="utf-8">
     <title>MarkText</title>
+    <script>
+      // Set background color ASAP to prevent white flash on dark themes.
+      // __TAURI_ENV__ is injected by Tauri's initialization_script before any page JS.
+      (function() {
+        var t = window.__TAURI_ENV__ && window.__TAURI_ENV__.theme;
+        var bg = {
+          'dark': '#282828',
+          'one-dark': '#282c34',
+          'material-dark': '#34393f',
+          'graphite': '#f7f7f7',
+          'ulysses': '#f3f3f3'
+        };
+        document.documentElement.style.backgroundColor = bg[t] || '#fff';
+      })();
+    </script>
     <link rel="stylesheet" href="./loading.css">
   </head>
   <body autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">

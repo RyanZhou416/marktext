@@ -7,7 +7,7 @@
 Start the application in development mode:
 
 ```bash
-yarn tauri:dev
+npm run tauri:dev
 ```
 
 This launches:
@@ -44,7 +44,7 @@ Install the [Vue DevTools](https://devtools.vuejs.org/) browser extension for in
 
 ### Console Output
 
-Rust `println!` and `eprintln!` output appears in the terminal where `yarn tauri:dev` was launched. Use Tauri's logging:
+Rust `println!` and `eprintln!` output appears in the terminal where `npm run tauri:dev` was launched. Use Tauri's logging:
 
 ```rust
 use tauri::Manager;
@@ -77,10 +77,10 @@ Set the `RUST_LOG` environment variable for detailed Tauri logging:
 ```bash
 # Windows PowerShell
 $env:RUST_LOG="debug"
-yarn tauri:dev
+npm run tauri:dev
 
 # Linux/macOS
-RUST_LOG=debug yarn tauri:dev
+RUST_LOG=debug npm run tauri:dev
 ```
 
 ## Performance Profiling

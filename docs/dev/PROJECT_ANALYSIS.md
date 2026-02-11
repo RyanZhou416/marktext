@@ -57,10 +57,13 @@ MarkText 是一款开源的 Markdown 编辑器，专注于速度和可用性。�
 
 ### 2.4 UI 组件库
 
-| 技术                    | 版本   | 用途            |
-| ----------------------- | ------ | --------------- |
-| **Element Plus**        | ^2.5.0 | Vue 3 UI 组件库 |
-| **github-markdown-css** | ^3.0.1 | Markdown 样式   |
+| 技术                      | 版本   | 用途                                     |
+| ------------------------- | ------ | ---------------------------------------- |
+| **Radix Vue**             | ^1.9.x | 无头 UI 组件（Dialog、Menu、Tooltip 等） |
+| **@vueuse/core**          | ^14.x  | Vue 组合式工具函数                       |
+| **vue-sonner**            | ^2.x   | Toast 通知系统                           |
+| **@tanstack/vue-virtual** | ^3.x   | 虚拟滚动（文件树、搜索结果）             |
+| **github-markdown-css**   | ^3.0.1 | Markdown 样式                            |
 
 ### 2.5 构建工具
 
@@ -155,19 +158,19 @@ marktext/
 
 ```bash
 # 安装依赖
-yarn install
+npm install
 
 # 开发模式（Vite + Tauri）
-yarn tauri:dev
+npm run tauri:dev
 
 # 生产构建
-yarn tauri:build
+npm run tauri:build
 
 # 代码检查与格式化
-yarn lint          # ESLint 检查 (JS, TS, Vue)
-yarn lint:fix      # 自动修复
-yarn format        # Prettier 格式化
-yarn format:check  # 检查格式
+npm run lint          # ESLint 检查 (JS, TS, Vue)
+npm run lint:fix      # 自动修复
+npm run format        # Prettier 格式化
+npm run format:check  # 检查格式
 
 ## 7. 测试结构
 
@@ -229,7 +232,7 @@ import { h, init, classModule, styleModule, propsModule } from "snabbdom";
 | 升级项           | 状态      | 说明                                       |
 | ---------------- | --------- | ------------------------------------------ |
 | Electron → Tauri | ✅ 已完成 | 迁移至 Tauri 2.0                           |
-| Vue 2 → Vue 3    | ✅ 已完成 | 含 Element Plus、Pinia、Vue Router 4       |
+| Vue 2 → Vue 3    | ✅ 已完成 | 含 Radix Vue、Pinia、Vue Router 4          |
 | Webpack → Vite   | ✅ 已完成 | 前端构建已迁移至 Vite（Muya 仍用 Webpack） |
 | TypeScript 迁移  | ✅ 已完成 | 32 个文件已迁移                            |
 | i18n 国际化      | ✅ 已完成 | Vue I18n v10                               |
@@ -240,7 +243,7 @@ import { h, init, classModule, styleModule, propsModule } from "snabbdom";
 
 1. **TypeScript 迁移**: 提高代码可维护性和类型安全
 2. **模块化 Muya**: 将编辑器引擎独立为 npm 包
-3. **性能优化**: 大文件编辑、虚拟滚动
+3. **性能优化**: 大文件编辑（虚拟滚动已通过 @tanstack/vue-virtual 实现：文件树、搜索结果）
 4. **插件系统**: 支持用户扩展
 5. **协作编辑**: 实时多人协作（CRDT/OT）
 
@@ -256,7 +259,7 @@ import { h, init, classModule, styleModule, propsModule } from "snabbdom";
 
 - **Node.js**: v18+（推荐使用 nvm 管理版本，项目根目录有 `.nvmrc`）
 - **Rust**: stable toolchain（通过 [rustup](https://rustup.rs/) 安装）
-- **Yarn**: >=1.22
+- **npm**: v9+（随 Node.js 自带）
 - **C++ 编译工具链**:
   - Windows: Visual Studio 2022
   - macOS: Xcode Command Line Tools

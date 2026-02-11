@@ -43,9 +43,9 @@ if errorlevel 1 (
 )
 
 :: Ensure JS deps are present (fast no-op if already installed)
-if not exist "node_modules\.yarn-integrity" (
+if not exist "node_modules\.package-lock.json" (
     echo [Step 0] Installing JS dependencies...
-    cmd /c "yarn install" >nul 2>&1
+    cmd /c "npm install --legacy-peer-deps" >nul 2>&1
     echo [OK] Dependencies ready
     echo.
 )

@@ -6,7 +6,11 @@ module.exports = {
     ecmaFeatures: {
       impliedStrict: true
     },
-    sourceType: 'module'
+    sourceType: 'module',
+    requireConfigFile: false,
+    babelOptions: {
+      configFile: false
+    }
   },
   env: {
     browser: true,
@@ -39,13 +43,30 @@ module.exports = {
     'prefer-const': 'off',
     'no-mixed-operators': 'off',
     'no-prototype-builtins': 'off',
-    // Ignore Vite-specific import suffixes (?raw, ?inline, ?url, etc.)
+    // Ignore Vite-specific import suffixes and ESM-only packages
     'import/no-unresolved': [
       'error',
       {
-        ignore: ['\\?raw$', '\\?inline$', '\\?url$', '\\?worker$']
+        ignore: [
+          '\\?raw$',
+          '\\?inline$',
+          '\\?url$',
+          '\\?worker$',
+          'vue-sonner',
+          'radix-vue',
+          '@vueuse',
+          '@tanstack'
+        ]
       }
-    ]
+    ],
+    // Disable import resolution rules - they crash on ESM-only packages
+    // (vue-sonner, radix-vue, @vueuse/core, @tanstack/vue-virtual)
+    'import/namespace': 'off',
+    'import/default': 'off',
+    'import/named': 'off',
+    'import/no-named-as-default': 'off',
+    'import/no-named-as-default-member': 'off',
+    'import/no-duplicates': 'off'
   },
   settings: {
     'import/resolver': {
@@ -59,10 +80,35 @@ module.exports = {
         extensions: ['.js', '.ts', '.vue', '.json', '.css', '.node']
       }
     },
-    // Ignore Vite-specific import suffixes (?raw, ?inline, etc.)
-    'import/ignore': ['\\?raw$', '\\?inline$', '\\?url$', '\\?worker$']
+    // Ignore Vite-specific import suffixes and ESM-only packages
+    'import/ignore': [
+      '\\?raw$',
+      '\\?inline$',
+      '\\?url$',
+      '\\?worker$',
+      'vue-sonner',
+      'radix-vue',
+      '@vueuse',
+      '@tanstack'
+    ]
   },
   overrides: [
+    {
+      files: ['*.vue'],
+      parser: 'vue-eslint-parser',
+      parserOptions: {
+        parser: '@typescript-eslint/parser'
+      },
+      plugins: ['@typescript-eslint'],
+      rules: {
+        '@typescript-eslint/no-explicit-any': 'off',
+        '@typescript-eslint/no-unused-vars': ['warn', { argsIgnorePattern: '^_' }],
+        '@typescript-eslint/ban-ts-comment': 'off',
+        '@typescript-eslint/no-unused-expressions': 'off',
+        'no-unused-vars': 'off',
+        'no-undef': 'off'
+      }
+    },
     {
       files: ['*.ts', '*.tsx'],
       parser: '@typescript-eslint/parser',
@@ -73,9 +119,14 @@ module.exports = {
         '@typescript-eslint/no-explicit-any': 'off',
         '@typescript-eslint/no-unused-vars': ['warn', { argsIgnorePattern: '^_' }],
         '@typescript-eslint/ban-ts-comment': 'off',
+        '@typescript-eslint/no-unsafe-function-type': 'warn',
         // Disable base rules that conflict with TS versions
         'no-unused-vars': 'off',
-        'no-undef': 'off'
+        'no-undef': 'off',
+        'no-use-before-define': 'off',
+        'no-return-await': 'warn',
+        'no-useless-catch': 'warn',
+        'node/no-callback-literal': 'off'
       }
     }
   ],

@@ -87,15 +87,19 @@
       </template>
       <template #children>
         <section class="startup-action-ctrl">
-          <el-radio-group v-model="startUpAction">
-            <!--
-              Hide "lastState" for now (#2064).
-            <el-radio class="ag-underdevelop" label="lastState">Restore last editor session</el-radio>
-            -->
-            <el-radio label="folder" style="margin-bottom: 10px;">{{ $t('settings.general.openDefaultDir') }}<span>: {{defaultDirectoryToOpen}}</span></el-radio>
-            <el-button size="small" @click="selectDefaultDirectoryToOpen">{{ $t('settings.general.selectFolder') }}</el-button>
-            <el-radio label="blank">{{ $t('settings.general.openBlankPage') }}</el-radio>
-          </el-radio-group>
+          <div class="radio-group">
+            <label class="radio-label">
+              <input type="radio" value="folder" v-model="startUpAction" />
+              {{ $t('settings.general.openDefaultDir') }}<span>: {{ defaultDirectoryToOpen }}</span>
+            </label>
+            <button class="btn-default pref-btn" @click="selectDefaultDirectoryToOpen">
+              {{ $t('settings.general.selectFolder') }}
+            </button>
+            <label class="radio-label">
+              <input type="radio" value="blank" v-model="startUpAction" />
+              {{ $t('settings.general.openBlankPage') }}
+            </label>
+          </div>
         </section>
       </template>
     </compound>
@@ -126,16 +130,11 @@ import Bool from '../common/bool'
 import Separator from '../common/separator'
 import { isOsx } from '@/util'
 
-import {
-  titleBarStyleOptions,
-  zoomOptions,
-  fileSortByOptions
-} from './config'
+import { titleBarStyleOptions, zoomOptions, fileSortByOptions } from './config'
 import meta from '../../../locales/_meta.json'
 import i18n from '@/i18n'
 import { loadLocale } from '@/i18n/loader'
 import { isTauriAvailable } from '@/util/tauri'
-
 
 export default {
   components: {
@@ -145,7 +144,7 @@ export default {
     CurSelect,
     Separator
   },
-  data () {
+  data() {
     this.zoomOptions = zoomOptions
     this.isOsx = isOsx
     return {}
@@ -164,13 +163,13 @@ export default {
       'fileSortBy',
       'language'
     ]),
-    titleBarStyleOpts () {
+    titleBarStyleOpts() {
       return titleBarStyleOptions(this.$t)
     },
-    fileSortByOpts () {
+    fileSortByOpts() {
       return fileSortByOptions(this.$t)
     },
-    languageOptions () {
+    languageOptions() {
       return meta.languages.map(lang => ({
         label: lang.nativeName,
         value: lang.code
@@ -188,24 +187,24 @@ export default {
     }
   },
   methods: {
-    onSelectChange (type, value) {
+    onSelectChange(type, value) {
       const preferencesStore = usePreferencesStore()
       preferencesStore.SET_SINGLE_PREFERENCE({ type, value })
     },
-    async onLanguageChange (value) {
+    async onLanguageChange(value) {
       const preferencesStore = usePreferencesStore()
       preferencesStore.SET_SINGLE_PREFERENCE({ type: 'language', value })
       await loadLocale(i18n, value)
       // Rebuild native menu with new locale
       if (isTauriAvailable()) {
         import('@tauri-apps/api/core').then(({ invoke }) => {
-          invoke('rebuild_menu', { locale: value }).catch((e) => {
+          invoke('rebuild_menu', { locale: value }).catch(e => {
             console.error('Failed to rebuild menu:', e)
           })
         })
       }
     },
-    selectDefaultDirectoryToOpen () {
+    selectDefaultDirectoryToOpen() {
       const preferencesStore = usePreferencesStore()
       preferencesStore.SELECT_DEFAULT_DIRECTORY_TO_OPEN()
     }
@@ -214,18 +213,35 @@ export default {
 </script>
 
 <style scoped>
-  .pref-general {
-    & .startup-action-ctrl {
-      font-size: 14px;
-      user-select: none;
+.pref-general {
+  & .startup-action-ctrl {
+    font-size: 14px;
+    user-select: none;
+    color: var(--editorColor);
+    & .radio-group {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    & .radio-label {
+      display: block;
+      margin: 10px 0;
+      cursor: pointer;
+    }
+    & .radio-label input {
+      margin-right: 8px;
+      accent-color: var(--themeColor);
+    }
+    & .pref-btn {
+      padding: 6px 16px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 13px;
+      margin-left: 25px;
+      background: transparent;
+      border: 1px solid var(--floatBorderColor);
       color: var(--editorColor);
-      & .el-button--small {
-        margin-left: 25px;
-      }
-      & label {
-        display: block;
-        margin: 20px 0;
-      }
     }
   }
+}
 </style>

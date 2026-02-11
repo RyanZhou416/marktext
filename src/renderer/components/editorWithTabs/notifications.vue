@@ -3,7 +3,7 @@
     v-if="currentNotification"
     class="editor-notifications"
     :class="currentNotification.style"
-    :style="{'max-width': showSideBar ? `calc(100vw - ${sideBarWidth}px` : '100vw' }"
+    :style="{ 'max-width': showSideBar ? `calc(100% - ${sideBarWidth}px)` : '100%' }"
   >
     <div class="msg">
       {{ currentNotification.msg }}
@@ -17,10 +17,7 @@
         >
           Ok
         </span>
-        <span
-          class="inline-button"
-          @click.stop="handleClick(false)"
-        >
+        <span class="inline-button" @click.stop="handleClick(false)">
           <svg class="close-icon icon" aria-hidden="true">
             <use id="default-close-icon" xlink:href="#icon-close-small"></use>
           </svg>
@@ -36,13 +33,13 @@ import { useEditorStore } from '@/stores/editor'
 import { useLayoutStore } from '@/stores/layout'
 
 export default {
-  data () {
+  data() {
     return {}
   },
   computed: {
     ...mapState(useEditorStore, ['currentFile']),
     ...mapState(useLayoutStore, ['showSideBar', 'sideBarWidth']),
-    currentNotification () {
+    currentNotification() {
       const notifications = this.currentFile.notifications
       if (!notifications || notifications.length === 0) {
         return null
@@ -51,7 +48,7 @@ export default {
     }
   },
   methods: {
-    handleClick (status) {
+    handleClick(status) {
       const notifications = this.currentFile.notifications
       if (!notifications || notifications.length === 0) {
         console.error('notifications::handleClick: Cannot find notification on stack.')
@@ -69,54 +66,54 @@ export default {
 </script>
 
 <style scoped>
-  .editor-notifications {
-    position: relative;
+.editor-notifications {
+  position: relative;
+  display: flex;
+  flex-direction: row;
+  max-height: 100px;
+  margin-top: 4px;
+  background: var(--notificationPrimaryBg);
+  color: var(--notificationPrimaryColor);
+  padding: 8px 10px;
+  user-select: none;
+  overflow: hidden;
+  &.warn {
+    background: var(--notificationWarningBg);
+    color: var(--notificationWarningColor);
+  }
+  &.crit {
+    background: var(--notificationErrorBg);
+    color: var(--notificationErrorColor);
+  }
+}
+.msg {
+  font-size: 13px;
+  flex: 1;
+}
+.controls {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  & > div {
     display: flex;
     flex-direction: row;
-    max-height: 100px;
-    margin-top: 4px;
-    background: var(--notificationPrimaryBg);
-    color: var(--notificationPrimaryColor);
-    padding: 8px 10px;
-    user-select: none;
-    overflow: hidden;
-    &.warn {
-      background: var(--notificationWarningBg);
-      color: var(--notificationWarningColor);
-    }
-    &.crit {
-      background: var(--notificationErrorBg);
-      color: var(--notificationErrorColor);
-    }
   }
-  .msg {
-    font-size: 13px;
-    flex: 1;
+  & .inline-button:not(:last-child) {
+    margin-right: 3px;
   }
-  .controls {
+  & .inline-button {
     display: flex;
-    flex-direction: column;
     justify-content: center;
-    & > div {
-      display: flex;
-      flex-direction: row;
-    }
-    & .inline-button:not(:last-child) {
-      margin-right: 3px;
-    }
-    & .inline-button {
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      width: 24px;
-      height: 24px;
-      font-size: 12px;
-      cursor: pointer;
-      border: 1px solid rgba(255, 255, 255, 0.1);
-    }
-    & .inline-button:hover {
-      background: rgba(255, 255, 255, 0.1);
-      border: 1px solid rgba(255, 255, 255, 0.6);
-    }
+    align-items: center;
+    width: 24px;
+    height: 24px;
+    font-size: 12px;
+    cursor: pointer;
+    border: 1px solid rgba(255, 255, 255, 0.1);
   }
+  & .inline-button:hover {
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.6);
+  }
+}
 </style>

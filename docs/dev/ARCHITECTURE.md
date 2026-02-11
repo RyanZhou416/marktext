@@ -25,7 +25,7 @@ marktext/
 │
 ├── src/
 │   ├── renderer/             # Vue 3 frontend
-│   │   ├── main.js           # Frontend entry point
+│   │   ├── main.ts           # Frontend entry point
 │   │   ├── App.vue           # Root component
 │   │   ├── components/       # Vue components
 │   │   ├── pages/            # Page views (app, preference)
@@ -123,4 +123,4 @@ Muya is bundled separately via Webpack and consumed by the Vue frontend.
 - **Frontend**: Vite (`vite.config.mjs`) → `out/renderer/`
 - **Backend**: Cargo (via Tauri CLI) → `src-tauri/target/`
 - **Muya**: Webpack (`src/muya/webpack.config.js`) → `src/muya/dist/`
-- **Production**: `yarn tauri:build` orchestrates both frontend and backend builds
+- **Production**: `npm run tauri:build` orchestrates both frontend and backend builds

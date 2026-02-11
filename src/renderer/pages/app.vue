@@ -29,6 +29,7 @@
       <tweet></tweet>
       <import-modal></import-modal>
     </div>
+    <Toaster position="top-right" :duration="8000" rich-colors />
   </div>
 </template>
 
@@ -45,6 +46,8 @@ import Rename from '@/components/rename'
 import Tweet from '@/components/tweet'
 import ImportModal from '@/components/import'
 import { useLoadingPage } from '@/composables/useLoadingPage'
+import { useEventListener } from '@vueuse/core'
+import { Toaster } from 'vue-sonner'
 import { mapState } from 'pinia'
 import { useAppStore } from '@/stores/app'
 import { useEditorStore } from '@/stores/editor'
@@ -72,13 +75,14 @@ export default {
     Rename,
     Tweet,
     ImportModal,
-    CommandPalette
+    CommandPalette,
+    Toaster
   },
-  setup () {
+  setup() {
     const { hideLoadingPage } = useLoadingPage()
     return { hideLoadingPage }
   },
-  data () {
+  data() {
     return {}
   },
   computed: {
@@ -86,15 +90,15 @@ export default {
     ...mapState(usePreferencesStore, ['sourceCode', 'theme', 'textDirection', 'zoom']),
     ...mapState(useProjectStore, ['projectTree']),
     ...mapState(useEditorStore, {
-      pathname: (store) => store.currentFile.pathname,
-      filename: (store) => store.currentFile.filename,
-      isSaved: (store) => store.currentFile.isSaved,
-      markdown: (store) => store.currentFile.markdown,
-      cursor: (store) => store.currentFile.cursor,
-      wordCount: (store) => store.currentFile.wordCount
+      pathname: store => store.currentFile.pathname,
+      filename: store => store.currentFile.filename,
+      isSaved: store => store.currentFile.isSaved,
+      markdown: store => store.currentFile.markdown,
+      cursor: store => store.currentFile.cursor,
+      wordCount: store => store.currentFile.wordCount
     }),
     ...mapState(useAppStore, ['windowActive', 'platform', 'init']),
-    hasCurrentFile () {
+    hasCurrentFile() {
       return this.markdown !== undefined
     }
   },
@@ -108,7 +112,7 @@ export default {
       ipcRenderer.emit('mt::window-zoom', null, zoom)
     }
   },
-  created () {
+  created() {
     const preferencesStore = usePreferencesStore()
     const appStore = useAppStore()
     const commandCenterStore = useCommandCenterStore()
@@ -207,37 +211,33 @@ export default {
     }
 
     // prevent Chromium's default behavior and try to open the first file
-    window.addEventListener(
-      'dragover',
-      (e) => {
-        // Cancel to allow tab drag&drop.
-        if (!e.dataTransfer.types.length) return
+    useEventListener(window, 'dragover', e => {
+      // Cancel to allow tab drag&drop.
+      if (!e.dataTransfer.types.length) return
 
-        if (e.dataTransfer.types.indexOf('Files') >= 0) {
-          if (
-            e.dataTransfer.items.length === 1 &&
-            e.dataTransfer.items[0].type.indexOf('image') > -1
-          ) {
-            // Do nothing, because we already drag/drop image in muya.
-          } else {
-            e.preventDefault()
-            if (this.timer) {
-              clearTimeout(this.timer)
-            }
-            this.timer = setTimeout(() => {
-              bus.$emit('importDialog', false)
-            }, 300)
-            bus.$emit('importDialog', true)
-          }
-
-          e.dataTransfer.dropEffect = 'copy'
+      if (e.dataTransfer.types.indexOf('Files') >= 0) {
+        if (
+          e.dataTransfer.items.length === 1 &&
+          e.dataTransfer.items[0].type.indexOf('image') > -1
+        ) {
+          // Do nothing, because we already drag/drop image in muya.
         } else {
-          e.stopPropagation()
-          e.dataTransfer.dropEffect = 'none'
+          e.preventDefault()
+          if (this.timer) {
+            clearTimeout(this.timer)
+          }
+          this.timer = setTimeout(() => {
+            bus.$emit('importDialog', false)
+          }, 300)
+          bus.$emit('importDialog', true)
         }
-      },
-      false
-    )
+
+        e.dataTransfer.dropEffect = 'copy'
+      } else {
+        e.stopPropagation()
+        e.dataTransfer.dropEffect = 'none'
+      }
+    })
 
     this.$nextTick(() => {
       const style = window.marktext.initialState || DEFAULT_STYLE
@@ -254,8 +254,6 @@ export default {
   display: flex;
   flex-direction: row;
   position: absolute;
-  width: 100vw;
-  height: 100vh;
   top: 0;
   left: 0;
   right: 0;
@@ -274,10 +272,17 @@ export default {
   display: flex;
   flex-direction: column;
   flex: 1;
-  min-height: 100vh;
+  min-height: 100%;
   position: relative;
   & > .editor {
     flex: 1;
   }
+}
+
+/* vue-sonner theme integration */
+[data-sonner-toaster] {
+  --normal-bg: var(--floatBgColor);
+  --normal-text: var(--editorColor);
+  --normal-border: var(--floatBorderColor);
 }
 </style>

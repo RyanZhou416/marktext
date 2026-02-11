@@ -77,7 +77,16 @@ pub fn run() {
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_clipboard_manager::init())
         .plugin(tauri_plugin_fs::init())
-        .plugin(tauri_plugin_window_state::Builder::new().build())
+        .plugin(
+            tauri_plugin_window_state::Builder::new()
+                .with_state_flags(
+                    tauri_plugin_window_state::StateFlags::SIZE
+                        | tauri_plugin_window_state::StateFlags::POSITION
+                        | tauri_plugin_window_state::StateFlags::MAXIMIZED
+                        | tauri_plugin_window_state::StateFlags::FULLSCREEN,
+                )
+                .build(),
+        )
         .plugin(tauri_plugin_process::init())
         .plugin(tauri_plugin_os::init())
         .plugin(tauri_plugin_single_instance::init(|app, argv, _cwd| {
@@ -319,6 +328,7 @@ pub fn run() {
             menu::rebuild_menu,
             commands::window::close_window_confirm,
             commands::window::show_main_window,
+            commands::window::show_settings_window,
             commands::window::minimize_window,
             commands::window::maximize_window,
             commands::window::close_window,

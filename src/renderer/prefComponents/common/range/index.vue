@@ -7,15 +7,20 @@
       >
       <i class="el-icon-info" v-if="more" @click="handleMoreClick"></i>
     </div>
-    <el-slider
-      v-model="selectValue"
-      @change="select"
+    <input
+      type="range"
+      class="pref-range"
+      :value="selectValue"
       :min="min"
       :max="max"
-      :format-tooltip="(value) => value + (unit ? unit : '')"
-      :step="step"
-    >
-    </el-slider>
+      :step="step ?? 1"
+      @input="
+        e => {
+          selectValue = Number(e.target.value)
+        }
+      "
+      @change="e => select(Number(e.target.value))"
+    />
   </section>
 </template>
 
@@ -38,16 +43,19 @@ export default {
       default: false
     }
   },
-  setup (props) {
+  setup(props) {
     // Reactive state
     const selectValue = ref(props.value)
 
     // Watch for prop changes
-    watch(() => props.value, (newValue, oldValue) => {
-      if (newValue !== oldValue) {
-        selectValue.value = newValue
+    watch(
+      () => props.value,
+      (newValue, oldValue) => {
+        if (newValue !== oldValue) {
+          selectValue.value = newValue
+        }
       }
-    })
+    )
 
     // Methods
     const handleMoreClick = () => {
@@ -56,7 +64,7 @@ export default {
       }
     }
 
-    const select = (value) => {
+    const select = value => {
       props.onChange(value)
     }
 
@@ -80,21 +88,9 @@ export default {
     font-style: italic;
     float: right;
   }
-  & .el-slider {
+  & .pref-range {
     width: 100%;
-  }
-  & .el-slider__runway,
-  & .el-slider__bar {
-    height: 4px;
-  }
-  & .el-slider__button {
-    width: 12px;
-    height: 12px;
-  }
-  & .el-slider__button-wrapper {
-    width: 20px;
-    height: 20px;
-    top: -9px;
+    accent-color: var(--themeColor);
   }
 }
 .pref-select-item .description {

@@ -1,16 +1,13 @@
 <template>
   <div>
-    <div
-      class="title-bar-editor-bg"
-      :class="{ 'tabs-visible': showTabBar }"
-    ></div>
+    <div class="title-bar-editor-bg" :class="{ 'tabs-visible': showTabBar }"></div>
     <div
       class="title-bar"
       :class="[
         { active: active },
         { 'tabs-visible': showTabBar },
         { frameless: titleBarStyle === 'custom' },
-        { isOsx: isOsx },
+        { isOsx: isOsx }
       ]"
     >
       <div class="title" @dblclick.stop="toggleMaxmizeOnMacOS">
@@ -22,45 +19,31 @@
               <use xlink:href="#icon-arrow-right"></use>
             </svg>
           </span>
-          <span
-            class="filename"
-            :class="{ isOsx: platform === 'darwin' }"
-            @click="rename"
-          >
+          <span class="filename" :class="{ isOsx: platform === 'darwin' }" @click="rename">
             {{ filename }}
           </span>
           <span class="save-dot" :class="{ show: !isSaved }"></span>
         </span>
       </div>
-      <div
-        :class="
-          showCustomTitleBar ? 'left-toolbar title-no-drag' : 'right-toolbar'
-        "
-      >
-        <div
-          v-if="showCustomTitleBar"
-          class="frameless-titlebar-menu title-no-drag"
-          @click.stop="handleMenuClick"
-        >
-          <span class="text-center-vertical">&#9776;</span>
-        </div>
-        <el-tooltip
-          v-if="wordCount"
-          class="item"
-          placement="bottom-end"
-        >
+      <div :class="showCustomTitleBar ? 'left-toolbar title-no-drag' : 'right-toolbar'">
+        <AppMenu v-if="showCustomTitleBar" :checked-ids="menuCheckedIds" @action="onMenuAction">
+          <div class="frameless-titlebar-menu title-no-drag">
+            <span class="text-center-vertical">&#9776;</span>
+          </div>
+        </AppMenu>
+        <AppTooltip v-if="wordCount" class="item" side="bottom">
           <template #content>
             <div class="title-item">
               <span class="front">{{ $t('titleBar.words') }}:</span
-              ><span class="text">{{ wordCount["word"] }}</span>
+              ><span class="text">{{ wordCount['word'] }}</span>
             </div>
             <div class="title-item">
               <span class="front">{{ $t('titleBar.characters') }}:</span
-              ><span class="text">{{ wordCount["character"] }}</span>
+              ><span class="text">{{ wordCount['character'] }}</span>
             </div>
             <div class="title-item">
               <span class="front">{{ $t('titleBar.paragraphs') }}:</span
-              ><span class="text">{{ wordCount["paragraph"] }}</span>
+              ><span class="text">{{ wordCount['paragraph'] }}</span>
             </div>
           </template>
           <div
@@ -68,11 +51,9 @@
             :class="[{ 'title-no-drag': platform !== 'darwin' }]"
             @click.stop="handleWordClick"
           >
-            <span class="text-center-vertical">{{
-              `${HASH[show].short} ${wordCount[show]}`
-            }}</span>
+            <span class="text-center-vertical">{{ `${HASH[show].short} ${wordCount[show]}` }}</span>
           </div>
-        </el-tooltip>
+        </AppTooltip>
       </div>
       <div
         v-if="titleBarStyle === 'custom' && !isFullScreen && !isOsx"
@@ -116,22 +97,37 @@
 </template>
 
 <script lang="ts">
-import { ipcRenderer } from '../../util/tauri'
+import { ipcRenderer, handleMenuAction } from '../../util/tauri'
 import { mapState } from 'pinia'
 import { usePreferencesStore } from '@/stores/preferences'
 import { useLayoutStore } from '@/stores/layout'
 import { useEditorStore } from '@/stores/editor'
-import {
-  minimizePath,
-  restorePath,
-  maximizePath,
-  closePath
-} from '../../assets/window-controls.js'
+import { minimizePath, restorePath, maximizePath, closePath } from '../../assets/window-controls.js'
 import { PATH_SEPARATOR } from '../../config'
 import { isOsx } from '@/util'
+import { useTitle } from '@vueuse/core'
+import { ref, computed } from 'vue'
+import AppMenu from '../appMenu/index.vue'
+import AppTooltip from '@/components/common/AppTooltip.vue'
 
 export default {
-  data () {
+  components: {
+    AppMenu,
+    AppTooltip
+  },
+  setup(props: any) {
+    const windowTitle = computed(() => {
+      const hasOpenFolder = props.project && props.project.name
+      if (props.filename) {
+        return hasOpenFolder
+          ? `${props.filename} - ${props.project.name}`
+          : `${props.filename} - MarkText`
+      }
+      return hasOpenFolder ? props.project.name : 'MarkText'
+    })
+    useTitle(windowTitle)
+  },
+  data() {
     this.isOsx = isOsx
     this.HASH = {
       word: {
@@ -161,7 +157,7 @@ export default {
       show: 'word'
     }
   },
-  created () {
+  created() {
     ipcRenderer.on('mt::window-maximize', this.onMaximize)
     ipcRenderer.on('mt::window-unmaximize', this.onUnmaximize)
     ipcRenderer.on('mt::window-enter-full-screen', this.onEnterFullScreen)
@@ -177,37 +173,55 @@ export default {
     isSaved: Boolean
   },
   computed: {
-    ...mapState(usePreferencesStore, ['titleBarStyle']),
-    ...mapState(useLayoutStore, ['showTabBar']),
-    paths () {
+    ...mapState(usePreferencesStore, [
+      'titleBarStyle',
+      'theme',
+      'autoSave',
+      'sourceCode',
+      'typewriter',
+      'focus'
+    ]),
+    ...mapState(useLayoutStore, ['showTabBar', 'showSideBar']),
+    ...mapState(useEditorStore, ['currentFile']),
+    paths() {
       if (!this.pathname) return []
-      const pathnameToken = this.pathname
-        .split(PATH_SEPARATOR)
-        .filter((i) => i)
+      const pathnameToken = this.pathname.split(PATH_SEPARATOR).filter(i => i)
       return pathnameToken.slice(0, pathnameToken.length - 1).slice(-3)
     },
-    showCustomTitleBar () {
+    showCustomTitleBar() {
       return this.titleBarStyle === 'custom' && !this.isOsx
-    }
-  },
-  watch: {
-    filename: function (value) {
-      // Set filename when hover on dock
-      const hasOpenFolder = this.project && this.project.name
-      let title = ''
-      if (value) {
-        title = hasOpenFolder
-          ? `${value} - ${this.project.name}`
-          : `${value} - MarkText`
-      } else {
-        title = hasOpenFolder ? this.project.name : 'MarkText'
+    },
+    menuCheckedIds() {
+      const ids = new Set<string>()
+      // Check-type toggles
+      if (this.autoSave) ids.add('file.auto-save')
+      if (this.sourceCode) ids.add('view.source-code-mode')
+      if (this.typewriter) ids.add('view.typewriter-mode')
+      if (this.focus) ids.add('view.focus-mode')
+      if (this.showSideBar) ids.add('view.toggle-sidebar')
+      if (this.showTabBar) ids.add('view.toggle-tabbar')
+      // Radio-type: theme
+      const themeMap: Record<string, string> = {
+        light: 'theme.cadmium-light',
+        dark: 'theme.dark',
+        graphite: 'theme.graphite-light',
+        'material-dark': 'theme.material-dark',
+        'one-dark': 'theme.one-dark',
+        ulysses: 'theme.ulysses-light'
       }
-
-      document.title = title
+      if (this.theme && themeMap[this.theme]) {
+        ids.add(themeMap[this.theme])
+      }
+      // Radio-type: line ending
+      const le = this.currentFile && this.currentFile.lineEnding
+      if (le === 'crlf') ids.add('edit.line-ending-crlf')
+      else if (le === 'lf') ids.add('edit.line-ending-lf')
+      return ids
     }
   },
+
   methods: {
-    handleWordClick () {
+    handleWordClick() {
       const ITEMS = ['word', 'paragraph', 'character', 'all']
       const len = ITEMS.length
       let index = ITEMS.indexOf(this.show)
@@ -216,11 +230,11 @@ export default {
       this.show = ITEMS[index]
     },
 
-    handleCloseClick () {
+    handleCloseClick() {
       ipcRenderer.send('mt::window-close')
     },
 
-    handleMaximizeClick () {
+    handleMaximizeClick() {
       if (this.isFullScreen) {
         ipcRenderer.send('mt::window-set-fullscreen', false)
       } else if (this.isMaximized) {
@@ -230,40 +244,40 @@ export default {
       }
     },
 
-    toggleMaxmizeOnMacOS () {
+    toggleMaxmizeOnMacOS() {
       if (this.isOsx) {
         this.handleMaximizeClick()
       }
     },
 
-    handleMinimizeClick () {
+    handleMinimizeClick() {
       ipcRenderer.send('mt::window-minimize')
     },
 
-    handleMenuClick () {
-      ipcRenderer.send('mt::show-app-menu', { x: 23, y: 20 })
+    onMenuAction(id) {
+      handleMenuAction(id)
     },
 
-    rename () {
+    rename() {
       if (this.platform === 'darwin') {
         useEditorStore().RESPONSE_FOR_RENAME()
       }
     },
 
-    onMaximize () {
+    onMaximize() {
       this.isMaximized = true
     },
-    onUnmaximize () {
+    onUnmaximize() {
       this.isMaximized = false
     },
-    onEnterFullScreen () {
+    onEnterFullScreen() {
       this.isFullScreen = true
     },
-    onLeaveFullScreen () {
+    onLeaveFullScreen() {
       this.isFullScreen = false
     }
   },
-  beforeUnmount () {
+  beforeUnmount() {
     ipcRenderer.off('window-maximize', this.onMaximize)
     ipcRenderer.off('window-unmaximize', this.onUnmaximize)
     ipcRenderer.off('window-enter-full-screen', this.onEnterFullScreen)
@@ -315,7 +329,7 @@ img {
     transition: all 0.25s ease-in-out;
   }
   &::after {
-    content: "";
+    content: '';
     position: absolute;
     top: 0;
     height: 1px;

@@ -2,29 +2,29 @@
   <div class="editor-tabs">
     <div class="scrollable-tabs" ref="tabContainer">
       <ul ref="tabDropContainer" class="tabs-container">
-        <li
-          :title="file.pathname"
-          :class="{
-            active: currentFile.id === file.id,
-            unsaved: !file.isSaved,
-          }"
+        <TabContextMenu
           v-for="file of tabs"
           :key="file.id"
-          :data-id="file.id"
-          @click.stop="selectFile(file)"
-          @click.middle="closeTab(file.id)"
-          @contextmenu.prevent="handleContextMenu($event, file)"
+          :has-pathname="!!file.pathname"
+          @action="action => handleTabAction(action, file)"
         >
-          <span>{{ file.filename }}</span>
-          <svg
-            class="close-icon icon"
-            aria-hidden="true"
-            @click.stop="removeFileInTab(file)"
+          <li
+            :title="file.pathname"
+            :class="{
+              active: currentFile.id === file.id,
+              unsaved: !file.isSaved
+            }"
+            :data-id="file.id"
+            @click.stop="selectFile(file)"
+            @click.middle="closeTab(file.id)"
           >
-            <circle id="unsaved-circle-icon" cx="6" cy="6" r="3"></circle>
-            <use id="default-close-icon" xlink:href="#icon-close-small"></use>
-          </svg>
-        </li>
+            <span>{{ file.filename }}</span>
+            <svg class="close-icon icon" aria-hidden="true" @click.stop="removeFileInTab(file)">
+              <circle id="unsaved-circle-icon" cx="6" cy="6" r="3"></circle>
+              <use id="default-close-icon" xlink:href="#icon-close-small"></use>
+            </svg>
+          </li>
+        </TabContextMenu>
       </ul>
     </div>
     <div class="new-file">
@@ -42,16 +42,19 @@ import { useEditorStore } from '@/stores/editor'
 import autoScroll from 'dom-autoscroller'
 import dragula from 'dragula'
 import { useTabs } from '../../composables/useTabs'
-import { showContextMenu } from '../../contextMenu/tabs'
+import TabContextMenu from './TabContextMenu.vue'
 import bus from '../../bus'
 
 export default {
-  data () {
+  components: {
+    TabContextMenu
+  },
+  data() {
     this.autoScroller = null
     this.drake = null
     return {}
   },
-  setup () {
+  setup() {
     const { selectFile, removeFileInTab } = useTabs()
     return { selectFile, removeFileInTab }
   },
@@ -59,10 +62,10 @@ export default {
     ...mapState(useEditorStore, ['currentFile', 'tabs'])
   },
   methods: {
-    newFile () {
+    newFile() {
       useEditorStore().NEW_UNTITLED_TAB({})
     },
-    handleTabScroll (event) {
+    handleTabScroll(event) {
       // Use mouse wheel value first but prioritize X value more (e.g. touchpad input).
       let delta = event.deltaY
       if (event.deltaX !== 0) {
@@ -70,55 +73,61 @@ export default {
       }
 
       const tabs = this.$refs.tabContainer
-      const newLeft = Math.max(
-        0,
-        Math.min(tabs.scrollLeft + delta, tabs.scrollWidth)
-      )
+      const newLeft = Math.max(0, Math.min(tabs.scrollLeft + delta, tabs.scrollWidth))
       tabs.scrollLeft = newLeft
     },
-    closeTab (tabId) {
-      const tab = this.tabs.find((f) => f.id === tabId)
+    closeTab(tabId) {
+      const tab = this.tabs.find(f => f.id === tabId)
       if (tab) {
         useEditorStore().CLOSE_TAB(tab)
       }
     },
-    closeOthers (tabId) {
-      const tab = this.tabs.find((f) => f.id === tabId)
+    closeOthers(tabId) {
+      const tab = this.tabs.find(f => f.id === tabId)
       if (tab) {
         useEditorStore().CLOSE_OTHER_TABS(tab)
       }
     },
-    closeSaved () {
+    closeSaved() {
       useEditorStore().CLOSE_SAVED_TABS()
     },
-    closeAll () {
+    closeAll() {
       useEditorStore().CLOSE_ALL_TABS()
     },
-    rename (tabId) {
-      const tab = this.tabs.find((f) => f.id === tabId)
+    rename(tabId) {
+      const tab = this.tabs.find(f => f.id === tabId)
       if (tab && tab.pathname) {
         useEditorStore().RENAME_FILE(tab)
       }
     },
-    copyPath (tabId) {
-      const tab = this.tabs.find((f) => f.id === tabId)
+    copyPath(tabId) {
+      const tab = this.tabs.find(f => f.id === tabId)
       if (tab && tab.pathname) {
         clipboard.writeText(tab.pathname)
       }
     },
-    showInFolder (tabId) {
-      const tab = this.tabs.find((f) => f.id === tabId)
+    showInFolder(tabId) {
+      const tab = this.tabs.find(f => f.id === tabId)
       if (tab && tab.pathname) {
         shell.showItemInFolder(tab.pathname)
       }
     },
-    handleContextMenu (event, tab) {
-      if (tab.id) {
-        showContextMenu(event, tab)
+    handleTabAction(action: string, tab: any) {
+      if (!tab.id) return
+      const actionMap: Record<string, () => void> = {
+        close: () => this.closeTab(tab.id),
+        closeOthers: () => this.closeOthers(tab.id),
+        closeSaved: () => this.closeSaved(),
+        closeAll: () => this.closeAll(),
+        rename: () => this.rename(tab.id),
+        copyPath: () => this.copyPath(tab.id),
+        showInFolder: () => this.showInFolder(tab.id)
       }
+      const handler = actionMap[action]
+      if (handler) handler()
     }
   },
-  created () {
+  created() {
     this.$nextTick(() => {
       bus.$on('TABS::close-this', this.closeTab)
       bus.$on('TABS::close-others', this.closeOthers)
@@ -129,7 +138,7 @@ export default {
       bus.$on('TABS::show-in-folder', this.showInFolder)
     })
   },
-  mounted () {
+  mounted() {
     this.$nextTick(() => {
       const tabs = this.$refs.tabContainer
 
@@ -174,7 +183,7 @@ export default {
       })
     })
   },
-  beforeUnmount () {
+  beforeUnmount() {
     const tabs = this.$refs.tabContainer
     tabs.removeEventListener('wheel', this.handleTabScroll)
 
@@ -243,7 +252,7 @@ svg.close-icon #unsaved-circle-icon {
     background: var(--floatBgColor);
     display: flex;
     align-items: center;
-    &[aria-grabbed="true"] {
+    &[aria-grabbed='true'] {
       color: var(--editorColor30) !important;
     }
     & > svg {
@@ -283,7 +292,7 @@ svg.close-icon #unsaved-circle-icon {
     background: var(--itemBgColor);
     z-index: 3;
     &:after {
-      content: "";
+      content: '';
       position: absolute;
       left: 0;
       bottom: 0;

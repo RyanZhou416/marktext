@@ -10,33 +10,36 @@
 **当发现"修修补补"的方案会在后续升级中被覆盖或失效时，应该选择彻底的现代化方案，而不是临时性的兼容补丁。**
 
 示例：
+
 - ❌ 临时方案：设置 `nodeIntegration: true` 让旧代码继续工作
 - ✅ 一劳永逸：彻底重构渲染进程，使用 `contextBridge` + IPC 的现代架构
 
 理由：
+
 - 临时方案会积累技术债务
 - 每次 Electron 升级都可能踩坑
 - 违背框架推荐的安全实践
 - 长期维护成本更高
 
 **应用场景**：
+
 - 如果发现某个修复方案会被后续升级覆盖 → 选择一劳永逸
 - 如果发现需要大量 polyfill/hack → 考虑彻底重构
 - 如果发现与框架推荐实践相悖 → 按推荐实践重写
 
 ### 2. 验证一律用脚本，不手动敲命令
 
-   - 环境与依赖：用 `scripts\setup-dev-env.cmd`（Windows）完成安装、Electron、原生模块编译与格式化。
-   - 开发运行：用 `scripts\dev.cmd` 验证能正常启动和操作。
-   - 构建验证：用 `scripts\build-win-portable.cmd` 或 `scripts\build-win-installer.cmd` 验证打包通过。
-   - 各阶段的「验证清单」以「运行上述脚本是否通过」为准，不写 `yarn install` / `yarn run rebuild` 等手写步骤。
+- 环境与依赖：用 `scripts\setup-dev-env.cmd`（Windows）完成安装、Electron、原生模块编译与格式化。
+- 开发运行：用 `scripts\dev.cmd` 验证能正常启动和操作。
+- 构建验证：用 `scripts\build-win-portable.cmd` 或 `scripts\build-win-installer.cmd` 验证打包通过。
+- 各阶段的「验证清单」以「运行上述脚本是否通过」为准，不写 `npm install` / `npm run rebuild` 等手写步骤。
 
 ### 3. 升级后必须同步更新脚本
 
-   - 依赖或原生模块有变更（如增删 keytar、换 Node/Electron 版本、换 VS 版本）时，必须检查并更新：
-     - **环境设置脚本**：`scripts\setup-dev-env.cmd`（清理/编译的原生模块目录、VS 版本等）。
-     - **构建脚本**：`scripts\build-win-portable.cmd`、`scripts\build-win-installer.cmd`、`scripts\build-windows.ps1`（同上，以及是否需要 rebuild 的判断）。
-   - 避免脚本里仍引用已删除的依赖（如 keytar）或错误的 VS 版本，导致每次误判需重建或清理失败。
+- 依赖或原生模块有变更（如增删 keytar、换 Node/Electron 版本、换 VS 版本）时，必须检查并更新：
+  - **环境设置脚本**：`scripts\setup-dev-env.cmd`（清理/编译的原生模块目录、VS 版本等）。
+  - **构建脚本**：`scripts\build-win-portable.cmd`、`scripts\build-win-installer.cmd`、`scripts\build-windows.ps1`（同上，以及是否需要 rebuild 的判断）。
+- 避免脚本里仍引用已删除的依赖（如 keytar）或错误的 VS 版本，导致每次误判需重建或清理失败。
 
 ## 概览
 
@@ -85,11 +88,11 @@ Muya (自研)        ───────────────────�
 
 ```bash
 # 1. 升级 electron-builder
-yarn upgrade electron-builder@^26
+npm install electron-builder@^26
 
 # 2. 替换 electron-rebuild 为官方包
-yarn remove electron-rebuild
-yarn add -D @electron/rebuild
+npm uninstall electron-rebuild
+npm install -D @electron/rebuild
 
 # 3. 更新 package.json 中的 rebuild 脚本
 # "rebuild": "electron-rebuild -f"
@@ -119,7 +122,7 @@ Uncaught Error: require() of ES Module snabbdom/build/index.js not supported.
 **修复**: 在 `.electron-vue/webpack.renderer.config.js` 中将 `snabbdom` 加入白名单：
 
 ```javascript
-const whiteListedModules = ["vue", "snabbdom", "snabbdom-to-html"];
+const whiteListedModules = ['vue', 'snabbdom', 'snabbdom-to-html']
 ```
 
 ---
@@ -215,12 +218,10 @@ const whiteListedModules = ["vue", "snabbdom", "snabbdom-to-html"];
 ### 实现的安全增强
 
 1. **contextIsolation: true**
-
    - 渲染进程无法直接访问 Node.js API
    - 所有 API 通过 preload 脚本安全暴露
 
 2. **nodeIntegration: false**
-
    - 渲染进程无法 `require()` Node.js 模块
    - 防止 XSS 攻击获取系统权限
 
@@ -230,7 +231,6 @@ const whiteListedModules = ["vue", "snabbdom", "snabbdom-to-html"];
 ### 新增文件
 
 - `src/preload/index.js` - Preload 脚本，安全暴露以下 API：
-
   - `ipcRenderer` - IPC 通信（带通道白名单验证）
   - `shell` - 打开外部链接/文件
   - `clipboard` - 剪贴板操作
@@ -315,8 +315,6 @@ const whiteListedModules = ["vue", "snabbdom", "snabbdom-to-html"];
 
 - [x] 文件打开正常（需用户测试）
 
-  
-
 - [x] 运行 `scripts\build-win-portable.cmd` 构建成功
 
 - [x] 原生模块（fontmanager-redux, native-keymap）兼容 Electron 38
@@ -356,39 +354,43 @@ const whiteListedModules = ["vue", "snabbdom", "snabbdom-to-html"];
 ### 问题背景
 
 直接升级到 Electron 38 后，设置 `nodeIntegration: false` + `contextIsolation: true` 导致：
+
 - `require is not defined` - 渲染进程无法直接使用 Node.js
 - `global is not defined` - `global` 对象不存在
 - 大量依赖 Node.js API 的代码无法运行
 
 **临时方案（已放弃）**：
+
 - 设置 `nodeIntegration: true` 让旧代码继续工作
 - 问题：违背 Electron 安全最佳实践，未来版本可能进一步限制
 
 **一劳永逸方案（采用）**：
+
 - 渲染进程作为纯 Web 环境运行
 - 所有 Node.js/Electron 功能通过 preload + contextBridge 暴露
 - webpack target 设置为 `web`，不依赖 Node.js polyfill
 
 ### 任务清单
 
-| 任务                           | 状态 | 说明                             |
-| ------------------------------ | ---- | -------------------------------- |
-| webpack target 改为 web        | ✅   | 生成纯浏览器兼容的 bundle        |
-| 移除 Node.js polyfill 依赖     | ✅   | 使用 resolve.fallback: false     |
-| 完善 preload 脚本              | ✅   | 暴露 fs/path/os/crypto/childProcess/webFrame/webUtils |
-| 重构 renderer 所有 Node.js 调用| ✅   | 改为使用 window.electronAPI      |
-| 处理第三方库兼容性             | ✅   | 移除 vue-electron, electron-log  |
-| 处理 common 模块               | ✅   | 条件导入 electronAPI/Node.js     |
-| 处理 muya 中的 Node.js 调用    | ✅   | 条件使用 electronAPI.path/webUtils |
-| 修复 IPC event 参数传递        | ✅   | preload 正确传递 event 给回调    |
-| 添加 mt::window-close 处理     | ✅   | 自定义标题栏关闭按钮支持         |
-| 添加上下文菜单 IPC 处理        | ⏸️   | 架构已实现，功能待 Tauri 重写    |
-| 修复拖放文件路径获取           | ✅   | 使用 webUtils.getPathForFile()   |
-| 测试所有功能                   | ✅   | 基础功能已验证                   |
+| 任务                            | 状态 | 说明                                                  |
+| ------------------------------- | ---- | ----------------------------------------------------- |
+| webpack target 改为 web         | ✅   | 生成纯浏览器兼容的 bundle                             |
+| 移除 Node.js polyfill 依赖      | ✅   | 使用 resolve.fallback: false                          |
+| 完善 preload 脚本               | ✅   | 暴露 fs/path/os/crypto/childProcess/webFrame/webUtils |
+| 重构 renderer 所有 Node.js 调用 | ✅   | 改为使用 window.electronAPI                           |
+| 处理第三方库兼容性              | ✅   | 移除 vue-electron, electron-log                       |
+| 处理 common 模块                | ✅   | 条件导入 electronAPI/Node.js                          |
+| 处理 muya 中的 Node.js 调用     | ✅   | 条件使用 electronAPI.path/webUtils                    |
+| 修复 IPC event 参数传递         | ✅   | preload 正确传递 event 给回调                         |
+| 添加 mt::window-close 处理      | ✅   | 自定义标题栏关闭按钮支持                              |
+| 添加上下文菜单 IPC 处理         | ⏸️   | 架构已实现，功能待 Tauri 重写                         |
+| 修复拖放文件路径获取            | ✅   | 使用 webUtils.getPathForFile()                        |
+| 测试所有功能                    | ✅   | 基础功能已验证                                        |
 
 ### 架构变更
 
 **变更前（旧架构）**：
+
 ```
 ┌─────────────────────────────────────┐
 │           Renderer Process          │
@@ -404,6 +406,7 @@ const whiteListedModules = ["vue", "snabbdom", "snabbdom-to-html"];
 ```
 
 **变更后（现代架构）**：
+
 ```
 ┌─────────────────────────────────────┐
 │           Renderer Process          │
@@ -431,18 +434,21 @@ const whiteListedModules = ["vue", "snabbdom", "snabbdom-to-html"];
 ### 需要重构的文件
 
 **1. Webpack 配置** (1 文件):
+
 - `.electron-vue/webpack.renderer.config.js`
   - `target: 'web'` 替代 `'electron-renderer'`
   - 移除 `libraryTarget: 'commonjs2'`
   - 清空 `externals`（所有依赖打包进 bundle）
 
 **2. HTML 模板** (1 文件):
+
 - `src/index.ejs`
   - 移除 `require('module').globalPaths.push()`
   - 移除 `require('path').join()`
   - 添加 `global` 和 `process` 的浏览器 polyfill
 
 **3. 主入口** (2 文件):
+
 - `src/renderer/main.js`
   - 移除 `vue-electron`（直接 require electron）
   - 移除 `source-map-support`（需要 fs/path）
@@ -463,11 +469,13 @@ const whiteListedModules = ["vue", "snabbdom", "snabbdom-to-html"];
 同上
 
 **8. Common 模块** (3 文件):
+
 - `src/common/envPaths.js` - 条件导入 path
 - `src/common/filesystem/paths.js` - 条件导入 fs/path
 - `src/common/filesystem/index.js` - 条件导入 fs-extra
 
 **9. Muya 编辑器** (1 文件):
+
 - `src/muya/lib/utils/index.js` - `getImageInfo` 中的 `require('path')`
 
 **10. 工具和其他** (14 文件):
@@ -475,13 +483,13 @@ const whiteListedModules = ["vue", "snabbdom", "snabbdom-to-html"];
 
 ### 第三方库处理
 
-| 库                  | 问题                     | 解决方案                    |
-| ------------------- | ------------------------ | --------------------------- |
-| `vue-electron`      | 直接 require('electron') | 移除，使用自定义桥接        |
-| `source-map-support`| 需要 fs/path             | 移除或仅在 main 进程使用    |
-| `electron-log`      | 需要 electron 模块       | 替换为自定义 console logger |
-| `vscode-ripgrep`    | 路径解析问题             | 通过 IPC 获取路径           |
-| `fs-extra`          | Node.js 模块             | 通过 preload 暴露必要方法   |
+| 库                   | 问题                     | 解决方案                    |
+| -------------------- | ------------------------ | --------------------------- |
+| `vue-electron`       | 直接 require('electron') | 移除，使用自定义桥接        |
+| `source-map-support` | 需要 fs/path             | 移除或仅在 main 进程使用    |
+| `electron-log`       | 需要 electron 模块       | 替换为自定义 console logger |
+| `vscode-ripgrep`     | 路径解析问题             | 通过 IPC 获取路径           |
+| `fs-extra`           | Node.js 模块             | 通过 preload 暴露必要方法   |
 
 ### 安全增强
 
@@ -512,12 +520,12 @@ const whiteListedModules = ["vue", "snabbdom", "snabbdom-to-html"];
 
 **目标**: 为 Vue 3 迁移做准备
 
-| 任务                     | 状态 | 说明                           |
-| ------------------------ | ---- | ------------------------------ |
-| 安装 Vue 2.7             | ✅   | 2.6.14 → 2.7.16                |
-| 审计 Element UI 使用     | ✅   | 26 个文件，78 处使用           |
-| 审计 Vuex 使用           | ✅   | 21 个文件，76 处调用           |
-| Composition API 试点     | ✅   | 2 个组件已重构                 |
+| 任务                 | 状态 | 说明                 |
+| -------------------- | ---- | -------------------- |
+| 安装 Vue 2.7         | ✅   | 2.6.14 → 2.7.16      |
+| 审计 Element UI 使用 | ✅   | 26 个文件，78 处使用 |
+| 审计 Vuex 使用       | ✅   | 21 个文件，76 处调用 |
+| Composition API 试点 | ✅   | 2 个组件已重构       |
 
 ### Vue 2.7 升级
 
@@ -531,49 +539,53 @@ vue-template-compiler: 2.6.14 → 2.7.16
 
 **统计**: 26 个文件使用 Element UI，共 78 处组件引用
 
-| 组件 | 使用次数 | 使用文件 |
-| ---- | -------- | -------- |
-| el-dialog | 8 | import, commandPalette, editor, tweet, exportSettings, key-input-dialog, rename, about |
-| el-button | 8 | keybindings, spellchecker, search, uploader, folderSetting, theme, general |
-| el-input | 5 | textBox, uploader, exportSettings |
-| el-tooltip | 5 | bool, uploader, titleBar, image, search |
-| el-table/el-table-column | 4 | keybindings, spellchecker |
-| el-select/el-option | 3 | select, exportSettings |
-| el-form/el-form-item | 5 | editor |
-| el-input-number | 3 | editor, exportSettings |
-| el-slider | 1 | range |
-| el-switch | 1 | bool |
-| el-checkbox | 1 | legalNoticesCheckbox |
-| el-autocomplete | 2 | sideBar, fontTextBox |
-| el-radio/el-radio-group | 2 | general |
-| el-tabs/el-tab-pane | 2 | exportSettings |
-| el-tree | 1 | toc |
-| el-row/el-col | 2 | about |
-| el-upload | 1 | (registered but not used in templates) |
-| el-color-picker | 1 | (registered but not used in templates) |
+| 组件                     | 使用次数 | 使用文件                                                                               |
+| ------------------------ | -------- | -------------------------------------------------------------------------------------- |
+| el-dialog                | 8        | import, commandPalette, editor, tweet, exportSettings, key-input-dialog, rename, about |
+| el-button                | 8        | keybindings, spellchecker, search, uploader, folderSetting, theme, general             |
+| el-input                 | 5        | textBox, uploader, exportSettings                                                      |
+| el-tooltip               | 5        | bool, uploader, titleBar, image, search                                                |
+| el-table/el-table-column | 4        | keybindings, spellchecker                                                              |
+| el-select/el-option      | 3        | select, exportSettings                                                                 |
+| el-form/el-form-item     | 5        | editor                                                                                 |
+| el-input-number          | 3        | editor, exportSettings                                                                 |
+| el-slider                | 1        | range                                                                                  |
+| el-switch                | 1        | bool                                                                                   |
+| el-checkbox              | 1        | legalNoticesCheckbox                                                                   |
+| el-autocomplete          | 2        | sideBar, fontTextBox                                                                   |
+| el-radio/el-radio-group  | 2        | general                                                                                |
+| el-tabs/el-tab-pane      | 2        | exportSettings                                                                         |
+| el-tree                  | 1        | toc                                                                                    |
+| el-row/el-col            | 2        | about                                                                                  |
+| el-upload                | 1        | (registered but not used in templates)                                                 |
+| el-color-picker          | 1        | (registered but not used in templates)                                                 |
 
 **迁移注意**: Element UI → Element Plus 时需要：
+
 - 组件名前缀变化: `el-` → `El` (大驼峰)
 - 图标需额外安装: `@element-plus/icons-vue`
 - 部分 API 变化（参考官方迁移指南）
+
+> **后续更新**: Element Plus 已彻底移除，替换为 Radix Vue（Dialog、AlertDialog、Tooltip、DropdownMenu、ContextMenu、Select、Combobox、Switch）、原生 HTML 元素和自定义 Vue 组件。通知系统改用 vue-sonner，虚拟滚动使用 @tanstack/vue-virtual，工具函数使用 @vueuse/core。
 
 ### Vuex 使用审计
 
 **统计**: 21 个文件使用 `$store`，共 76 处调用
 
-| 模块 | 行数 | State | Mutations | Actions | 迁移难度 |
-| ---- | ---- | ----- | --------- | ------- | -------- |
-| editor.js | 1540 | 4 | 23 | 51 | 高 |
-| project.js | 234 | 6 | 9 | 9 | 中 |
-| preferences.js | 173 | ~50 | 3 | 8 | 中 |
-| layout.js | 83 | 4 | 3 | 3 | 低 |
-| commandCenter.js | 76 | 1 | 2 | 1 | 低 |
-| autoUpdates.js | 55 | 0 | 0 | 1 | 低 |
-| listenForMain.js | 44 | 0 | 0 | 3 | 低 |
-| notification.js | 34 | 0 | 0 | 1 | 低 |
-| tweet.js | 20 | 0 | 0 | 1 | 低 |
+| 模块             | 行数 | State | Mutations | Actions | 迁移难度 |
+| ---------------- | ---- | ----- | --------- | ------- | -------- |
+| editor.js        | 1540 | 4     | 23        | 51      | 高       |
+| project.js       | 234  | 6     | 9         | 9       | 中       |
+| preferences.js   | 173  | ~50   | 3         | 8       | 中       |
+| layout.js        | 83   | 4     | 3         | 3       | 低       |
+| commandCenter.js | 76   | 1     | 2         | 1       | 低       |
+| autoUpdates.js   | 55   | 0     | 0         | 1       | 低       |
+| listenForMain.js | 44   | 0     | 0         | 3       | 低       |
+| notification.js  | 34   | 0     | 0         | 1       | 低       |
+| tweet.js         | 20   | 0     | 0         | 1       | 低       |
 
 **迁移策略**: Vuex → Pinia
+
 - 移除 mutations（直接修改 state）
 - 从低复杂度模块开始迁移
 - `editor.js` 最后处理（核心模块）
@@ -582,12 +594,12 @@ vue-template-compiler: 2.6.14 → 2.7.16
 
 4 个 mixin 定义于 `src/renderer/mixins/index.js`：
 
-| Mixin | 使用文件数 | 说明 |
-| ----- | ---------- | ---- |
-| tabsMixins | 2 | tabs.vue, treeOpenedTab.vue |
-| loadingPageMixins | 2 | app.vue, preference.vue |
-| fileMixins | 2 | searchResultItem.vue, treeFile.vue |
-| createFileOrDirectoryMixins | 2 | treeFolder.vue, tree.vue |
+| Mixin                       | 使用文件数 | 说明                               |
+| --------------------------- | ---------- | ---------------------------------- |
+| tabsMixins                  | 2          | tabs.vue, treeOpenedTab.vue        |
+| loadingPageMixins           | 2          | app.vue, preference.vue            |
+| fileMixins                  | 2          | searchResultItem.vue, treeFile.vue |
+| createFileOrDirectoryMixins | 2          | treeFolder.vue, tree.vue           |
 
 **迁移策略**: 重构为 Composition API composables
 
@@ -615,17 +627,17 @@ vue-template-compiler: 2.6.14 → 2.7.16
 
 **目标**: 完成 Vue 2 → Vue 3 迁移，同时迁移到 Vite 构建工具
 
-| 任务                           | 状态 | 说明                                   |
-| ------------------------------ | ---- | -------------------------------------- |
+| 任务                           | 状态 | 说明                                  |
+| ------------------------------ | ---- | ------------------------------------- |
 | 迁移 webpack → Vite            | ✅   | 纯 Vite 构建 (vite.config.mjs)        |
 | 升级 Vue 3                     | ✅   | vue@3.4.x + createApp                 |
 | 迁移 Vuex → Pinia              | ✅   | 9 个模块 → 10 个 Pinia stores (.ts)   |
-| 迁移 Element UI → Element Plus | ✅   | element-plus                           |
+| 迁移 Element UI → Element Plus | ✅   | 已后续替换为 Radix Vue + 原生 HTML    |
 | 迁移 Vue Router                | ✅   | vue-router@4.x + createWebHashHistory |
 | 修复所有组件                   | ✅   | 27+ 组件 store 引用更新               |
 | Mixins → Composables           | ✅   | 4 个 mixin → 4 个 composable          |
-| 移除 Vuex 依赖                 | ✅   | package.json 中已移除                  |
-| 清理 babel Element UI 插件     | ✅   | babel-plugin-component 已移除          |
+| 移除 Vuex 依赖                 | ✅   | package.json 中已移除                 |
+| 清理 babel Element UI 插件     | ✅   | babel-plugin-component 已移除         |
 
 ### 为什么迁移到 Vite
 
@@ -661,12 +673,10 @@ electron.vite.config.ts
 ### 主要变化
 
 1. **模板语法**:
-
    - `v-model` 变化
    - `v-if` / `v-for` 优先级变化
 
 2. **全局 API**:
-
    - `Vue.use()` → `app.use()`
    - `Vue.component()` → `app.component()`
 
@@ -680,17 +690,17 @@ electron.vite.config.ts
 
 **目标**: 逐步将 JavaScript 迁移到 TypeScript
 
-| 任务                           | 状态 | 说明                                          |
-| ------------------------------ | ---- | --------------------------------------------- |
-| 配置 TypeScript                | ✅   | tsconfig.json strict:true, jsx:preserve       |
-| ESLint TypeScript 支持         | ✅   | @typescript-eslint/parser + eslint-plugin      |
-| Vue 组件类型 shim              | ✅   | src/renderer/env.d.ts                         |
-| 迁移 util/ 目录               | ✅   | 13 个 .js → .ts (tauri, index, fileSystem...) |
-| 迁移 Pinia stores             | ✅   | 10 个 store 直接用 .ts 创建                   |
-| 迁移 src/common/              | ✅   | 6 个 .js → .ts (envPaths, filesystem, ...)    |
-| Vue 组件 lang=ts              | ✅   | 45 个 .vue 文件添加 lang="ts"                 |
-| 入口文件迁移                   | ✅   | main.ts + router/index.ts                     |
-| 迁移 Muya                     | ⬜   | src/muya/ (Phase 10 编辑器现代化时处理)       |
+| 任务                   | 状态 | 说明                                          |
+| ---------------------- | ---- | --------------------------------------------- |
+| 配置 TypeScript        | ✅   | tsconfig.json strict:true, jsx:preserve       |
+| ESLint TypeScript 支持 | ✅   | @typescript-eslint/parser + eslint-plugin     |
+| Vue 组件类型 shim      | ✅   | src/renderer/env.d.ts                         |
+| 迁移 util/ 目录        | ✅   | 13 个 .js → .ts (tauri, index, fileSystem...) |
+| 迁移 Pinia stores      | ✅   | 10 个 store 直接用 .ts 创建                   |
+| 迁移 src/common/       | ✅   | 6 个 .js → .ts (envPaths, filesystem, ...)    |
+| Vue 组件 lang=ts       | ✅   | 45 个 .vue 文件添加 lang="ts"                 |
+| 入口文件迁移           | ✅   | main.ts + router/index.ts                     |
+| 迁移 Muya              | ⬜   | src/muya/ (Phase 10 编辑器现代化时处理)       |
 
 ---
 
@@ -698,16 +708,16 @@ electron.vite.config.ts
 
 **目标**: 评估 Tauri 可行性，创建概念验证
 
-| 任务                        | 状态 | 说明                                              |
-| --------------------------- | ---- | ------------------------------------------------- |
-| 环境准备与 Tauri 初始化     | ✅   | Rust/Cargo/Tauri CLI，src-tauri 目录结构          |
-| 创建 Tauri API 桥接层       | ✅   | tauri.js + backend.js 与 electron.js 同构接口     |
-| 实现 Rust 后端核心命令      | ✅   | fs/path/system/fonts/app commands                 |
-| Muya 兼容性 (path polyfill) | ✅   | 纯 JS pathPolyfill.js 支持同步 path 操作          |
-| 构建脚本                    | ✅   | build-tauri-portable.cmd                          |
-| 共享模块 Tauri 兼容         | ✅   | common/filesystem Tauri stub + require shim       |
-| 前端自动初始化              | ✅   | app.vue Tauri 环境自动 bootstrap                  |
-| 性能评估                    | ✅   | 见下方评估结果                                    |
+| 任务                        | 状态 | 说明                                          |
+| --------------------------- | ---- | --------------------------------------------- |
+| 环境准备与 Tauri 初始化     | ✅   | Rust/Cargo/Tauri CLI，src-tauri 目录结构      |
+| 创建 Tauri API 桥接层       | ✅   | tauri.js + backend.js 与 electron.js 同构接口 |
+| 实现 Rust 后端核心命令      | ✅   | fs/path/system/fonts/app commands             |
+| Muya 兼容性 (path polyfill) | ✅   | 纯 JS pathPolyfill.js 支持同步 path 操作      |
+| 构建脚本                    | ✅   | build-tauri-portable.cmd                      |
+| 共享模块 Tauri 兼容         | ✅   | common/filesystem Tauri stub + require shim   |
+| 前端自动初始化              | ✅   | app.vue Tauri 环境自动 bootstrap              |
+| 性能评估                    | ✅   | 见下方评估结果                                |
 
 ### Tauri 优势
 
@@ -746,36 +756,37 @@ marktext/
 
 ### Tauri 插件映射
 
-| Electron 模块        | Tauri 替代方案                     |
-| -------------------- | ---------------------------------- |
-| electron-store       | tauri-plugin-store / serde_json    |
-| electron-updater     | tauri-plugin-updater               |
-| electron-window-state| tauri-plugin-window-state          |
-| electron-log         | Rust log + env_logger              |
-| @electron/remote     | 不需要 (直接 Tauri commands)       |
-| fontmanager-redux    | font-kit Rust crate                |
-| native-keymap        | winapi (Windows) / 平台特定实现    |
-| chokidar             | notify Rust crate                  |
+| Electron 模块         | Tauri 替代方案                  |
+| --------------------- | ------------------------------- |
+| electron-store        | tauri-plugin-store / serde_json |
+| electron-updater      | tauri-plugin-updater            |
+| electron-window-state | tauri-plugin-window-state       |
+| electron-log          | Rust log + env_logger           |
+| @electron/remote      | 不需要 (直接 Tauri commands)    |
+| fontmanager-redux     | font-kit Rust crate             |
+| native-keymap         | winapi (Windows) / 平台特定实现 |
+| chokidar              | notify Rust crate               |
 
 ### 评估结果 (待填写)
 
-| 指标           | Electron 版本 | Tauri 版本 | 差异         |
-| -------------- | ------------- | ---------- | ------------ |
-| 主程序大小     | ~150MB        | ~11MB      | **-93%**     |
-| MSI 安装包     | -             | ~4MB       | 极小         |
-| NSIS 安装包    | -             | ~4MB       | 极小         |
-| 编辑器兼容性   | 100%          | PoC 可编辑 | 基本功能可用 |
+| 指标         | Electron 版本 | Tauri 版本 | 差异         |
+| ------------ | ------------- | ---------- | ------------ |
+| 主程序大小   | ~150MB        | ~11MB      | **-93%**     |
+| MSI 安装包   | -             | ~4MB       | 极小         |
+| NSIS 安装包  | -             | ~4MB       | 极小         |
+| 编辑器兼容性 | 100%          | PoC 可编辑 | 基本功能可用 |
 
 > 注: Tauri PoC 已验证编辑器核心功能可用。文件对话框、偏好持久化、菜单快捷键等
 > 高级功能需在阶段 9 完整迁移中实现。
 
 **构建命令**:
+
 ```bash
 # Tauri 开发
-yarn tauri:dev
+npm run tauri:dev
 
 # Tauri 构建
-yarn tauri:build
+npm run tauri:build
 # 或
 scripts\build-tauri-portable.cmd
 ```
@@ -786,23 +797,23 @@ scripts\build-tauri-portable.cmd
 
 **目标**: 完全从 Electron 迁移到 Tauri 2.0，删除所有 Electron 代码
 
-| 任务                       | 状态    | 说明                                              |
-| -------------------------- | ------- | ------------------------------------------------- |
-| 9.1 核心文件操作           | ✅ 完成 | 打开/保存/另存为对话框、拖放、重命名/移动/回收站   |
-| 9.2 偏好设置与数据中心     | ✅ 完成 | preference.json 读写、user-data、安全凭据存储      |
-| 9.3 窗口管理               | ✅ 完成 | 多窗口创建/切换、关闭确认、单实例                  |
-| 9.4 菜单系统               | ✅ 完成 | 7 大类原生菜单 + 最近文件列表 + 前端事件联动       |
-| 9.5 文件监视器             | ✅ 完成 | notify crate 实现，防抖、fs-change 事件推送前端    |
-| 9.6 快捷键系统             | ✅ 完成 | 平台默认 + 用户自定义 keybindings.json             |
-| 9.7 上下文菜单             | ✅ 完成 | 编辑器/侧边栏/Tab 右键菜单 Rust 命令              |
-| 9.8 导出/打印/导入         | ✅ 完成 | HTML 导出、Pandoc 集成、markdown_to_html           |
-| 9.9 图片管理               | ✅ 完成 | 图片选择对话框、路径自动补全、复制到文件夹         |
-| 9.10 拼写检查              | ✅ 完成 | WebView 内置 + 自定义词典管理                      |
-| 9.11 自动更新              | ✅ 完成 | tauri-plugin-updater + GitHub Releases             |
-| 9.12 CLI 与启动环境        | ✅ 完成 | 命令行参数、便携模式、文件关联 .md/.markdown       |
-| 9.13 构建系统迁移          | ✅ 完成 | electron-vite → 纯 Vite + Tauri bundler            |
-| 9.14 清理 Electron 代码    | ✅ 完成 | 删除 src/main/、.electron-vue/、迁移所有 import    |
-| 9.15 测试与文档            | ✅ 完成 | 文档更新、README 更新                              |
+| 任务                    | 状态    | 说明                                             |
+| ----------------------- | ------- | ------------------------------------------------ |
+| 9.1 核心文件操作        | ✅ 完成 | 打开/保存/另存为对话框、拖放、重命名/移动/回收站 |
+| 9.2 偏好设置与数据中心  | ✅ 完成 | preference.json 读写、user-data、安全凭据存储    |
+| 9.3 窗口管理            | ✅ 完成 | 多窗口创建/切换、关闭确认、单实例                |
+| 9.4 菜单系统            | ✅ 完成 | 7 大类原生菜单 + 最近文件列表 + 前端事件联动     |
+| 9.5 文件监视器          | ✅ 完成 | notify crate 实现，防抖、fs-change 事件推送前端  |
+| 9.6 快捷键系统          | ✅ 完成 | 平台默认 + 用户自定义 keybindings.json           |
+| 9.7 上下文菜单          | ✅ 完成 | 编辑器/侧边栏/Tab 右键菜单 Rust 命令             |
+| 9.8 导出/打印/导入      | ✅ 完成 | HTML 导出、Pandoc 集成、markdown_to_html         |
+| 9.9 图片管理            | ✅ 完成 | 图片选择对话框、路径自动补全、复制到文件夹       |
+| 9.10 拼写检查           | ✅ 完成 | WebView 内置 + 自定义词典管理                    |
+| 9.11 自动更新           | ✅ 完成 | tauri-plugin-updater + GitHub Releases           |
+| 9.12 CLI 与启动环境     | ✅ 完成 | 命令行参数、便携模式、文件关联 .md/.markdown     |
+| 9.13 构建系统迁移       | ✅ 完成 | electron-vite → 纯 Vite + Tauri bundler          |
+| 9.14 清理 Electron 代码 | ✅ 完成 | 删除 src/main/、.electron-vue/、迁移所有 import  |
+| 9.15 测试与文档         | ✅ 完成 | 文档更新、README 更新                            |
 
 ### Rust 后端模块
 
@@ -854,37 +865,37 @@ src-tauri/src/
 
 **目标**: 实现中英双语支持，建立可扩展的多语言框架
 
-| 任务 | 状态 | 说明 |
-| ---- | ---- | ---- |
-| 10.1 安装 vue-i18n v10 + Vite 插件 | ✅ | `vue-i18n@^10` + `@intlify/unplugin-vue-i18n` |
-| 10.2 创建 `src/locales/en.json` | ✅ | 英文翻译文件，~400 个 flat key |
-| 10.3 创建 `src/locales/zh-CN.json` | ✅ | 简体中文翻译文件 |
-| 10.4 创建 `src/locales/_meta.json` | ✅ | 语言元数据（名称、方向、进度） |
-| 10.5 创建 `src/renderer/i18n/index.ts` | ✅ | createI18n 配置 (`legacy: true`，从 `__TAURI_ENV__` 读初始 locale) |
-| 10.6 创建 `src/renderer/i18n/loader.ts` | ✅ | 运行时语言切换，使用 `.value` 兼容 vue-i18n v10 Ref API |
-| 10.7 `main.ts` 中注册 i18n 插件 | ✅ | `app.use(i18n)` + watcher 同步 store→locale |
-| 10.8 提取 Vue 组件字符串 | ✅ | titleBar, about, import, app.vue 等 → `$t('key')` |
-| 10.9 提取偏好设置组件字符串 | ✅ | general, editor, markdown, theme, image, sideBar, keybindings, spellchecker + 8 个 config.js |
-| 10.10 提取 Muya UI 配置字符串 | ✅ | formatPicker, quickInsert, imageToolbar, frontMenu, tableTools, codePicker, imageSelector (i18nBridge.js) |
-| 10.11 提取上下文菜单字符串 | ✅ | tabs/menuItems.js, sideBar/menuItems.js |
-| 10.12 提取 Store 通知/错误字符串 | ✅ | editor.ts, notification.ts, preferences.ts |
-| 10.13 Rust 侧 i18n 实现 | ✅ | `src-tauri/src/i18n.rs`，`include_str!` 读取共享 JSON |
-| 10.14 Rust 菜单本地化 | ✅ | `menu.rs` 所有菜单标签使用 `i18n.t()` |
-| 10.15 Rust 对话框本地化 | ✅ | `window.rs`, `file_ops.rs`, `context_menu.rs` 中的对话框文本 |
-| 10.16 启用语言选择器 | ✅ | 从 `_meta.json` 动态生成选项，即时生效 |
-| 10.17 添加重启提示 | ✅ | 切换语言后原生菜单需重启更新（与 VS Code 一致） |
-| 10.18 配置 i18n-ally | ✅ | vite.config.mjs 中配置 `@intlify/unplugin-vue-i18n` |
+| 任务                                    | 状态 | 说明                                                                                                      |
+| --------------------------------------- | ---- | --------------------------------------------------------------------------------------------------------- |
+| 10.1 安装 vue-i18n v10 + Vite 插件      | ✅   | `vue-i18n@^10` + `@intlify/unplugin-vue-i18n`                                                             |
+| 10.2 创建 `src/locales/en.json`         | ✅   | 英文翻译文件，~400 个 flat key                                                                            |
+| 10.3 创建 `src/locales/zh-CN.json`      | ✅   | 简体中文翻译文件                                                                                          |
+| 10.4 创建 `src/locales/_meta.json`      | ✅   | 语言元数据（名称、方向、进度）                                                                            |
+| 10.5 创建 `src/renderer/i18n/index.ts`  | ✅   | createI18n 配置 (`legacy: true`，从 `__TAURI_ENV__` 读初始 locale)                                        |
+| 10.6 创建 `src/renderer/i18n/loader.ts` | ✅   | 运行时语言切换，使用 `.value` 兼容 vue-i18n v10 Ref API                                                   |
+| 10.7 `main.ts` 中注册 i18n 插件         | ✅   | `app.use(i18n)` + watcher 同步 store→locale                                                               |
+| 10.8 提取 Vue 组件字符串                | ✅   | titleBar, about, import, app.vue 等 → `$t('key')`                                                         |
+| 10.9 提取偏好设置组件字符串             | ✅   | general, editor, markdown, theme, image, sideBar, keybindings, spellchecker + 8 个 config.js              |
+| 10.10 提取 Muya UI 配置字符串           | ✅   | formatPicker, quickInsert, imageToolbar, frontMenu, tableTools, codePicker, imageSelector (i18nBridge.js) |
+| 10.11 提取上下文菜单字符串              | ✅   | tabs/menuItems.js, sideBar/menuItems.js                                                                   |
+| 10.12 提取 Store 通知/错误字符串        | ✅   | editor.ts, notification.ts, preferences.ts                                                                |
+| 10.13 Rust 侧 i18n 实现                 | ✅   | `src-tauri/src/i18n.rs`，`include_str!` 读取共享 JSON                                                     |
+| 10.14 Rust 菜单本地化                   | ✅   | `menu.rs` 所有菜单标签使用 `i18n.t()`                                                                     |
+| 10.15 Rust 对话框本地化                 | ✅   | `window.rs`, `file_ops.rs`, `context_menu.rs` 中的对话框文本                                              |
+| 10.16 启用语言选择器                    | ✅   | 从 `_meta.json` 动态生成选项，即时生效                                                                    |
+| 10.17 添加重启提示                      | ✅   | 切换语言后原生菜单需重启更新（与 VS Code 一致）                                                           |
+| 10.18 配置 i18n-ally                    | ✅   | vite.config.mjs 中配置 `@intlify/unplugin-vue-i18n`                                                       |
 
 ### 技术决策
 
-| 决策项 | 选择 | 理由 |
-| ------ | ---- | ---- |
-| 前端库 | vue-i18n v10 (`legacy: true`) | 兼容 Options API，`$t()` 全组件可用 |
-| Key 格式 | 扁平 dot notation | grep 友好，i18n-ally 兼容，rust-i18n 兼容 |
-| 文件结构 | 单文件/语言（初期） | <600 key 不需要拆分 |
-| Rust 侧 | `include_str!` + `serde_json` | 轻量，无需额外 crate |
-| Vue 切换 | 即时生效 | `i18n.global.locale` 是响应式的 |
-| 菜单切换 | 需重启 | 与 VS Code / Zettlr 一致 |
+| 决策项   | 选择                          | 理由                                      |
+| -------- | ----------------------------- | ----------------------------------------- |
+| 前端库   | vue-i18n v10 (`legacy: true`) | 兼容 Options API，`$t()` 全组件可用       |
+| Key 格式 | 扁平 dot notation             | grep 友好，i18n-ally 兼容，rust-i18n 兼容 |
+| 文件结构 | 单文件/语言（初期）           | <600 key 不需要拆分                       |
+| Rust 侧  | `include_str!` + `serde_json` | 轻量，无需额外 crate                      |
+| Vue 切换 | 即时生效                      | `i18n.global.locale` 是响应式的           |
+| 菜单切换 | 需重启                        | 与 VS Code / Zettlr 一致                  |
 
 ### 翻译文件格式示例
 
@@ -921,6 +932,7 @@ src-tauri/src/
 5. **Muya i18nBridge**: 为非 Vue 的 Muya 编辑器组件创建了 `i18nBridge.js`，通过 `window.__marktext_i18n` 桥接 vue-i18n 实例
 
 **新增文件**:
+
 - `src/locales/en.json` — 英文翻译 (~400 key)
 - `src/locales/zh-CN.json` — 简体中文翻译 (~400 key)
 - `src/locales/_meta.json` — 语言元数据
@@ -931,7 +943,7 @@ src-tauri/src/
 
 ### 验证清单
 
-- [x] `yarn dev` 启动后界面显示英文（默认）
+- [x] `npm run dev` 启动后界面显示英文（默认）
 - [x] 设置中切换语言为简体中文，UI 立即更新
 - [x] 重启后原生菜单显示中文
 - [x] 所有偏好设置面板文本已翻译
@@ -962,19 +974,19 @@ src-tauri/src/
 
 **目标**: 建立 IEditorEngine 抽象接口，实现 Muya 适配器，搭建引擎切换基础设施
 
-| 任务 | 状态 | 说明 |
-| ---- | ---- | ---- |
-| 11.1 定义 `IEditorEngine` 接口 | ⬜ | `src/renderer/editor/interface.ts` |
-| 11.2 定义共享类型 | ⬜ | `src/renderer/editor/types.ts` (FormatType, SearchOptions 等) |
-| 11.3 实现 MuyaAdapter | ⬜ | `src/renderer/editor/muya/adapter.ts`，包装现有 Muya API |
-| 11.4 重构 `editor.vue` | ⬜ | 面向 IEditorEngine 编程，不再直接调用 Muya |
-| 11.5 实现编辑器工厂 | ⬜ | `src/renderer/editor/factory.ts`，动态 import 适配器 |
-| 11.6 启动参数解析 | ⬜ | `--editor-engine=milkdown` 命令行参数 |
-| 11.7 设置项 | ⬜ | `Preferences > General > Editor Engine` 下拉选择 |
-| 11.8 Pinia store 集成 | ⬜ | `appStore.editorEngine` 存储当前引擎类型 |
-| 11.9 Milkdown 基础集成 | ⬜ | 安装依赖，创建最小可用的 MilkdownAdapter |
-| 11.10 Vue 3 集成 | ⬜ | `@milkdown/vue` + `useEditor` composable |
-| 11.11 双引擎启动验证 | ⬜ | Muya 和 Milkdown 都能启动，冷切换工作 |
+| 任务                           | 状态 | 说明                                                          |
+| ------------------------------ | ---- | ------------------------------------------------------------- |
+| 11.1 定义 `IEditorEngine` 接口 | ⬜   | `src/renderer/editor/interface.ts`                            |
+| 11.2 定义共享类型              | ⬜   | `src/renderer/editor/types.ts` (FormatType, SearchOptions 等) |
+| 11.3 实现 MuyaAdapter          | ⬜   | `src/renderer/editor/muya/adapter.ts`，包装现有 Muya API      |
+| 11.4 重构 `editor.vue`         | ⬜   | 面向 IEditorEngine 编程，不再直接调用 Muya                    |
+| 11.5 实现编辑器工厂            | ⬜   | `src/renderer/editor/factory.ts`，动态 import 适配器          |
+| 11.6 启动参数解析              | ⬜   | `--editor-engine=milkdown` 命令行参数                         |
+| 11.7 设置项                    | ⬜   | `Preferences > General > Editor Engine` 下拉选择              |
+| 11.8 Pinia store 集成          | ⬜   | `appStore.editorEngine` 存储当前引擎类型                      |
+| 11.9 Milkdown 基础集成         | ⬜   | 安装依赖，创建最小可用的 MilkdownAdapter                      |
+| 11.10 Vue 3 集成               | ⬜   | `@milkdown/vue` + `useEditor` composable                      |
+| 11.11 双引擎启动验证           | ⬜   | Muya 和 Milkdown 都能启动，冷切换工作                         |
 
 ### IEditorEngine 接口（核心）
 
@@ -1058,23 +1070,23 @@ Preferences > General > Editor Engine > [Muya (Legacy)] / [Milkdown (Experimenta
 
 **目标**: 在 MilkdownAdapter 中实现所有有官方插件支持的核心功能
 
-| 任务 | 状态 | 说明 |
-| ---- | ---- | ---- |
-| 12.1 CommonMark + GFM 语法 | ⬜ | `@milkdown/preset-commonmark` + `@milkdown/preset-gfm` |
-| 12.2 表格交互编辑 | ⬜ | `@milkdown/components` table-block |
-| 12.3 数学公式 (KaTeX) | ⬜ | `@milkdown/crepe` latex 功能 或自定义 remark-math |
-| 12.4 代码块 (CodeMirror 6) | ⬜ | `@milkdown/crepe` code-mirror 或自定义 CM6 nodeView |
-| 12.5 格式工具栏 | ⬜ | `@milkdown/plugin-tooltip` 或 Crepe toolbar |
-| 12.6 链接编辑 | ⬜ | Crepe link-tooltip |
-| 12.7 撤销/重做 | ⬜ | `@milkdown/plugin-history` |
-| 12.8 剪贴板 | ⬜ | `@milkdown/plugin-clipboard` |
-| 12.9 图片上传/粘贴/拖拽 | ⬜ | `@milkdown/plugin-upload` + imageAction 回调适配 |
-| 12.10 Emoji | ⬜ | `@milkdown/plugin-emoji` |
-| 12.11 斜杠命令 | ⬜ | `@milkdown/plugin-slash` + 自定义 UI |
-| 12.12 脚注 | ⬜ | `preset-gfm` 内含 |
-| 12.13 事件映射 | ⬜ | change, selectionChange, selectionFormats 事件 |
-| 12.14 配置项映射 | ⬜ | fontSize, lineHeight, tabSize, bulletListMarker 等 |
-| 12.15 主题适配 | ⬜ | CSS 变量映射 MarkText 现有主题 |
+| 任务                       | 状态 | 说明                                                   |
+| -------------------------- | ---- | ------------------------------------------------------ |
+| 12.1 CommonMark + GFM 语法 | ⬜   | `@milkdown/preset-commonmark` + `@milkdown/preset-gfm` |
+| 12.2 表格交互编辑          | ⬜   | `@milkdown/components` table-block                     |
+| 12.3 数学公式 (KaTeX)      | ⬜   | `@milkdown/crepe` latex 功能 或自定义 remark-math      |
+| 12.4 代码块 (CodeMirror 6) | ⬜   | `@milkdown/crepe` code-mirror 或自定义 CM6 nodeView    |
+| 12.5 格式工具栏            | ⬜   | `@milkdown/plugin-tooltip` 或 Crepe toolbar            |
+| 12.6 链接编辑              | ⬜   | Crepe link-tooltip                                     |
+| 12.7 撤销/重做             | ⬜   | `@milkdown/plugin-history`                             |
+| 12.8 剪贴板                | ⬜   | `@milkdown/plugin-clipboard`                           |
+| 12.9 图片上传/粘贴/拖拽    | ⬜   | `@milkdown/plugin-upload` + imageAction 回调适配       |
+| 12.10 Emoji                | ⬜   | `@milkdown/plugin-emoji`                               |
+| 12.11 斜杠命令             | ⬜   | `@milkdown/plugin-slash` + 自定义 UI                   |
+| 12.12 脚注                 | ⬜   | `preset-gfm` 内含                                      |
+| 12.13 事件映射             | ⬜   | change, selectionChange, selectionFormats 事件         |
+| 12.14 配置项映射           | ⬜   | fontSize, lineHeight, tabSize, bulletListMarker 等     |
+| 12.15 主题适配             | ⬜   | CSS 变量映射 MarkText 现有主题                         |
 
 ### 新增依赖
 
@@ -1120,27 +1132,27 @@ Preferences > General > Editor Engine > [Muya (Legacy)] / [Milkdown (Experimenta
 
 **目标**: 提取 Muya 可复用逻辑，构建 Milkdown 缺失的自定义插件
 
-| 任务 | 状态 | 说明 |
-| ---- | ---- | ---- |
-| **13.1 提取共享模块** | | |
-| 提取图表渲染器 | ⬜ | `shared/renderers/` — Mermaid, Flowchart, Vega, PlantUML, Sequence |
-| 提取搜索匹配算法 | ⬜ | `shared/search/matchEngine.ts` — 从 `searchCtrl.js` 提取 |
-| 提取 HTML 导出模板 | ⬜ | `shared/export/htmlTemplate.ts` — 从 `exportHtml.js` 提取 (~80% 复用) |
-| 提取图片工具 | ⬜ | `shared/images/` — pathResolver, Unsplash API |
-| 提取 Focus 模式 CSS | ⬜ | `shared/styles/focusMode.css` — 从 Muya CSS 提取 (~90% 复用) |
-| **13.2 构建 Milkdown 插件** | | |
-| 搜索替换插件 | ⬜ | 基于 `prosemirror-search` + 复用 matchEngine |
-| Mermaid 图表 NodeView | ⬜ | 自定义 ProseMirror nodeView + 复用 Muya 渲染器 |
-| Flowchart.js 图表 NodeView | ⬜ | 同上 |
-| Vega-Lite 图表 NodeView | ⬜ | 同上 |
-| Sequence/PlantUML NodeView | ⬜ | 同上（Sequence 可合并到 Mermaid） |
-| Front Matter 插件 | ⬜ | `remark-frontmatter` + 复用 Muya 正则 + 自定义 nodeView |
-| TOC 生成插件 | ⬜ | 遍历 ProseMirror doc 收集 heading 节点 |
-| Focus 模式插件 | ⬜ | ProseMirror Decoration + 复用 Muya CSS |
-| Typewriter 模式插件 | ⬜ | ProseMirror plugin 保持光标垂直居中 |
-| HTML 导出插件 | ⬜ | `remark-rehype` + `rehype-stringify` + 复用导出模板 |
-| 图片调整大小 NodeView | ⬜ | 自定义 ProseMirror nodeView + 拖拽 resize |
-| 上标/下标 | ⬜ | `remark-supersub` |
+| 任务                        | 状态 | 说明                                                                  |
+| --------------------------- | ---- | --------------------------------------------------------------------- |
+| **13.1 提取共享模块**       |      |                                                                       |
+| 提取图表渲染器              | ⬜   | `shared/renderers/` — Mermaid, Flowchart, Vega, PlantUML, Sequence    |
+| 提取搜索匹配算法            | ⬜   | `shared/search/matchEngine.ts` — 从 `searchCtrl.js` 提取              |
+| 提取 HTML 导出模板          | ⬜   | `shared/export/htmlTemplate.ts` — 从 `exportHtml.js` 提取 (~80% 复用) |
+| 提取图片工具                | ⬜   | `shared/images/` — pathResolver, Unsplash API                         |
+| 提取 Focus 模式 CSS         | ⬜   | `shared/styles/focusMode.css` — 从 Muya CSS 提取 (~90% 复用)          |
+| **13.2 构建 Milkdown 插件** |      |                                                                       |
+| 搜索替换插件                | ⬜   | 基于 `prosemirror-search` + 复用 matchEngine                          |
+| Mermaid 图表 NodeView       | ⬜   | 自定义 ProseMirror nodeView + 复用 Muya 渲染器                        |
+| Flowchart.js 图表 NodeView  | ⬜   | 同上                                                                  |
+| Vega-Lite 图表 NodeView     | ⬜   | 同上                                                                  |
+| Sequence/PlantUML NodeView  | ⬜   | 同上（Sequence 可合并到 Mermaid）                                     |
+| Front Matter 插件           | ⬜   | `remark-frontmatter` + 复用 Muya 正则 + 自定义 nodeView               |
+| TOC 生成插件                | ⬜   | 遍历 ProseMirror doc 收集 heading 节点                                |
+| Focus 模式插件              | ⬜   | ProseMirror Decoration + 复用 Muya CSS                                |
+| Typewriter 模式插件         | ⬜   | ProseMirror plugin 保持光标垂直居中                                   |
+| HTML 导出插件               | ⬜   | `remark-rehype` + `rehype-stringify` + 复用导出模板                   |
+| 图片调整大小 NodeView       | ⬜   | 自定义 ProseMirror nodeView + 拖拽 resize                             |
+| 上标/下标                   | ⬜   | `remark-supersub`                                                     |
 
 ### 共享模块架构
 
@@ -1167,14 +1179,14 @@ src/renderer/editor/shared/              ← 引擎无关，Muya 和 Milkdown �
 
 ### 复用节省
 
-| 模块 | 从零开发 | 复用 Muya 后 | 节省 |
-|------|---------|-------------|------|
-| 图表渲染器 ×5 | 5 周 | 2.5 周 | 2.5 周 |
-| 搜索替换 | 1.5 周 | 1 周 | 0.5 周 |
-| HTML 导出 | 1 周 | 2 天 | 3 天 |
-| Focus 模式 | 3 天 | 1 天 | 2 天 |
-| 其他 | 2 周 | 1 周 | 1 周 |
-| **合计** | **~10-12 周** | **~6-7 周** | **~4-5 周** |
+| 模块          | 从零开发      | 复用 Muya 后 | 节省        |
+| ------------- | ------------- | ------------ | ----------- |
+| 图表渲染器 ×5 | 5 周          | 2.5 周       | 2.5 周      |
+| 搜索替换      | 1.5 周        | 1 周         | 0.5 周      |
+| HTML 导出     | 1 周          | 2 天         | 3 天        |
+| Focus 模式    | 3 天          | 1 天         | 2 天        |
+| 其他          | 2 周          | 1 周         | 1 周        |
+| **合计**      | **~10-12 周** | **~6-7 周**  | **~4-5 周** |
 
 ### 验证清单
 
@@ -1198,35 +1210,35 @@ src/renderer/editor/shared/              ← 引擎无关，Muya 和 Milkdown �
 
 **目标**: 实现类似 JetBrains IDE 的左侧源码 + 右侧可编辑预览对照模式
 
-| 任务 | 状态 | 说明 |
-| ---- | ---- | ---- |
-| **14.1 基础框架** | | |
-| `SplitEditor.vue` 组件 | ⬜ | 三模式切换 + 可拖拽分隔栏 |
-| 三种编辑模式 UI | ⬜ | 预览(Ctrl+1) / 对照(Ctrl+2) / 源码(Ctrl+3) |
-| **14.2 Source Pane** | | |
-| CodeMirror 6 集成 | ⬜ | `@codemirror/lang-markdown` + 行号 + 语法高亮 |
-| CM6 主题适配 | ⬜ | 匹配 MarkText 主题 (light/dark) |
-| **14.3 双向同步** | | |
-| SyncEngine 核心 | ⬜ | debounce 150ms + isSyncing 防回声 |
-| Source → Preview | ⬜ | markdown → `parserCtx` → ProseMirror doc |
-| Preview → Source | ⬜ | serialize → diff patch → CodeMirror 最小更新 |
-| IME 兼容 | ⬜ | compositionstart/end 守卫，组合期间暂停同步 |
-| **14.4 滚动同步** | | |
-| remarkSourceLines 插件 | ⬜ | Remark 插件，注入 `data-source-line` 属性 |
-| lineMap 构建 | ⬜ | DOM 扫描构建 sourceLine ↔ offsetTop 映射 |
-| 双向滚动同步 | ⬜ | 线性插值 + 二分查找 |
-| **14.5 集成** | | |
-| IEditorEngine 扩展 | ⬜ | `setSplitMode()`, `getSplitMode()` 方法 |
-| 状态栏模式指示 | ⬜ | 显示当前编辑模式 |
-| 快捷键注册 | ⬜ | Ctrl+1/2/3 切换模式 |
+| 任务                   | 状态 | 说明                                          |
+| ---------------------- | ---- | --------------------------------------------- |
+| **14.1 基础框架**      |      |                                               |
+| `SplitEditor.vue` 组件 | ⬜   | 三模式切换 + 可拖拽分隔栏                     |
+| 三种编辑模式 UI        | ⬜   | 预览(Ctrl+1) / 对照(Ctrl+2) / 源码(Ctrl+3)    |
+| **14.2 Source Pane**   |      |                                               |
+| CodeMirror 6 集成      | ⬜   | `@codemirror/lang-markdown` + 行号 + 语法高亮 |
+| CM6 主题适配           | ⬜   | 匹配 MarkText 主题 (light/dark)               |
+| **14.3 双向同步**      |      |                                               |
+| SyncEngine 核心        | ⬜   | debounce 150ms + isSyncing 防回声             |
+| Source → Preview       | ⬜   | markdown → `parserCtx` → ProseMirror doc      |
+| Preview → Source       | ⬜   | serialize → diff patch → CodeMirror 最小更新  |
+| IME 兼容               | ⬜   | compositionstart/end 守卫，组合期间暂停同步   |
+| **14.4 滚动同步**      |      |                                               |
+| remarkSourceLines 插件 | ⬜   | Remark 插件，注入 `data-source-line` 属性     |
+| lineMap 构建           | ⬜   | DOM 扫描构建 sourceLine ↔ offsetTop 映射      |
+| 双向滚动同步           | ⬜   | 线性插值 + 二分查找                           |
+| **14.5 集成**          |      |                                               |
+| IEditorEngine 扩展     | ⬜   | `setSplitMode()`, `getSplitMode()` 方法       |
+| 状态栏模式指示         | ⬜   | 显示当前编辑模式                              |
+| 快捷键注册             | ⬜   | Ctrl+1/2/3 切换模式                           |
 
 ### 三种编辑模式
 
-| 模式 | 快捷键 | 左面板 | 右面板 |
-| ---- | ------ | ------ | ------ |
-| 预览模式 | Ctrl+1 | 隐藏 | 全宽 WYSIWYG（当前默认） |
-| 对照模式 | Ctrl+2 | CodeMirror 6 源码 | WYSIWYG 预览（可编辑） |
-| 源码模式 | Ctrl+3 | 全宽 CodeMirror 6 | 隐藏 |
+| 模式     | 快捷键 | 左面板            | 右面板                   |
+| -------- | ------ | ----------------- | ------------------------ |
+| 预览模式 | Ctrl+1 | 隐藏              | 全宽 WYSIWYG（当前默认） |
+| 对照模式 | Ctrl+2 | CodeMirror 6 源码 | WYSIWYG 预览（可编辑）   |
+| 源码模式 | Ctrl+3 | 全宽 CodeMirror 6 | 隐藏                     |
 
 ### 新增依赖
 
@@ -1243,12 +1255,12 @@ src/renderer/editor/shared/              ← 引擎无关，Muya 和 Milkdown �
 
 ### 性能目标
 
-| 指标 | 目标 | 可接受 |
-| ---- | ---- | ------ |
-| 按键到预览延迟 | <200ms | <500ms |
-| 滚动同步延迟 | <16ms (60fps) | <33ms (30fps) |
-| 额外内存开销 | <50MB | <100MB |
-| 万行文档初始渲染 | <1s | <2s |
+| 指标             | 目标          | 可接受        |
+| ---------------- | ------------- | ------------- |
+| 按键到预览延迟   | <200ms        | <500ms        |
+| 滚动同步延迟     | <16ms (60fps) | <33ms (30fps) |
+| 额外内存开销     | <50MB         | <100MB        |
+| 万行文档初始渲染 | <1s           | <2s           |
 
 ### 验证清单
 
@@ -1272,20 +1284,20 @@ src/renderer/editor/shared/              ← 引擎无关，Muya 和 Milkdown �
 
 **目标**: 完善所有集成细节，确保 Milkdown 引擎功能完整
 
-| 任务 | 状态 | 说明 |
-| ---- | ---- | ---- |
-| 15.1 PDF 导出适配 | ⬜ | Milkdown HTML → PDF 流水线 |
-| 15.2 主题系统完整迁移 | ⬜ | 6 个主题 (light/dark 各 3) |
-| 15.3 Unsplash 集成 | ⬜ | 图片选择器复用 Muya Unsplash API |
-| 15.4 拼写检查适配 | ⬜ | WebView spellcheck + 自定义词典 |
-| 15.5 Milkdown UI 本地化 | ⬜ | 工具栏/斜杠命令/placeholder 使用 `$t()` |
-| 15.6 发起社区翻译 | ⬜ | 配置 Crowdin/Weblate，邀请社区贡献者 |
-| 15.7 单元测试 | ⬜ | 共享模块 + 自定义插件 |
-| 15.8 集成测试 | ⬜ | 双引擎对比：同一文档渲染一致性 |
-| 15.9 E2E 测试 | ⬜ | Playwright: 三种编辑模式基本流程 |
-| 15.10 性能基准测试 | ⬜ | Muya vs Milkdown: 大文档、输入延迟、内存 |
-| 15.11 回归测试 + Bug 修复 | ⬜ | 修复所有已知问题 |
-| 15.12 文档更新 | ⬜ | README、CONTRIBUTING、用户指南 |
+| 任务                      | 状态 | 说明                                     |
+| ------------------------- | ---- | ---------------------------------------- |
+| 15.1 PDF 导出适配         | ⬜   | Milkdown HTML → PDF 流水线               |
+| 15.2 主题系统完整迁移     | ⬜   | 6 个主题 (light/dark 各 3)               |
+| 15.3 Unsplash 集成        | ⬜   | 图片选择器复用 Muya Unsplash API         |
+| 15.4 拼写检查适配         | ⬜   | WebView spellcheck + 自定义词典          |
+| 15.5 Milkdown UI 本地化   | ⬜   | 工具栏/斜杠命令/placeholder 使用 `$t()`  |
+| 15.6 发起社区翻译         | ⬜   | 配置 Crowdin/Weblate，邀请社区贡献者     |
+| 15.7 单元测试             | ⬜   | 共享模块 + 自定义插件                    |
+| 15.8 集成测试             | ⬜   | 双引擎对比：同一文档渲染一致性           |
+| 15.9 E2E 测试             | ⬜   | Playwright: 三种编辑模式基本流程         |
+| 15.10 性能基准测试        | ⬜   | Muya vs Milkdown: 大文档、输入延迟、内存 |
+| 15.11 回归测试 + Bug 修复 | ⬜   | 修复所有已知问题                         |
+| 15.12 文档更新            | ⬜   | README、CONTRIBUTING、用户指南           |
 
 ### 验证清单
 
@@ -1308,13 +1320,13 @@ src/renderer/editor/shared/              ← 引擎无关，Muya 和 Milkdown �
 
 **目标**: 将 Milkdown 设为默认引擎，收集反馈，最终移除 Muya
 
-| 任务 | 状态 | 说明 |
-| ---- | ---- | ---- |
-| 16.1 Beta 发布 | ⬜ | Milkdown 引擎为实验性选项 |
-| 16.2 收集用户反馈 | ⬜ | GitHub Issues + 社区渠道 |
-| 16.3 修复反馈问题 | ⬜ | 根据反馈迭代 |
-| 16.4 Milkdown 设为默认 | ⬜ | 切换默认引擎 |
-| 16.5 移除 Muya 代码 | ⬜ | 删除 src/muya/ + MuyaAdapter（视反馈决定） |
+| 任务                   | 状态 | 说明                                       |
+| ---------------------- | ---- | ------------------------------------------ |
+| 16.1 Beta 发布         | ⬜   | Milkdown 引擎为实验性选项                  |
+| 16.2 收集用户反馈      | ⬜   | GitHub Issues + 社区渠道                   |
+| 16.3 修复反馈问题      | ⬜   | 根据反馈迭代                               |
+| 16.4 Milkdown 设为默认 | ⬜   | 切换默认引擎                               |
+| 16.5 移除 Muya 代码    | ⬜   | 删除 src/muya/ + MuyaAdapter（视反馈决定） |
 
 > **注意**: 移除 Muya 不是必须的。如果社区反馈 Milkdown 有功能缺失，可以长期保留双引擎。
 
@@ -1322,26 +1334,26 @@ src/renderer/editor/shared/              ← 引擎无关，Muya 和 Milkdown �
 
 ## 进度跟踪
 
-| 阶段 | 状态 | 开始日期 | 完成日期 | 预估工期 |
-| ---- | ---- | -------- | -------- | -------- |
-| 阶段 0: 基础准备 | ✅ 完成 | 2026-02-04 | 2026-02-04 | - |
-| 阶段 1: 构建工具升级 | ✅ 完成 | 2026-02-04 | 2026-02-04 | - |
-| 阶段 2: 减少原生模块 | ✅ 完成 | 2026-02-04 | 2026-02-04 | - |
-| 阶段 3: Electron 小版本升级 | ✅ 完成 | 2026-02-04 | 2026-02-04 | - |
-| 阶段 4: Electron 大版本升级 | ✅ 完成 | 2026-02-04 | 2026-02-05 | - |
-| 阶段 4.5: 渲染进程现代化 | ✅ 完成 | 2026-02-04 | 2026-02-05 | - |
-| 阶段 5: Vue 生态升级准备 | ✅ 完成 | 2026-02-05 | 2026-02-05 | - |
-| 阶段 6: Vue 3 迁移 | ✅ 完成 | 2026-02-06 | 2026-02-06 | - |
-| 阶段 7: TypeScript 迁移 | ✅ 完成 | 2026-02-06 | 2026-02-06 | - |
-| 阶段 8: Tauri 评估与 PoC | ✅ 完成 | 2026-02-05 | 2026-02-05 | - |
-| 阶段 9: Tauri 完整迁移 | ✅ 完成 | 2026-02-05 | 2026-02-05 | - |
-| **阶段 10: 国际化 (i18n)** | ✅ 完成 | 2026-02-07 | 2026-02-08 | - |
-| **阶段 11: 编辑器抽象层 + 引擎切换** | ⬜ 待开始 | - | - | 3 周 |
-| **阶段 12: Milkdown 核心功能** | ⬜ 待开始 | - | - | 3-4 周 |
-| **阶段 13: 自定义插件 (复用 Muya)** | ⬜ 待开始 | - | - | 4-5 周 |
-| **阶段 14: Split View 对照模式** | ⬜ 待开始 | - | - | 4 周 |
-| **阶段 15: 集成完善 + 测试** | ⬜ 待开始 | - | - | 2-3 周 |
-| **阶段 16: 发布 + 清理** | ⬜ 待开始 | - | - | 视反馈 |
+| 阶段                                 | 状态      | 开始日期   | 完成日期   | 预估工期 |
+| ------------------------------------ | --------- | ---------- | ---------- | -------- |
+| 阶段 0: 基础准备                     | ✅ 完成   | 2026-02-04 | 2026-02-04 | -        |
+| 阶段 1: 构建工具升级                 | ✅ 完成   | 2026-02-04 | 2026-02-04 | -        |
+| 阶段 2: 减少原生模块                 | ✅ 完成   | 2026-02-04 | 2026-02-04 | -        |
+| 阶段 3: Electron 小版本升级          | ✅ 完成   | 2026-02-04 | 2026-02-04 | -        |
+| 阶段 4: Electron 大版本升级          | ✅ 完成   | 2026-02-04 | 2026-02-05 | -        |
+| 阶段 4.5: 渲染进程现代化             | ✅ 完成   | 2026-02-04 | 2026-02-05 | -        |
+| 阶段 5: Vue 生态升级准备             | ✅ 完成   | 2026-02-05 | 2026-02-05 | -        |
+| 阶段 6: Vue 3 迁移                   | ✅ 完成   | 2026-02-06 | 2026-02-06 | -        |
+| 阶段 7: TypeScript 迁移              | ✅ 完成   | 2026-02-06 | 2026-02-06 | -        |
+| 阶段 8: Tauri 评估与 PoC             | ✅ 完成   | 2026-02-05 | 2026-02-05 | -        |
+| 阶段 9: Tauri 完整迁移               | ✅ 完成   | 2026-02-05 | 2026-02-05 | -        |
+| **阶段 10: 国际化 (i18n)**           | ✅ 完成   | 2026-02-07 | 2026-02-08 | -        |
+| **阶段 11: 编辑器抽象层 + 引擎切换** | ⬜ 待开始 | -          | -          | 3 周     |
+| **阶段 12: Milkdown 核心功能**       | ⬜ 待开始 | -          | -          | 3-4 周   |
+| **阶段 13: 自定义插件 (复用 Muya)**  | ⬜ 待开始 | -          | -          | 4-5 周   |
+| **阶段 14: Split View 对照模式**     | ⬜ 待开始 | -          | -          | 4 周     |
+| **阶段 15: 集成完善 + 测试**         | ⬜ 待开始 | -          | -          | 2-3 周   |
+| **阶段 16: 发布 + 清理**             | ⬜ 待开始 | -          | -          | 视反馈   |
 
 ### 并行关系
 
@@ -1356,29 +1368,29 @@ src/renderer/editor/shared/              ← 引擎无关，Muya 和 Milkdown �
 
 ### 总工期预估
 
-| 场景 | 工期 | 说明 |
-| ---- | ---- | ---- |
-| 最乐观 | 18 周（~4.5 个月） | 阶段 10+11 并行，一切顺利 |
-| 正常预期 | 24-28 周（~6-7 个月） | 含调试、返工、边缘情况 |
-| 最悲观 | 36 周（~9 个月） | 架构级问题 + Split View 性能 |
+| 场景     | 工期                  | 说明                         |
+| -------- | --------------------- | ---------------------------- |
+| 最乐观   | 18 周（~4.5 个月）    | 阶段 10+11 并行，一切顺利    |
+| 正常预期 | 24-28 周（~6-7 个月） | 含调试、返工、边缘情况       |
+| 最悲观   | 36 周（~9 个月）      | 架构级问题 + Split View 性能 |
 
 ---
 
 ## 版本规划
 
-| 版本 | 包含阶段 | 主要变化 |
-| ---- | -------- | -------- |
-| v0.18.0 | 0-1 | 构建优化，Windows 支持改进 |
-| v0.19.0 | 2-3 | 减少原生模块，Electron 补丁更新 |
-| v0.20.0 | 4, 4.5 | Electron 38 + 渲染进程现代化 |
-| v0.21.0 | 5-6 | Vue 3 + Vite 迁移 |
-| v0.22.0 | 7 | TypeScript 迁移 |
-| v1.0.0 | 8-9 | Tauri 版本发布 |
-| **v1.1.0** | **10** | **中英双语国际化** |
+| 版本       | 包含阶段  | 主要变化                              |
+| ---------- | --------- | ------------------------------------- |
+| v0.18.0    | 0-1       | 构建优化，Windows 支持改进            |
+| v0.19.0    | 2-3       | 减少原生模块，Electron 补丁更新       |
+| v0.20.0    | 4, 4.5    | Electron 38 + 渲染进程现代化          |
+| v0.21.0    | 5-6       | Vue 3 + Vite 迁移                     |
+| v0.22.0    | 7         | TypeScript 迁移                       |
+| v1.0.0     | 8-9       | Tauri 版本发布                        |
+| **v1.1.0** | **10**    | **中英双语国际化**                    |
 | **v1.2.0** | **11-12** | **Milkdown 引擎（实验性）+ 引擎切换** |
-| **v1.3.0** | **13** | **图表/搜索/导出等自定义插件** |
-| **v1.4.0** | **14** | **Split View 对照编辑模式** |
-| **v2.0.0** | **15-16** | **Milkdown 设为默认 + 完整多语言** |
+| **v1.3.0** | **13**    | **图表/搜索/导出等自定义插件**        |
+| **v1.4.0** | **14**    | **Split View 对照编辑模式**           |
+| **v2.0.0** | **15-16** | **Milkdown 设为默认 + 完整多语言**    |
 
 ---
 
@@ -1398,27 +1410,23 @@ node tools/checkEsmModules.js
 ## 注意事项
 
 1. **每个阶段完成后**:
-
    - 更新本文档状态（标记 ✅ + 填写日期）
    - 创建 git tag
-   - **用脚本验证**：`yarn dev`、`scripts\build-tauri-portable.cmd` 等，不手写验证步骤
+   - **用脚本验证**：`npm run dev`、`scripts\build-tauri-portable.cmd` 等，不手写验证步骤
    - 测试所有平台（Windows 以脚本为准）
 
 2. **升级后必须更新脚本**:
-
    - 依赖或原生模块有增删时，必须同步修改：
      - 构建脚本：`scripts\build-tauri-portable.cmd`、`scripts\build-windows.ps1`
    - 避免脚本中仍引用已删除依赖或错误版本，导致验证/构建异常。
 
 3. **风险控制**:
-
    - 每个阶段都要可回滚
    - 保持向后兼容（数据、配置）
    - 充分测试再合并（以脚本通过为准）
    - **编辑器迁移的安全网**：阶段 11 建立引擎抽象层后，Muya 永远可用，任何阶段验证失败都可回退到 Muya
 
 4. **i18n 纪律**:
-
    - 阶段 10 以后，**所有新增用户可见字符串必须使用 `$t()` / `i18n.t()`**
    - PR Review 检查清单中加入"无硬编码字符串"
    - 新增字符串必须同时写入 `en.json`，`zh-CN.json` 可后续补充

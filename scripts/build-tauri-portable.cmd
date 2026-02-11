@@ -36,7 +36,7 @@ set "BUILD_READY=1"
 where rustc >nul 2>&1 || (echo   [MISSING] Rust & set "BUILD_READY=0")
 where cargo >nul 2>&1 || (echo   [MISSING] Cargo & set "BUILD_READY=0")
 where node  >nul 2>&1 || (echo   [MISSING] Node.js & set "BUILD_READY=0")
-where yarn  >nul 2>&1 || (echo   [MISSING] Yarn & set "BUILD_READY=0")
+where npm   >nul 2>&1 || (echo   [MISSING] npm & set "BUILD_READY=0")
 
 if "!BUILD_READY!"=="0" (
     echo.
@@ -52,9 +52,9 @@ echo.
 
 :: ---------- Step 1: Ensure JS dependencies ----------
 :: Fast no-op if already installed; needed for tauri's beforeBuildCommand.
-if not exist "node_modules\.yarn-integrity" (
+if not exist "node_modules\.package-lock.json" (
     echo [Step 1/2] Installing JS dependencies...
-    cmd /c "yarn install"
+    cmd /c "npm install --legacy-peer-deps"
     if errorlevel 1 (
         echo [ERROR] Failed to install dependencies
         goto :ERROR_EXIT
@@ -67,7 +67,7 @@ if not exist "node_modules\.yarn-integrity" (
 )
 
 :: ---------- Step 2: Build Tauri Application (frontend + Rust) ----------
-:: NOTE: "npx tauri build" automatically runs beforeBuildCommand ("yarn vite:build")
+:: NOTE: "npx tauri build" automatically runs beforeBuildCommand ("npm run vite:build")
 :: to build the frontend, then compiles Rust in release mode.
 :: We do NOT build the frontend separately, that would compile it twice!
 echo [Step 2/2] Building Tauri application (Release)...

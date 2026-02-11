@@ -2,22 +2,39 @@
   <div class="pref-sidebar">
     <h3 class="title">{{ $t('settings.preferences') }}</h3>
     <section class="search-wrapper">
-      <el-autocomplete
-        popper-class="pref-autocomplete"
-        v-model="state"
-        :fetch-suggestions="querySearch"
-        :placeholder="$t('settings.searchPreferences')"
-        :trigger-on-focus="false"
-        @select="handleSelect"
+      <ComboboxRoot
+        v-model="selectedItem"
+        class="pref-combobox"
+        :display-value="displaySearchValue"
+        :filter-function="filterSearch"
       >
-        <template #suffix>
-          <i class="el-icon-search el-input__icon"></i>
-        </template>
-        <template #default="{ item }">
-          <div class="name">{{ item.category }}</div>
-          <span class="addr">{{ item.preference }}</span>
-        </template>
-      </el-autocomplete>
+        <ComboboxAnchor class="pref-combobox-anchor">
+          <ComboboxInput
+            class="pref-combobox-input"
+            :placeholder="$t('settings.searchPreferences')"
+          />
+          <ComboboxTrigger class="pref-combobox-trigger">
+            <i class="el-icon-search"></i>
+          </ComboboxTrigger>
+        </ComboboxAnchor>
+        <ComboboxPortal>
+          <ComboboxContent class="pref-combobox-content" position="popper" :side-offset="4">
+            <ComboboxViewport class="pref-combobox-viewport">
+              <ComboboxEmpty class="pref-combobox-empty"> No preferences found </ComboboxEmpty>
+              <ComboboxItem
+                v-for="(item, index) in restaurants"
+                :key="`${item.category}-${item.preference}-${index}`"
+                :value="item"
+                class="pref-combobox-item"
+                @select="handleComboboxSelect"
+              >
+                <div class="name">{{ item.category }}</div>
+                <span class="addr">{{ item.preference }}</span>
+              </ComboboxItem>
+            </ComboboxViewport>
+          </ComboboxContent>
+        </ComboboxPortal>
+      </ComboboxRoot>
     </section>
     <section class="category">
       <div
@@ -36,59 +53,77 @@
   </div>
 </template>
 <script lang="ts">
+import {
+  ComboboxAnchor,
+  ComboboxContent,
+  ComboboxEmpty,
+  ComboboxInput,
+  ComboboxItem,
+  ComboboxPortal,
+  ComboboxRoot,
+  ComboboxTrigger,
+  ComboboxViewport
+} from 'radix-vue'
 import { ipcRenderer } from '../../util/tauri'
 import { category, searchContent } from './config'
 
+type SearchItem = { category: string; preference: string }
+
 export default {
-  data () {
+  components: {
+    ComboboxAnchor,
+    ComboboxContent,
+    ComboboxEmpty,
+    ComboboxInput,
+    ComboboxItem,
+    ComboboxPortal,
+    ComboboxRoot,
+    ComboboxTrigger,
+    ComboboxViewport
+  },
+  data() {
     return {
       currentCategory: 'general',
-      restaurants: [],
-      state: ''
+      restaurants: [] as SearchItem[],
+      selectedItem: null as SearchItem | null
     }
   },
   computed: {
-    category () {
+    category() {
       return category(this.$t)
     }
   },
   watch: {
-    $route (to, from) {
+    $route(to, from) {
       if (to.name !== from.name) {
         this.currentCategory = to.name
       }
     }
   },
   methods: {
-    querySearch (queryString, cb) {
-      const restaurants = this.restaurants
-      const results = queryString
-        ? restaurants.filter(this.createFilter(queryString))
-        : restaurants
-      // call callback return this results
-      cb(results)
+    displaySearchValue(item: SearchItem | null) {
+      return item ? `${item.category}: ${item.preference}` : ''
     },
-    createFilter (queryString) {
-      return (restaurant) => {
-        return (
-          restaurant.preference
-            .toLowerCase()
-            .indexOf(queryString.toLowerCase()) >= 0 ||
-          restaurant.category
-            .toLowerCase()
-            .indexOf(queryString.toLowerCase()) >= 0
-        )
-      }
+    filterSearch(list: SearchItem[], term: string) {
+      if (!term) return list
+      const lower = term.toLowerCase()
+      return list.filter(
+        item =>
+          item.preference.toLowerCase().indexOf(lower) >= 0 ||
+          item.category.toLowerCase().indexOf(lower) >= 0
+      )
     },
-    loadAll () {
-      return searchContent
-    },
-    handleSelect (item) {
+    handleComboboxSelect(event: { value: SearchItem }) {
+      const item = event.value
       this.$router.push({
         path: `/preference/${item.category.toLowerCase()}`
       })
+      this.selectedItem = null
     },
-    handleCategoryItemClick (item) {
+    loadAll() {
+      return searchContent
+    },
+    handleCategoryItemClick(item) {
       const { currentCategory } = this
       if (item.name.toLowerCase() !== currentCategory) {
         this.$router.push({
@@ -96,12 +131,10 @@ export default {
         })
       }
     },
-    onIpcCategoryChange (event, category) {
+    onIpcCategoryChange(event, category) {
       const validRoute =
         category &&
-        this.$router
-          .getRoutes()
-          .findIndex((route) => route.path.endsWith(`/${category}`)) !== -1
+        this.$router.getRoutes().findIndex(route => route.path.endsWith(`/${category}`)) !== -1
       if (validRoute) {
         this.$router.push({
           path: `/preference/${category}`
@@ -110,18 +143,15 @@ export default {
     }
   },
 
-  mounted () {
+  mounted() {
     this.restaurants = this.loadAll()
     if (this.$route && this.$route.name) {
       this.currentCategory = this.$route.name
     }
     ipcRenderer.on('settings::change-tab', this.onIpcCategoryChange)
   },
-  unmounted () {
-    ipcRenderer.removeAllListener(
-      'settings::change-tab',
-      this.onIpcCategoryChange
-    )
+  unmounted() {
+    ipcRenderer.removeAllListener('settings::change-tab', this.onIpcCategoryChange)
   }
 }
 </script>
@@ -148,45 +178,102 @@ export default {
   padding: 0 20px;
   margin: 30px 0;
 }
-.el-autocomplete {
+
+.pref-combobox {
   width: 100%;
-  & .el-input__inner {
-    background: var(--inputBgColor);
-    height: 35px;
-    line-height: 35px;
-  }
-  & .el-input__wrapper {
-    background-color: var(--inputBgColor);
-  }
 }
-.pref-autocomplete.el-autocomplete-suggestion {
+
+.pref-combobox-anchor {
+  display: flex;
+  align-items: center;
+  height: 35px;
+  background: var(--inputBgColor);
+  border: 1px solid var(--floatBorderColor);
+  border-radius: 4px;
+  padding: 0 8px;
+}
+
+.pref-combobox-anchor:focus-within {
+  border-color: var(--themeColor);
+}
+
+.pref-combobox-input {
+  flex: 1;
+  min-width: 0;
+  height: 100%;
+  background: transparent;
+  border: none;
+  outline: none;
+  color: var(--editorColor);
+  font-size: 14px;
+}
+
+.pref-combobox-input::placeholder {
+  color: var(--editorColor50);
+}
+
+.pref-combobox-trigger {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: none;
+  padding: 0 4px;
+  cursor: pointer;
+  color: var(--iconColor);
+}
+
+.pref-combobox-trigger:hover {
+  color: var(--themeColor);
+}
+
+.pref-combobox-content {
+  min-width: var(--radix-combobox-trigger-width);
+  max-height: 280px;
   background: var(--floatBgColor);
-  border-color: var(--floatBorderColor);
-  & .el-autocomplete-suggestion__wrap li:hover {
-    background: var(--floatHoverColor);
-  }
-  & .popper__arrow {
-    display: none;
-  }
-  & li {
-    line-height: normal;
-    padding: 7px;
-    opacity: 0.8;
+  border: 1px solid var(--floatBorderColor);
+  border-radius: 4px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  overflow: hidden;
+}
 
-    & .name {
-      text-overflow: ellipsis;
-      overflow: hidden;
-      color: var(--editorColor80);
-    }
-    & .addr {
-      font-size: 12px;
-      color: var(--editorColor);
-    }
+.pref-combobox-viewport {
+  padding: 4px 0;
+  max-height: 272px;
+  overflow-y: auto;
+}
 
-    & .highlighted .addr {
-      color: var(--editorColor);
-    }
-  }
+.pref-combobox-empty {
+  padding: 8px 12px;
+  font-size: 13px;
+  color: var(--editorColor50);
+  text-align: center;
+}
+
+.pref-combobox-item {
+  display: flex;
+  flex-direction: column;
+  padding: 7px 12px;
+  font-size: 13px;
+  color: var(--editorColor);
+  cursor: default;
+  user-select: none;
+  opacity: 0.8;
+}
+
+.pref-combobox-item[data-highlighted] {
+  background: var(--floatHoverColor);
+}
+
+.pref-combobox-item .name {
+  text-overflow: ellipsis;
+  overflow: hidden;
+  color: var(--editorColor80);
+}
+
+.pref-combobox-item .addr {
+  font-size: 12px;
+  color: var(--editorColor);
 }
 .category {
   -webkit-app-region: no-drag;
@@ -214,7 +301,7 @@ export default {
       background: var(--sideBarItemHoverBgColor);
     }
     &::before {
-      content: "";
+      content: '';
       width: 4px;
       height: 0;
       background: var(--highlightThemeColor);

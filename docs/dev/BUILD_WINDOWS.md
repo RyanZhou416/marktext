@@ -9,7 +9,7 @@
 | 软件          | 版本要求 | 说明                                   |
 | ------------- | -------- | -------------------------------------- |
 | Node.js       | v18+     | 推荐使用 nvm-windows 管理版本          |
-| Yarn          | >=1.22   | `npm install -g yarn`                  |
+| npm           | v9+      | 随 Node.js 自带                        |
 | Rust          | stable   | 通过 [rustup](https://rustup.rs/) 安装 |
 | Visual Studio | 2022+    | 需要 C++ 构建工具                      |
 | WebView2      | 最新版   | Windows 10/11 通常已预装               |
@@ -52,19 +52,17 @@
 
 ```powershell
 # 1. 安装依赖
-yarn install
+npm install
 
 # 2. 代码检查
-yarn run lint
-yarn run validate-licenses
+npm run lint
+npm run validate-licenses
 
 # 3. 运行测试
-yarn run test
+npm run test
 
 # 4. 构建
-yarn run release:win      # 完整构建
-# 或
-yarn build:bin            # 仅二进制
+npm run tauri:build
 ```
 
 ## GitHub Actions 自动构建
@@ -140,7 +138,7 @@ Webpack 构建可能需要较多内存，可以增加 Node.js 内存限制：
 
 ```powershell
 $env:NODE_OPTIONS="--max-old-space-size=4096"
-yarn run release:win
+npm run tauri:build
 ```
 
 ### 4. 杀毒软件干扰
@@ -156,7 +154,7 @@ yarn run release:win
 
 ```powershell
 # npm 镜像
-yarn config set registry https://registry.npmmirror.com
+npm config set registry https://registry.npmmirror.com
 
 # Rust crates 镜像（编辑 %USERPROFILE%\.cargo\config.toml）
 # [source.crates-io]
@@ -171,7 +169,7 @@ yarn config set registry https://registry.npmmirror.com
 
 ```powershell
 # 启动开发服务器
-yarn dev
+npm run dev
 ```
 
 这会启动热重载的开发环境，修改代码后自动刷新。
@@ -186,7 +184,7 @@ yarn dev
 ```powershell
 $env:CSC_LINK="path/to/certificate.pfx"
 $env:CSC_KEY_PASSWORD="your-password"
-yarn run release:win
+npm run tauri:build
 ```
 
 ## 相关链接

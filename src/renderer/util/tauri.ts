@@ -87,7 +87,10 @@ interface TauriEventModule {
 interface TauriShellModule {
   open: (path: string) => Promise<void>
   Command: {
-    create: (cmd: string, args: string[]) => {
+    create: (
+      cmd: string,
+      args: string[]
+    ) => {
       execute: () => Promise<{ stdout: string; stderr: string }>
     }
   }
@@ -209,13 +212,48 @@ const loadTauriApis = async (): Promise<boolean> => {
   }
   // Load plugin APIs individually (optional - don't block on failure)
   const pluginLoaders: [string, () => Promise<void>][] = [
-    ['shell', async () => { tauriShell = await import('@tauri-apps/plugin-shell') as any }],
-    ['dialog', async () => { tauriDialog = await import('@tauri-apps/plugin-dialog') }],
-    ['clipboard', async () => { tauriClipboard = await import('@tauri-apps/plugin-clipboard-manager') as any }],
-    ['fs', async () => { tauriFs = await import('@tauri-apps/plugin-fs') as any }],
-    ['os', async () => { tauriOs = await import('@tauri-apps/plugin-os') }],
-    ['path', async () => { tauriPath = await import('@tauri-apps/api/path') }],
-    ['process', async () => { tauriProcess = await import('@tauri-apps/plugin-process') }],
+    [
+      'shell',
+      async () => {
+        tauriShell = (await import('@tauri-apps/plugin-shell')) as any
+      }
+    ],
+    [
+      'dialog',
+      async () => {
+        tauriDialog = await import('@tauri-apps/plugin-dialog')
+      }
+    ],
+    [
+      'clipboard',
+      async () => {
+        tauriClipboard = (await import('@tauri-apps/plugin-clipboard-manager')) as any
+      }
+    ],
+    [
+      'fs',
+      async () => {
+        tauriFs = (await import('@tauri-apps/plugin-fs')) as any
+      }
+    ],
+    [
+      'os',
+      async () => {
+        tauriOs = await import('@tauri-apps/plugin-os')
+      }
+    ],
+    [
+      'path',
+      async () => {
+        tauriPath = await import('@tauri-apps/api/path')
+      }
+    ],
+    [
+      'process',
+      async () => {
+        tauriProcess = await import('@tauri-apps/plugin-process')
+      }
+    ]
   ]
   for (const [name, loader] of pluginLoaders) {
     try {
@@ -241,10 +279,11 @@ const eventListeners: Map<string, EventListener[]> = new Map()
  * Extract the encoding string from the file state.
  * The encoding can be either a string ('utf-8') or an object ({ encoding: 'utf8', isBom: false }).
  */
-function getEncodingString (encoding: any): string | null {
+function getEncodingString(encoding: any): string | null {
   if (!encoding) return null
   if (typeof encoding === 'string') return encoding
-  if (typeof encoding === 'object' && typeof encoding.encoding === 'string') return encoding.encoding
+  if (typeof encoding === 'object' && typeof encoding.encoding === 'string')
+    return encoding.encoding
   return null
 }
 
@@ -413,7 +452,7 @@ const ipcChannelHandlers: Record<string, IpcChannelHandler> = {
     if (!data) return
     const { type, content, pathname, title } = data
     const ext = type === 'pdf' ? '.pdf' : '.html'
-    const basename = pathname ? pathPolyfill.basename(pathname, '.md') : (title || 'Untitled')
+    const basename = pathname ? pathPolyfill.basename(pathname, '.md') : title || 'Untitled'
     const filePath: string | null = await tauriCore!.invoke('export_file_dialog', {
       exportType: type,
       defaultPath: pathname ? pathPolyfill.dirname(pathname) : null,
@@ -596,36 +635,35 @@ const ipcChannelHandlers: Record<string, IpcChannelHandler> = {
       return
     }
 
-    const { ElMessageBox } = await import('element-plus')
+    const { confirm } = await import('@/components/common/confirmDialog')
     const count = unsavedFiles.length
-    const message = count === 1
-      ? 'Do you want to save the changes you made?'
-      : `You have ${count} unsaved files. Do you want to save changes?`
+    const message =
+      count === 1
+        ? 'Do you want to save the changes you made?'
+        : `You have ${count} unsaved files. Do you want to save changes?`
+
+    const shouldSave = await confirm('MarkText', message, {
+      confirmText: 'Save',
+      cancelText: "Don't Save"
+    })
 
     try {
-      await ElMessageBox.confirm(message, 'MarkText', {
-        confirmButtonText: 'Save',
-        cancelButtonText: "Don't Save",
-        distinguishCancelAndClose: true,
-        type: 'warning'
-      })
-      // User clicked "Save" → save files then close
-      for (const file of unsavedFiles) {
-        if (file.pathname && typeof file.markdown === 'string') {
-          await tauriCore!.invoke('save_markdown_file', {
-            filePath: file.pathname,
-            content: file.markdown,
-            encoding: getEncodingString(file.options?.encoding)
-          })
+      if (shouldSave) {
+        // User clicked "Save" → save files then close
+        for (const file of unsavedFiles) {
+          if (file.pathname && typeof file.markdown === 'string') {
+            await tauriCore!.invoke('save_markdown_file', {
+              filePath: file.pathname,
+              content: file.markdown,
+              encoding: getEncodingString(file.options?.encoding)
+            })
+          }
         }
       }
+      // Both "Save" (after saving) and "Don't Save" close the window
       await tauriCore!.invoke('close_window')
-    } catch (action) {
-      if (action === 'cancel') {
-        // User clicked "Don't Save" → close without saving
-        await tauriCore!.invoke('close_window')
-      }
-      // action === 'close' (X button or ESC) → do nothing (cancel)
+    } catch (err) {
+      console.error('Error during window close:', err)
     }
   },
   // Check for updates — uses Tauri core invoke to avoid needing the npm package
@@ -634,16 +672,17 @@ const ipcChannelHandlers: Record<string, IpcChannelHandler> = {
     try {
       const update = await tauriCore.invoke('plugin:updater|check')
       if (update) {
-        ipcRenderer.emit('mt::UPDATE_AVAILABLE', null,
-          'A new version is available.')
+        ipcRenderer.emit('mt::UPDATE_AVAILABLE', null, 'A new version is available.')
       } else {
-        ipcRenderer.emit('mt::UPDATE_NOT_AVAILABLE', null,
-          'You are using the latest version.')
+        ipcRenderer.emit('mt::UPDATE_NOT_AVAILABLE', null, 'You are using the latest version.')
       }
     } catch (e: any) {
       // Updater plugin may not be configured — show a friendly message
-      ipcRenderer.emit('mt::UPDATE_NOT_AVAILABLE', null,
-        'Update check is not available in this build.')
+      ipcRenderer.emit(
+        'mt::UPDATE_NOT_AVAILABLE',
+        null,
+        'Update check is not available in this build.'
+      )
     }
   },
   // No-op handlers for channels that don't need backend interaction
@@ -668,11 +707,11 @@ const ipcChannelHandlers: Record<string, IpcChannelHandler> = {
 }
 
 // Convert mt:: channel names to Tauri command names (fallback)
-function channelToCommand (channel: string): string {
+function channelToCommand(channel: string): string {
   return channel.replace(/^mt::/, '').replace(/-/g, '_')
 }
 
-function channelToEvent (channel: string): string {
+function channelToEvent(channel: string): string {
   return channel
 }
 
@@ -795,7 +834,7 @@ export const ipcRenderer = {
       const unlistenPromise = tauriReady.then(async () => {
         if (!tauriEvent) return null
         const eventName = channelToEvent(channel)
-        const unsub = await tauriEvent.listen(eventName, (event) => {
+        const unsub = await tauriEvent.listen(eventName, event => {
           const fakeEvent = { sender: null }
           callback(fakeEvent, event.payload)
         })
@@ -807,7 +846,9 @@ export const ipcRenderer = {
       })
       // Wrap for cleanup
       tauriUnsubscribe = null
-      unlistenPromise.then(fn => { tauriUnsubscribe = fn })
+      unlistenPromise.then(fn => {
+        tauriUnsubscribe = fn
+      })
     }
 
     // Return unsubscribe function that cleans up both local and Tauri listeners
@@ -848,7 +889,7 @@ export const ipcRenderer = {
       tauriReady.then(async () => {
         if (!tauriEvent || fired) return
         const eventName = channelToEvent(channel)
-        tauriUnsubscribe = await tauriEvent.once(eventName, (event) => {
+        tauriUnsubscribe = await tauriEvent.once(eventName, event => {
           const fakeEvent = { sender: null }
           wrappedCallback(fakeEvent, event.payload)
         })
@@ -940,7 +981,7 @@ export const clipboard = {
     if (!isTauri()) return ''
     await tauriReady
     try {
-      return await tauriClipboard!.readText() || ''
+      return (await tauriClipboard!.readText()) || ''
     } catch (e) {
       console.error('Failed to read clipboard:', e)
       return ''
@@ -1201,7 +1242,7 @@ export const fs: Record<string, any> = {
   watch: (_filePath: string, _options?: any, _listener?: Function): null => null,
   watchFile: (_filename: string, _options?: any, _listener?: Function): void => {},
   unwatchFile: (_filename: string, _listener?: Function): void => {},
-  get constants (): { F_OK: number; R_OK: number; W_OK: number; X_OK: number } {
+  get constants(): { F_OK: number; R_OK: number; W_OK: number; X_OK: number } {
     return { F_OK: 0, R_OK: 4, W_OK: 2, X_OK: 1 }
   }
 }
@@ -1262,10 +1303,18 @@ export const path = {
   normalize: (filePath: string): string => pathPolyfill.normalize(filePath),
   isAbsolute: (filePath: string): boolean => pathPolyfill.isAbsolute(filePath),
   relative: (from: string, to: string): string => pathPolyfill.relative(from, to),
-  get sep (): string { return pathPolyfill.sep },
-  get delimiter (): string { return pathPolyfill.delimiter },
-  get posix (): null { return null },
-  get win32 (): null { return null }
+  get sep(): string {
+    return pathPolyfill.sep
+  },
+  get delimiter(): string {
+    return pathPolyfill.delimiter
+  },
+  get posix(): null {
+    return null
+  },
+  get win32(): null {
+    return null
+  }
 }
 
 // ============================================================================
@@ -1276,17 +1325,29 @@ export const os = {
   homedir: async (): Promise<string> => {
     if (!isTauri()) return ''
     await tauriReady
-    try { return await tauriCore!.invoke('get_homedir') } catch (e) { return '' }
+    try {
+      return await tauriCore!.invoke('get_homedir')
+    } catch (e) {
+      return ''
+    }
   },
   tmpdir: async (): Promise<string> => {
     if (!isTauri()) return ''
     await tauriReady
-    try { return await tauriCore!.invoke('get_tmpdir') } catch (e) { return '' }
+    try {
+      return await tauriCore!.invoke('get_tmpdir')
+    } catch (e) {
+      return ''
+    }
   },
   platform: async (): Promise<string> => {
     if (!isTauri()) return ''
     await tauriReady
-    try { return await tauriCore!.invoke('get_platform') } catch (e) { return '' }
+    try {
+      return await tauriCore!.invoke('get_platform')
+    } catch (e) {
+      return ''
+    }
   },
   type: async (): Promise<string> => {
     if (!isTauri()) return ''
@@ -1294,28 +1355,42 @@ export const os = {
     try {
       const platform: string = await tauriCore!.invoke('get_platform')
       switch (platform) {
-        case 'windows': return 'Windows_NT'
-        case 'macos': return 'Darwin'
-        case 'linux': return 'Linux'
-        default: return platform
+        case 'windows':
+          return 'Windows_NT'
+        case 'macos':
+          return 'Darwin'
+        case 'linux':
+          return 'Linux'
+        default:
+          return platform
       }
-    } catch (e) { return '' }
+    } catch (e) {
+      return ''
+    }
   },
   arch: async (): Promise<string> => {
     if (!isTauri()) return ''
     await tauriReady
-    try { return await tauriCore!.invoke('get_arch') } catch (e) { return '' }
+    try {
+      return await tauriCore!.invoke('get_arch')
+    } catch (e) {
+      return ''
+    }
   },
   release: (): string => '',
   hostname: async (): Promise<string> => {
     if (!isTauri()) return ''
     await tauriReady
-    try { return await tauriCore!.invoke('get_hostname') } catch (e) { return '' }
+    try {
+      return await tauriCore!.invoke('get_hostname')
+    } catch (e) {
+      return ''
+    }
   },
   cpus: (): any[] => [],
   totalmem: (): number => 0,
   freemem: (): number => 0,
-  get EOL (): string {
+  get EOL(): string {
     return navigator.platform.startsWith('Win') ? '\r\n' : '\n'
   }
 }
@@ -1325,24 +1400,38 @@ export const os = {
 // ============================================================================
 
 export const processInfo = {
-  get platform (): string {
+  get platform(): string {
     const userAgent = navigator.userAgent.toLowerCase()
     if (userAgent.includes('win')) return 'win32'
     if (userAgent.includes('mac')) return 'darwin'
     if (userAgent.includes('linux')) return 'linux'
     return 'unknown'
   },
-  get arch (): string {
+  get arch(): string {
     return navigator.userAgent.includes('x64') ? 'x64' : 'x86'
   },
-  get versions (): Record<string, any> { return {} },
-  get env (): Record<string, any> { return {} },
+  get versions(): Record<string, any> {
+    return {}
+  },
+  get env(): Record<string, any> {
+    return {}
+  },
   cwd: (): string => '',
-  get argv (): string[] { return [] },
-  get execPath (): string { return '' },
-  get pid (): number { return 0 },
-  get ppid (): number { return 0 },
-  get resourcesPath (): string { return '' }
+  get argv(): string[] {
+    return []
+  },
+  get execPath(): string {
+    return ''
+  },
+  get pid(): number {
+    return 0
+  },
+  get ppid(): number {
+    return 0
+  },
+  get resourcesPath(): string {
+    return ''
+  }
 }
 
 // ============================================================================
@@ -1394,7 +1483,11 @@ export const childProcess = {
     console.warn('spawn not fully supported in Tauri')
     return null
   },
-  exec: async (command: string, options?: any, callback?: (err: Error | null, stdout?: string, stderr?: string) => void): Promise<any> => {
+  exec: async (
+    command: string,
+    options?: any,
+    callback?: (err: Error | null, stdout?: string, stderr?: string) => void
+  ): Promise<any> => {
     if (!isTauri()) {
       if (callback) callback(new Error('Tauri API not available'))
       return null
@@ -1409,7 +1502,12 @@ export const childProcess = {
       return null
     }
   },
-  execFile: (_file: string, _args?: string[], _options?: any, callback?: (err: Error | null, stdout?: string, stderr?: string) => void): null => {
+  execFile: (
+    _file: string,
+    _args?: string[],
+    _options?: any,
+    callback?: (err: Error | null, stdout?: string, stderr?: string) => void
+  ): null => {
     console.warn('execFile not fully supported in Tauri')
     if (callback) callback(new Error('Not supported'))
     return null
@@ -1467,10 +1565,20 @@ export const isMas: boolean = platformInfo.isMas
 
 // Markdown extensions matching the old version (common/filesystem/paths.js)
 const MARKDOWN_EXTENSIONS = [
-  '.markdown', '.mdown', '.mkdn', '.md', '.mkd', '.mdwn', '.mdtxt', '.mdtext', '.mdx', '.text', '.txt'
+  '.markdown',
+  '.mdown',
+  '.mkdn',
+  '.md',
+  '.mkd',
+  '.mdwn',
+  '.mdtxt',
+  '.mdtext',
+  '.mdx',
+  '.text',
+  '.txt'
 ]
 
-function hasMarkdownExtension (filename: string): boolean {
+function hasMarkdownExtension(filename: string): boolean {
   if (!filename) return false
   const lower = filename.toLowerCase()
   return MARKDOWN_EXTENSIONS.some(ext => lower.endsWith(ext))
@@ -1478,7 +1586,7 @@ function hasMarkdownExtension (filename: string): boolean {
 
 let dragDropInitialized = false
 
-export function initDragDrop (bus: any): void {
+export function initDragDrop(bus: any): void {
   if (dragDropInitialized || !isTauri()) return
   dragDropInitialized = true
 
@@ -1522,7 +1630,7 @@ export function initDragDrop (bus: any): void {
 
 let openFilesInitialized = false
 
-export function initOpenFilesListener (): void {
+export function initOpenFilesListener(): void {
   if (openFilesInitialized || !isTauri()) return
   openFilesInitialized = true
 
@@ -1552,7 +1660,7 @@ export function initOpenFilesListener (): void {
 let menuEventInitialized = false
 let _bus: any = null
 
-export function initMenuEvents (bus: any): void {
+export function initMenuEvents(bus: any): void {
   if (menuEventInitialized || !isTauri()) return
   menuEventInitialized = true
   _bus = bus
@@ -1562,14 +1670,14 @@ export function initMenuEvents (bus: any): void {
       console.warn('Tauri event API not loaded, cannot listen for menu events')
       return
     }
-    await tauriEvent.listen('menu-event', (event) => {
+    await tauriEvent.listen('menu-event', event => {
       const menuId = event.payload as string
       handleMenuAction(menuId)
     })
   })
 }
 
-function handleMenuAction (menuId: string): void {
+export function handleMenuAction(menuId: string): void {
   const menuActions: Record<string, () => void> = {
     // File
     'file.new-tab': () => ipcRenderer.emit('mt::new-untitled-tab', null),
@@ -1659,23 +1767,31 @@ function handleMenuAction (menuId: string): void {
     // Theme
     'theme.cadmium-light': () => ipcRenderer.send('mt::set-user-preference', { theme: 'light' }),
     'theme.dark': () => ipcRenderer.send('mt::set-user-preference', { theme: 'dark' }),
-    'theme.graphite-light': () => ipcRenderer.send('mt::set-user-preference', { theme: 'graphite' }),
-    'theme.material-dark': () => ipcRenderer.send('mt::set-user-preference', { theme: 'material-dark' }),
+    'theme.graphite-light': () =>
+      ipcRenderer.send('mt::set-user-preference', { theme: 'graphite' }),
+    'theme.material-dark': () =>
+      ipcRenderer.send('mt::set-user-preference', { theme: 'material-dark' }),
     'theme.one-dark': () => ipcRenderer.send('mt::set-user-preference', { theme: 'one-dark' }),
     'theme.ulysses-light': () => ipcRenderer.send('mt::set-user-preference', { theme: 'ulysses' }),
     // Window
     'window.toggle-always-on-top': () => ipcRenderer.send('mt::window-toggle-always-on-top', true),
     // Help
-    'help.quick-start': () => shell.openExternal('https://github.com/marktext/marktext/blob/develop/docs/QUICKSTART.md'),
-    'help.markdown-reference': () => shell.openExternal('https://github.com/marktext/marktext/blob/develop/docs/MARKDOWN_SYNTAX.md'),
-    'help.changelog': () => shell.openExternal('https://github.com/marktext/marktext/blob/develop/.github/CHANGELOG.md'),
+    'help.quick-start': () =>
+      shell.openExternal('https://github.com/marktext/marktext/blob/develop/docs/QUICKSTART.md'),
+    'help.markdown-reference': () =>
+      shell.openExternal(
+        'https://github.com/marktext/marktext/blob/develop/docs/MARKDOWN_SYNTAX.md'
+      ),
+    'help.changelog': () =>
+      shell.openExternal('https://github.com/marktext/marktext/blob/develop/.github/CHANGELOG.md'),
     'help.donate': () => shell.openExternal('https://opencollective.com/marktext'),
     'help.report-issue': () => shell.openExternal('https://github.com/marktext/marktext/issues'),
     'help.website': () => shell.openExternal('https://github.com/marktext/marktext'),
     'help.watch-on-github': () => shell.openExternal('https://github.com/marktext/marktext'),
-    'help.license': () => shell.openExternal('https://github.com/marktext/marktext/blob/develop/LICENSE'),
+    'help.license': () =>
+      shell.openExternal('https://github.com/marktext/marktext/blob/develop/LICENSE'),
     'help.check-update': () => ipcRenderer.send('mt::check-for-update'),
-    'help.about': () => _bus && _bus.$emit('aboutDialog'),
+    'help.about': () => _bus && _bus.$emit('aboutDialog')
   }
 
   const action = menuActions[menuId]
@@ -1729,7 +1845,7 @@ const tauriApiObject: TauriApiObject = {
 /**
  * Initialize Tauri API bridge
  */
-export function initTauriApi (): boolean {
+export function initTauriApi(): boolean {
   if (!isTauri()) return false
 
   if (typeof window !== 'undefined' && !window.electronAPI) {

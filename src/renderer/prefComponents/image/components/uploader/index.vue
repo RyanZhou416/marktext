@@ -11,16 +11,12 @@
       <cur-select
         :value="currentUploader"
         :options="uploaderOptions"
-        :onChange="(value) => setCurrentUploader(value)"
+        :onChange="value => setCurrentUploader(value)"
       ></cur-select>
       <div class="picgo" v-if="currentUploader === 'picgo'">
         <div v-if="!picgoExists" class="warning">
           {{ $t('settings.image.noPicgo') }}
-          <span
-            class="link"
-            @click="open('https://github.com/PicGo/PicGo-Core')"
-            >picgo</span
-          >
+          <span class="link" @click="open('https://github.com/PicGo/PicGo-Core')">picgo</span>
         </div>
       </div>
       <div class="github" v-if="currentUploader === 'github'">
@@ -30,44 +26,43 @@
         <div class="form-group">
           <div class="label">
             {{ $t('settings.image.githubToken') }}
-            <el-tooltip
-              class="item"
-              effect="dark"
-              :content="$t('settings.image.tokenStorageNote')"
-              placement="top-start"
-            >
+            <AppTooltip class="item" :content="$t('settings.image.tokenStorageNote')" side="top">
               <i class="el-icon-info"></i>
-            </el-tooltip>
+            </AppTooltip>
           </div>
-          <el-input
+          <input
             v-model="githubToken"
+            type="text"
+            class="pref-input"
             :placeholder="$t('settings.image.inputToken')"
-            size="mini"
-          ></el-input>
+          />
         </div>
         <div class="form-group">
           <div class="label">{{ $t('settings.image.ownerName') }}</div>
-          <el-input
+          <input
             v-model="github.owner"
+            type="text"
+            class="pref-input"
             :placeholder="$t('settings.image.owner')"
-            size="mini"
-          ></el-input>
+          />
         </div>
         <div class="form-group">
           <div class="label">{{ $t('settings.image.repoName') }}</div>
-          <el-input
+          <input
             v-model="github.repo"
+            type="text"
+            class="pref-input"
             :placeholder="$t('settings.image.repo')"
-            size="mini"
-          ></el-input>
+          />
         </div>
         <div class="form-group">
           <div class="label">{{ $t('settings.image.branchName') }}</div>
-          <el-input
+          <input
             v-model="github.branch"
+            type="text"
+            class="pref-input"
             :placeholder="$t('settings.image.branch')"
-            size="mini"
-          ></el-input>
+          />
         </div>
         <legal-notices-checkbox
           class="github"
@@ -75,12 +70,14 @@
           :uploaderService="uploadServices.github"
         ></legal-notices-checkbox>
         <div class="form-group">
-          <el-button
-            size="mini"
+          <button
+            type="button"
+            class="pref-btn pref-btn-primary"
             :disabled="githubDisable"
             @click="save('github')"
-            >{{ $t('settings.image.saveConfig') }}
-          </el-button>
+          >
+            {{ $t('settings.image.saveConfig') }}
+          </button>
         </div>
       </div>
       <div class="script" v-else-if="currentUploader === 'cliScript'">
@@ -89,19 +86,22 @@
         </div>
         <div class="form-group">
           <div class="label">{{ $t('settings.image.shellScriptLocation') }}</div>
-          <el-input
+          <input
             v-model="cliScript"
+            type="text"
+            class="pref-input"
             :placeholder="$t('settings.image.scriptPath')"
-            size="mini"
-          ></el-input>
+          />
         </div>
         <div class="form-group">
-          <el-button
-            size="mini"
+          <button
+            type="button"
+            class="pref-btn pref-btn-primary"
             :disabled="cliScriptDisable"
             @click="save('cliScript')"
-            >{{ $t('settings.image.saveConfig') }}
-          </el-button>
+          >
+            {{ $t('settings.image.saveConfig') }}
+          </button>
         </div>
       </div>
     </section>
@@ -114,18 +114,20 @@ import services, { isValidService } from './services.js'
 import legalNoticesCheckbox from './legalNoticesCheckbox'
 import { isFileExecutableSync } from '@/util/fileSystem'
 import CurSelect from '@/prefComponents/common/select'
-// commandExists was a Node.js module - in Tauri we use Rust backend
-const commandExists = { sync: () => false }
+import AppTooltip from '@/components/common/AppTooltip.vue'
 import notice from '@/services/notification'
 import { usePreferencesStore } from '@/stores/preferences'
+// commandExists was a Node.js module - in Tauri we use Rust backend
+const commandExists = { sync: () => false }
 
 export default {
   components: {
     legalNoticesCheckbox,
-    CurSelect
+    CurSelect,
+    AppTooltip
   },
-  data () {
-    this.uploaderOptions = Object.keys(services).map((name) => {
+  data() {
+    this.uploaderOptions = Object.keys(services).map(name => {
       const { name: label } = services[name]
       return {
         label,
@@ -168,10 +170,10 @@ export default {
         return usePreferencesStore().cliScript
       }
     },
-    githubDisable () {
+    githubDisable() {
       return !this.githubToken || !this.github.owner || !this.github.repo
     },
-    cliScriptDisable () {
+    cliScriptDisable() {
       if (!this.cliScript) {
         return true
       }
@@ -185,7 +187,7 @@ export default {
       }
     }
   },
-  created () {
+  created() {
     this.$nextTick(() => {
       this.github = this.imageBed.github
       this.githubToken = this.prefGithubToken
@@ -198,20 +200,20 @@ export default {
     })
   },
   methods: {
-    isValidUploaderService (name) {
+    isValidUploaderService(name) {
       return isValidService(name)
     },
 
-    getServiceNameById (id) {
+    getServiceNameById(id) {
       const service = services[id]
       return service ? service.name : id
     },
 
-    open (link) {
+    open(link) {
       shell.openExternal(link)
     },
 
-    save (type) {
+    save(type) {
       if (!this.validate(type)) {
         return
       }
@@ -245,17 +247,17 @@ export default {
       })
     },
 
-    setCurrentUploader (value) {
+    setCurrentUploader(value) {
       const type = 'currentUploader'
       const preferencesStore = usePreferencesStore()
       preferencesStore.SET_USER_DATA({ type, value })
     },
 
-    testPicgo () {
+    testPicgo() {
       this.picgoExists = commandExists.sync('picgo')
     },
 
-    validate (value) {
+    validate(value) {
       const service = services[value]
       const { agreedToLegalNotices } = service
       if (!agreedToLegalNotices) {
@@ -297,13 +299,33 @@ export default {
   & .label {
     margin-bottom: 10px;
   }
-  & .el-input__inner {
+  & .pref-input {
+    height: 30px;
+    border: 1px solid var(--floatBorderColor);
     background: var(--inputBgColor);
+    color: var(--editorColor);
+    border-radius: 4px;
+    padding: 0 8px;
+    outline: none;
+    font-size: 13px;
+    width: 100%;
+    box-sizing: border-box;
   }
-  & .el-input__wrapper {
-    background-color: var(--inputBgColor);
+  & .pref-btn {
+    padding: 6px 16px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 13px;
   }
-  & .el-button.btn-reset,
+  & .pref-btn-primary {
+    background: var(--themeColor);
+    color: #fff;
+    border: none;
+  }
+  & .pref-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
   & .button-group {
     margin-top: 30px;
   }

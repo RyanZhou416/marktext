@@ -1,33 +1,16 @@
 <template>
   <div class="tweet-dialog">
-    <el-dialog
-      v-model="showTweetDialog"
-      :show-close="false"
-      :modal="true"
-      custom-class="ag-dialog-table"
-      width="450px"
-    >
-      <template #header>
-        <div class="title">
-          <span>Send us feedback via tweet</span>
-        </div>
-      </template>
+    <AppDialog v-model:open="showTweetDialog" title="Send us feedback via tweet" width="450px">
       <div class="body">
         <div class="feeling">
           <div>What's your experience feelings?</div>
           <ul>
-            <li
-              :class="{ active: selectedFace === 'smile' }"
-              @click="faceClick('smile')"
-            >
+            <li :class="{ active: selectedFace === 'smile' }" @click="faceClick('smile')">
               <svg class="icon" aria-hidden="true">
                 <use xlink:href="#icon-smile"></use>
               </svg>
             </li>
-            <li
-              :class="{ active: selectedFace === 'sad' }"
-              @click="faceClick('sad')"
-            >
+            <li :class="{ active: selectedFace === 'sad' }" @click="faceClick('sad')">
               <svg class="icon" aria-hidden="true">
                 <use xlink:href="#icon-sad"></use>
               </svg>
@@ -36,12 +19,7 @@
         </div>
         <div class="feedback">
           <div>Tell us your feedback?</div>
-          <textarea
-            cols="30"
-            rows="10"
-            v-model="value"
-            ref="textarea"
-          ></textarea>
+          <textarea cols="30" rows="10" v-model="value" ref="textarea"></textarea>
         </div>
         <div class="buttons">
           <a href="javascript:;" class="github" @click="reportViaGithub">
@@ -63,30 +41,32 @@
           </a>
         </div>
       </div>
-    </el-dialog>
+    </AppDialog>
   </div>
 </template>
 
 <script lang="ts">
+import AppDialog from '@/components/common/AppDialog.vue'
 import { shell } from '../../util/tauri'
 import bus from '../../bus'
 
 export default {
-  data () {
+  components: { AppDialog },
+  data() {
     return {
       showTweetDialog: false,
       value: '',
       selectedFace: 'smile'
     }
   },
-  created () {
+  created() {
     bus.$on('tweetDialog', this.showDialog)
   },
-  beforeUnmount () {
+  beforeUnmount() {
     bus.$off('tweetDialog', this.showDialog)
   },
   methods: {
-    showDialog () {
+    showDialog() {
       this.showTweetDialog = true
       this.value = ''
       bus.$emit('editor-blur')
@@ -94,13 +74,13 @@ export default {
         this.$refs.textarea.focus()
       })
     },
-    faceClick (name) {
+    faceClick(name) {
       this.selectedFace = name
     },
-    reportViaGithub () {
+    reportViaGithub() {
       shell.openExternal('https://github.com/marktext/marktext/issues/new')
     },
-    reportViaTwitter () {
+    reportViaTwitter() {
       const { value, selectedFace } = this
       if (!value) return
       const origin = 'https://twitter.com/intent/tweet'
@@ -115,7 +95,7 @@ export default {
 
       shell.openExternal(
         `${origin}?${Object.keys(params)
-          .map((key) => `${key}=${params[key]}`)
+          .map(key => `${key}=${params[key]}`)
           .join('&')}`
       )
       this.showTweetDialog = false
@@ -127,16 +107,6 @@ export default {
 <style>
 .tweet-dialog {
   color: var(--sideBarColor);
-  & .title {
-    font-size: 24px;
-  }
-  & .el-dialog__header {
-    border-top-left-radius: 5px;
-    border-top-right-radius: 5px;
-  }
-  & .el-dialog__body {
-    color: var(--sideBarColor);
-  }
 }
 .tweet-dialog .feeling,
 .tweet-dialog .feedback {
@@ -218,9 +188,5 @@ export default {
     height: 1.4rem;
     vertical-align: bottom;
   }
-}
-.tweet-dialog .el-dialog__header {
-  background: var(--themeColor);
-  color: #fff;
 }
 </style>

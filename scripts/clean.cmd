@@ -31,7 +31,6 @@ echo   [JS]    .eslintcache               ESLint cache
 echo   [Rust]  src-tauri\target\          Rust build artifacts (debug + release)
 echo   [Rust]  src-tauri\gen\             Tauri generated code
 echo   [Rust]  src-tauri\Cargo.lock       Rust dependency lock
-echo   [Vite]  node_modules\.vite\        Vite dependency cache
 echo   [Env]   .tauri-env-ready           Environment setup marker
 echo   [Build] build\                     Electron build output (if any)
 echo.
@@ -146,14 +145,7 @@ echo.
 :: ==============================================================
 echo [5/5] Cleaning misc caches...
 
-:: Yarn cache (project-level)
-if exist ".yarn" (
-    rmdir /s /q ".yarn" 2>nul
-    echo   [OK] .yarn removed
-)
-
 :: Log files
-del /f /q "yarn-error.log" 2>nul
 del /f /q "npm-debug.log" 2>nul
 del /f /q "npm-debug.log.*" 2>nul
 

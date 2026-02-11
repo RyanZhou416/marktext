@@ -12,7 +12,7 @@ Before you can get started developing, you need set up your build environment:
 
 - [Rust](https://rustup.rs/) (stable toolchain)
 - [Node.js](https://nodejs.org/) v18+ (recommended to use [nvm](https://github.com/nvm-sh/nvm) or [nvm-windows](https://github.com/coreybutler/nvm-windows))
-- [Yarn](https://yarnpkg.com/) v1.x (`npm install -g yarn`)
+- [npm](https://www.npmjs.com/) v9+ (bundled with Node.js)
 - Platform-specific [Tauri prerequisites](https://v2.tauri.app/start/prerequisites/)
 - Build is supported on Linux, macOS and Windows
 
@@ -37,16 +37,16 @@ On Red Hat-based Linux: `sudo dnf install libX11-devel libxkbfile-devel libsecre
 ### Let's build
 
 1. Go to `marktext` folder
-2. Install dependencies: `yarn install`
-3. Development mode: `yarn tauri:dev`
-4. Production build: `yarn tauri:build`
+2. Install dependencies: `npm install`
+3. Development mode: `npm run tauri:dev`
+4. Production build: `npm run tauri:build`
 
 Build output is located in `src-tauri/target/release/bundle/`.
 
 ### Important scripts
 
 ```
-$ yarn run <script>
+$ npm run <script>
 ```
 
 | Script         | Description                                |

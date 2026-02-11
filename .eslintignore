@@ -9,3 +9,6 @@ src/muya/lib/assets/libs/*.js
 babel.config.js
 commitlint.config.js
 .eslintrc.js
+
+# Tools directory (legacy scripts, not part of the app)
+tools/

@@ -29,20 +29,43 @@ pub async fn create_editor_window(
         .unwrap_or_default();
 
     // Read saved preferences for early injection
-    let (language, title_bar_style) = app.try_state::<PreferencesState>()
-        .map(|state| {
-            let prefs = state.preferences.lock().unwrap();
-            let lang = prefs.get("language")
-                .and_then(|v| v.as_str())
-                .unwrap_or("en")
-                .to_string();
-            let tbs = prefs.get("titleBarStyle")
-                .and_then(|v| v.as_str())
-                .unwrap_or("custom")
-                .to_string();
-            (lang, tbs)
-        })
-        .unwrap_or_else(|| ("en".to_string(), "custom".to_string()));
+    let (language, title_bar_style, theme, code_font_family, code_font_size, hide_scrollbar) =
+        app.try_state::<PreferencesState>()
+            .map(|state| {
+                let prefs = state.preferences.lock().unwrap();
+                let lang = prefs.get("language")
+                    .and_then(|v| v.as_str())
+                    .unwrap_or("en")
+                    .to_string();
+                let tbs = prefs.get("titleBarStyle")
+                    .and_then(|v| v.as_str())
+                    .unwrap_or("custom")
+                    .to_string();
+                let th = prefs.get("theme")
+                    .and_then(|v| v.as_str())
+                    .unwrap_or("light")
+                    .to_string();
+                let cff = prefs.get("codeFontFamily")
+                    .and_then(|v| v.as_str())
+                    .unwrap_or("DejaVu Sans Mono")
+                    .to_string();
+                let cfs = prefs.get("codeFontSize")
+                    .and_then(|v| v.as_u64())
+                    .unwrap_or(14)
+                    .to_string();
+                let hs = prefs.get("hideScrollbar")
+                    .and_then(|v| v.as_bool())
+                    .unwrap_or(false);
+                (lang, tbs, th, cff, cfs, hs)
+            })
+            .unwrap_or_else(|| (
+                "en".to_string(),
+                "custom".to_string(),
+                "light".to_string(),
+                "DejaVu Sans Mono".to_string(),
+                "14".to_string(),
+                false,
+            ));
     let use_custom_titlebar = title_bar_style == "custom";
 
     let file_info = if let Some(ref fp) = file_path {
@@ -52,11 +75,15 @@ pub async fn create_editor_window(
     };
 
     let js = format!(
-        "window.__TAURI_ENV__ = {{ userDataPath: '{}', debug: {}, windowId: {}, type: 'editor', language: '{}', theme: 'light', codeFontFamily: 'DejaVu Sans Mono', codeFontSize: '14', hideScrollbar: false, titleBarStyle: '{}'{} }};",
+        "window.__TAURI_ENV__ = {{ userDataPath: '{}', debug: {}, windowId: {}, type: 'editor', language: '{}', theme: '{}', codeFontFamily: '{}', codeFontSize: '{}', hideScrollbar: {}, titleBarStyle: '{}'{} }};",
         user_data_path.replace('\\', "\\\\").replace('\'', "\\'"),
         if cfg!(debug_assertions) { "true" } else { "false" },
         1,
         language,
+        theme,
+        code_font_family,
+        code_font_size,
+        hide_scrollbar,
         title_bar_style,
         file_info,
     );
@@ -72,7 +99,7 @@ pub async fn create_editor_window(
     .min_inner_size(600.0, 400.0)
     .resizable(true)
     .decorations(!use_custom_titlebar)
-    .focused(true)
+    .visible(false) // Start hidden to avoid flash; frontend calls show_main_window when ready
     .initialization_script(&js)
     .build()
     .map_err(|e| format!("Failed to create window: {}", e))?;
@@ -105,27 +132,54 @@ pub async fn create_settings_window(
         .map(|p| p.to_string_lossy().to_string())
         .unwrap_or_default();
 
-    let (language, title_bar_style) = app.try_state::<PreferencesState>()
-        .map(|state| {
-            let prefs = state.preferences.lock().unwrap();
-            let lang = prefs.get("language")
-                .and_then(|v| v.as_str())
-                .unwrap_or("en")
-                .to_string();
-            let tbs = prefs.get("titleBarStyle")
-                .and_then(|v| v.as_str())
-                .unwrap_or("custom")
-                .to_string();
-            (lang, tbs)
-        })
-        .unwrap_or_else(|| ("en".to_string(), "custom".to_string()));
+    let (language, title_bar_style, theme, code_font_family, code_font_size, hide_scrollbar) =
+        app.try_state::<PreferencesState>()
+            .map(|state| {
+                let prefs = state.preferences.lock().unwrap();
+                let lang = prefs.get("language")
+                    .and_then(|v| v.as_str())
+                    .unwrap_or("en")
+                    .to_string();
+                let tbs = prefs.get("titleBarStyle")
+                    .and_then(|v| v.as_str())
+                    .unwrap_or("custom")
+                    .to_string();
+                let th = prefs.get("theme")
+                    .and_then(|v| v.as_str())
+                    .unwrap_or("light")
+                    .to_string();
+                let cff = prefs.get("codeFontFamily")
+                    .and_then(|v| v.as_str())
+                    .unwrap_or("DejaVu Sans Mono")
+                    .to_string();
+                let cfs = prefs.get("codeFontSize")
+                    .and_then(|v| v.as_u64())
+                    .unwrap_or(14)
+                    .to_string();
+                let hs = prefs.get("hideScrollbar")
+                    .and_then(|v| v.as_bool())
+                    .unwrap_or(false);
+                (lang, tbs, th, cff, cfs, hs)
+            })
+            .unwrap_or_else(|| (
+                "en".to_string(),
+                "custom".to_string(),
+                "light".to_string(),
+                "DejaVu Sans Mono".to_string(),
+                "14".to_string(),
+                false,
+            ));
     let use_custom_titlebar = title_bar_style == "custom";
 
     let js = format!(
-        "window.__TAURI_ENV__ = {{ userDataPath: '{}', debug: {}, windowId: 2, type: 'settings', language: '{}', theme: 'light', codeFontFamily: 'DejaVu Sans Mono', codeFontSize: '14', hideScrollbar: false, titleBarStyle: '{}' }};",
+        "window.__TAURI_ENV__ = {{ userDataPath: '{}', debug: {}, windowId: 2, type: 'settings', language: '{}', theme: '{}', codeFontFamily: '{}', codeFontSize: '{}', hideScrollbar: {}, titleBarStyle: '{}' }};",
         user_data_path.replace('\\', "\\\\").replace('\'', "\\'"),
         if cfg!(debug_assertions) { "true" } else { "false" },
         language,
+        theme,
+        code_font_family,
+        code_font_size,
+        hide_scrollbar,
         title_bar_style,
     );
 
@@ -140,7 +194,7 @@ pub async fn create_settings_window(
     .min_inner_size(600.0, 400.0)
     .resizable(true)
     .decorations(!use_custom_titlebar)
-    .focused(true)
+    .visible(false) // Start hidden to avoid flash; frontend calls show_settings_window when ready
     .initialization_script(&js)
     .build()
     .map_err(|e| format!("Failed to create settings window: {}", e))?;
@@ -227,6 +281,16 @@ pub async fn set_always_on_top(window: tauri::WebviewWindow, always_on_top: bool
 pub async fn show_main_window(window: tauri::WebviewWindow) -> Result<(), String> {
     window.show().map_err(|e| e.to_string())?;
     window.set_focus().map_err(|e| e.to_string())?;
+    Ok(())
+}
+
+/// Show the settings window (called by frontend when it's ready, to avoid startup flash)
+#[tauri::command]
+pub async fn show_settings_window(app: tauri::AppHandle) -> Result<(), String> {
+    if let Some(window) = app.get_webview_window("settings") {
+        window.show().map_err(|e| e.to_string())?;
+        window.set_focus().map_err(|e| e.to_string())?;
+    }
     Ok(())
 }
 

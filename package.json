@@ -6,7 +6,7 @@
   "license": "MIT",
   "engines": {
     "node": ">=18.0.0",
-    "yarn": ">=1.22.0"
+    "npm": ">=9.0.0"
   },
   "scripts": {
     "dev": "vite --config vite.config.mjs",
@@ -19,12 +19,12 @@
     "vite:build": "vite build --config vite.config.mjs",
     "vite:preview": "vite preview --config vite.config.mjs",
     "build:clean": "rimraf out dist",
-    "e2e": "yarn build && cross-env MARKTEXT_EXIT_ON_ERROR=1 playwright test -c test/e2e/playwright.config.js test/e2e",
+    "e2e": "npm run build && cross-env MARKTEXT_EXIT_ON_ERROR=1 playwright test -c test/e2e/playwright.config.js test/e2e",
     "lint": "eslint --ext .js,.ts,.vue src test",
     "lint:fix": "eslint --ext .js,.ts,.vue --fix src test",
     "format": "prettier --write \"src/**/*.{js,ts,vue,css,json}\" \"test/**/*.{js,ts}\"",
     "format:check": "prettier --check \"src/**/*.{js,ts,vue,css,json}\" \"test/**/*.{js,ts}\"",
-    "test": "yarn run e2e",
+    "test": "npm run e2e",
     "test:specs": "node -r esm test/specs/commonMark/run.spec.js && node -r esm test/specs/gfm/run.spec.js",
     "build:muya": "cd src/muya && webpack --progress --config webpack.config.js",
     "gen-third-party": "node tools/generateThirdPartyLicense.js",
@@ -32,7 +32,6 @@
     "prepare": "husky"
   },
   "dependencies": {
-    "@element-plus/icons-vue": "^2.3.0",
     "@marktext/file-icons": "^1.0.6",
     "@octokit/rest": "^18.12.0",
     "@tauri-apps/api": "^2.0.0",
@@ -43,13 +42,13 @@
     "@tauri-apps/plugin-process": "^2.0.0",
     "@tauri-apps/plugin-shell": "^2.0.0",
     "@tauri-apps/plugin-window-state": "^2.0.0",
+    "@vueuse/core": "^14.2.1",
     "axios": "^0.26.1",
     "codemirror": "^5.65.2",
     "dayjs": "^1.11.0",
     "dom-autoscroller": "^2.3.4",
     "dompurify": "^2.3.6",
     "dragula": "^3.7.3",
-    "element-plus": "^2.5.0",
     "element-resize-detector": "^1.2.4",
     "eve": "^0.5.4",
     "execall": "^2.0.0",
@@ -67,6 +66,7 @@
     "pinia": "^2.1.0",
     "popper.js": "^1.16.1",
     "prismjs": "^1.27.0",
+    "radix-vue": "^1.9.17",
     "snabbdom": "^3.4.0",
     "snabbdom-to-html": "^7.0.0",
     "turndown": "^7.1.1",
@@ -78,6 +78,7 @@
     "vue": "^3.4.0",
     "vue-i18n": "^10",
     "vue-router": "^4.2.0",
+    "vue-sonner": "^2.0.9",
     "webfontloader": "^1.6.28"
   },
   "devDependencies": {

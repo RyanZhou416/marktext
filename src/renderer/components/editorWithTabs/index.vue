@@ -1,25 +1,25 @@
 <template>
-    <div
-      class="editor-with-tabs"
-      :style="{'max-width': showSideBar ? `calc(100vw - ${sideBarWidth}px` : '100vw' }"
-    >
-      <tabs v-show="showTabBar"></tabs>
-      <div class="container">
-        <editor
-          :markdown="markdown"
-          :cursor="cursor"
-          :text-direction="textDirection"
-          :platform="platform"
-        ></editor>
-        <source-code
-          v-if="sourceCode"
-          :markdown="markdown"
-          :cursor="cursor"
-          :text-direction="textDirection"
-        ></source-code>
-      </div>
-      <tab-notifications></tab-notifications>
+  <div
+    class="editor-with-tabs"
+    :style="{ 'max-width': showSideBar ? `calc(100% - ${sideBarWidth}px)` : '100%' }"
+  >
+    <tabs v-show="showTabBar"></tabs>
+    <div class="container">
+      <editor
+        :markdown="markdown"
+        :cursor="cursor"
+        :text-direction="textDirection"
+        :platform="platform"
+      ></editor>
+      <source-code
+        v-if="sourceCode"
+        :markdown="markdown"
+        :cursor="cursor"
+        :text-direction="textDirection"
+      ></source-code>
     </div>
+    <tab-notifications></tab-notifications>
+  </div>
 </template>
 
 <script lang="ts">
@@ -37,7 +37,7 @@ export default {
       required: true
     },
     cursor: {
-      validator (value) {
+      validator(value) {
         return typeof value === 'object'
       },
       required: true
@@ -72,18 +72,18 @@ export default {
 </script>
 
 <style scoped>
-  .editor-with-tabs {
-    position: relative;
-    height: 100%;
-    flex: 1;
-    display: flex;
-    flex-direction: column;
+.editor-with-tabs {
+  position: relative;
+  height: 100%;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
 
+  overflow: hidden;
+  background: var(--editorBgColor);
+  & > .container {
+    flex: 1;
     overflow: hidden;
-    background: var(--editorBgColor);
-    & > .container {
-      flex: 1;
-      overflow: hidden;
-    }
   }
+}
 </style>

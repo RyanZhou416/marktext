@@ -3,28 +3,41 @@
     <div class="description">
       <span>{{ description }}:</span>
       <i class="el-icon-info" v-if="more" @click="handleMoreClick"></i>
-      <el-tooltip
+      <AppTooltip
         v-else-if="detailedDescription"
         :content="detailedDescription"
         class="item"
-        effect="dark"
-        placement="top-start"
+        side="top"
       >
         <i class="el-icon-info"></i>
-      </el-tooltip>
+      </AppTooltip>
       <span v-if="notes" class="notes">
         {{ notes }}
       </span>
     </div>
-    <el-switch v-model="status" @change="handleSwitchChange"> </el-switch>
+    <SwitchRoot
+      v-model:checked="status"
+      class="pref-switch-root"
+      :disabled="disable"
+      @update:checked="handleSwitchChange"
+    >
+      <SwitchThumb class="pref-switch-thumb" />
+    </SwitchRoot>
   </section>
 </template>
 
 <script lang="ts">
 import { ref, watch } from 'vue'
+import { SwitchRoot, SwitchThumb } from 'radix-vue'
 import { shell } from '../../../util/tauri'
+import AppTooltip from '@/components/common/AppTooltip.vue'
 
 export default {
+  components: {
+    AppTooltip,
+    SwitchRoot,
+    SwitchThumb
+  },
   props: {
     description: String,
     notes: String,
@@ -37,16 +50,19 @@ export default {
       default: false
     }
   },
-  setup (props) {
+  setup(props) {
     // Reactive state
     const status = ref(props.bool)
 
     // Watch for prop changes
-    watch(() => props.bool, (newValue, oldValue) => {
-      if (newValue !== oldValue) {
-        status.value = newValue
+    watch(
+      () => props.bool,
+      (newValue, oldValue) => {
+        if (newValue !== oldValue) {
+          status.value = newValue
+        }
       }
-    })
+    )
 
     // Methods
     const handleMoreClick = () => {
@@ -55,7 +71,7 @@ export default {
       }
     }
 
-    const handleSwitchChange = (value) => {
+    const handleSwitchChange = (value: boolean) => {
       props.onChange(value)
     }
 
@@ -95,24 +111,40 @@ export default {
   }
 }
 
-span.el-switch__core::after {
-  top: 3px;
-  left: 7px;
-  width: 10px;
-  height: 10px;
+.pref-switch-root {
+  width: 36px;
+  height: 20px;
+  border-radius: 10px;
+  background: var(--floatBorderColor);
+  position: relative;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: background 0.2s ease;
 }
 
-.el-switch .el-switch__core {
-  border: 2px solid var(--iconColor);
-  background: transparent;
-  box-sizing: border-box;
+.pref-switch-root[data-state='checked'] {
+  background: var(--themeColor);
 }
 
-span.el-switch__label {
-  color: var(--editorColor50);
+.pref-switch-root[data-disabled] {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
-.el-switch:not(.is-checked) .el-switch__core::after {
-  background: var(--iconColor);
+.pref-switch-thumb {
+  display: block;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: white;
+  transition: transform 0.2s ease;
+  transform: translateX(2px);
+  position: absolute;
+  top: 2px;
+  left: 0;
+}
+
+.pref-switch-root[data-state='checked'] .pref-switch-thumb {
+  transform: translateX(18px);
 }
 </style>

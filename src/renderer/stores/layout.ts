@@ -1,47 +1,43 @@
 import { defineStore } from 'pinia'
+import { useStorage } from '@vueuse/core'
 import { ipcRenderer } from '../util/tauri'
 import bus from '../bus'
 
-const storedWidth = localStorage.getItem('side-bar-width')
-const initialSideBarWidth = typeof +storedWidth! === 'number' ? Math.max(+storedWidth!, 220) : 280
+const storedSideBarWidth = useStorage('side-bar-width', 280)
 
 export const useLayoutStore = defineStore('layout', {
   state: () => ({
     rightColumn: 'files' as string,
     showSideBar: false,
     showTabBar: false,
-    sideBarWidth: initialSideBarWidth
+    sideBarWidth: Math.max(storedSideBarWidth.value, 220)
   }),
 
   actions: {
-    SET_LAYOUT (layout: Record<string, any>) {
+    SET_LAYOUT(layout: Record<string, any>) {
       if (layout.showSideBar !== undefined) {
         const { windowId } = (window as any).marktext.env
-        ipcRenderer.send(
-          'mt::update-sidebar-menu',
-          windowId,
-          !!layout.showSideBar
-        )
+        ipcRenderer.send('mt::update-sidebar-menu', windowId, !!layout.showSideBar)
       }
       Object.assign(this, layout)
     },
 
-    TOGGLE_LAYOUT_ENTRY (entryName: string) {
-      (this as any)[entryName] = !(this as any)[entryName]
+    TOGGLE_LAYOUT_ENTRY(entryName: string) {
+      ;(this as any)[entryName] = !(this as any)[entryName]
     },
 
-    SET_SIDE_BAR_WIDTH (width: number) {
-      localStorage.setItem('side-bar-width', String(Math.max(+width, 220)))
+    SET_SIDE_BAR_WIDTH(width: number) {
+      const clamped = Math.max(+width, 220)
+      storedSideBarWidth.value = clamped
       this.sideBarWidth = width
     },
 
-    LISTEN_FOR_LAYOUT () {
+    LISTEN_FOR_LAYOUT() {
       ipcRenderer.on('mt::set-view-layout', (e: any, layout: any) => {
         if (layout.rightColumn) {
           this.SET_LAYOUT({
             ...layout,
-            rightColumn:
-              layout.rightColumn === this.rightColumn ? '' : layout.rightColumn,
+            rightColumn: layout.rightColumn === this.rightColumn ? '' : layout.rightColumn,
             showSideBar: true
           })
         } else {
@@ -64,7 +60,7 @@ export const useLayoutStore = defineStore('layout', {
       })
     },
 
-    DISPATCH_LAYOUT_MENU_ITEMS () {
+    DISPATCH_LAYOUT_MENU_ITEMS() {
       const { windowId } = (window as any).marktext.env
       const { showTabBar, showSideBar } = this
       ipcRenderer.send('mt::view-layout-changed', windowId, {
@@ -73,7 +69,7 @@ export const useLayoutStore = defineStore('layout', {
       })
     },
 
-    CHANGE_SIDE_BAR_WIDTH (width: number) {
+    CHANGE_SIDE_BAR_WIDTH(width: number) {
       this.SET_SIDE_BAR_WIDTH(width)
     }
   }

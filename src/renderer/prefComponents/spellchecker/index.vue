@@ -14,9 +14,7 @@
           :description="$t('settings.spelling.hideMarks')"
           :bool="spellcheckerNoUnderline"
           :disable="!spellcheckerEnabled"
-          :onChange="
-            (value) => onSelectChange('spellcheckerNoUnderline', value)
-          "
+          :onChange="value => onSelectChange('spellcheckerNoUnderline', value)"
         ></bool>
         <bool
           v-show="isOsx"
@@ -42,26 +40,32 @@
     <div v-if="!isOsx && spellcheckerEnabled">
       <h6 class="title">{{ $t('settings.spelling.customDictionary') }}</h6>
       <div class="description">{{ $t('settings.spelling.editWords') }}</div>
-      <el-table
-        :data="wordsInCustomDictionary"
-        :empty-text="$t('settings.spelling.noWords')"
-        style="width: 100%"
-      >
-        <el-table-column prop="word" :label="$t('settings.spelling.word')"> </el-table-column>
-
-        <el-table-column fixed="right" :label="$t('settings.spelling.options')" width="90">
-          <template #default="scope">
-            <el-button
-              @click="handleDeleteClick(scope.row)"
-              type="text"
-              size="small"
-              :title="$t('common.delete')"
-            >
-              <i class="el-icon-delete"></i>
-            </el-button>
-          </template>
-        </el-table-column>
-      </el-table>
+      <table class="pref-table">
+        <thead>
+          <tr>
+            <th>{{ $t('settings.spelling.word') }}</th>
+            <th>{{ $t('settings.spelling.options') }}</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr v-for="(item, index) in wordsInCustomDictionary" :key="item.word + '-' + index">
+            <td>{{ item.word }}</td>
+            <td>
+              <button
+                type="button"
+                class="btn-icon"
+                @click="handleDeleteClick(item)"
+                :title="$t('common.delete')"
+              >
+                <i class="el-icon-delete"></i>
+              </button>
+            </td>
+          </tr>
+          <tr v-if="!wordsInCustomDictionary.length">
+            <td colspan="2" class="empty">{{ $t('settings.spelling.noWords') }}</td>
+          </tr>
+        </tbody>
+      </table>
     </div>
   </div>
 </template>
@@ -87,7 +91,7 @@ export default {
     CurSelect,
     Separator
   },
-  data () {
+  data() {
     this.isOsx = isOsx
     return {
       availableDictionaries: [],
@@ -102,44 +106,42 @@ export default {
       'spellcheckerLanguage'
     ])
   },
-  mounted () {
+  mounted() {
     if (!isOsx) {
-      this.getAvailableDictionaries().then((dicts) => {
+      this.getAvailableDictionaries().then(dicts => {
         this.availableDictionaries = dicts
       })
 
-      ipcRenderer
-        .invoke('mt::spellchecker-get-custom-dictionary-words')
-        .then((words) => {
-          this.wordsInCustomDictionary = words.map((word) => {
-            return { word }
-          })
+      ipcRenderer.invoke('mt::spellchecker-get-custom-dictionary-words').then(words => {
+        this.wordsInCustomDictionary = words.map(word => {
+          return { word }
         })
+      })
     }
   },
   methods: {
-    async getAvailableDictionaries () {
+    async getAvailableDictionaries() {
       const dictionaries = await SpellChecker.getAvailableDictionaries()
-      return dictionaries.map((selectedItem) => {
+      return dictionaries.map(selectedItem => {
         return {
           value: selectedItem,
           label: getLanguageName(selectedItem)
         }
       })
     },
-    async ensureDictLanguage (lang) {
+    async ensureDictLanguage(lang) {
       if (!this.spellchecker) {
         this.spellchecker = new SpellChecker(true, 'en-US')
       }
       await this.spellchecker.switchLanguage(lang)
     },
 
-    handleSpellcheckerLanguage (languageCode) {
+    handleSpellcheckerLanguage(languageCode) {
       this.ensureDictLanguage(languageCode)
         .then(() => {
           this.onSelectChange('spellcheckerLanguage', languageCode)
         })
-        .catch((error) => {
+        .catch(error => {
           log.error(error)
           notice.notify({
             title: this.$t('settings.spelling.failedSwitch'),
@@ -148,23 +150,22 @@ export default {
           })
         })
     },
-    handleSpellcheckerEnabled (isEnabled) {
+    handleSpellcheckerEnabled(isEnabled) {
       this.onSelectChange('spellcheckerEnabled', isEnabled)
     },
-    onSelectChange (type, value) {
+    onSelectChange(type, value) {
       const preferencesStore = usePreferencesStore()
       preferencesStore.SET_SINGLE_PREFERENCE({ type, value })
     },
-    handleDeleteClick (selectedItem) {
+    handleDeleteClick(selectedItem) {
       if (selectedItem && typeof selectedItem.word === 'string') {
         ipcRenderer
           .invoke('mt::spellchecker-remove-word', selectedItem.word)
-          .then((success) => {
+          .then(success => {
             if (success) {
-              this.wordsInCustomDictionary =
-                this.wordsInCustomDictionary.filter(
-                  (item) => item.word !== selectedItem.word
-                )
+              this.wordsInCustomDictionary = this.wordsInCustomDictionary.filter(
+                item => item.word !== selectedItem.word
+              )
             } else {
               notice.notify({
                 title: this.$t('settings.spelling.failedRemove'),
@@ -173,7 +174,7 @@ export default {
               })
             }
           })
-          .catch((error) => log.error(error))
+          .catch(error => log.error(error))
       }
     }
   }
@@ -194,90 +195,44 @@ export default {
     margin-bottom: 0;
   }
 }
-.el-table,
-.el-table__expanded-cell {
-  background: var(--editorBgColor);
+.pref-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
 }
-.el-table button {
+.pref-table th {
+  background: var(--itemBgColor);
+  color: var(--editorColor);
+  font-weight: 600;
+  padding: 8px 12px;
+  text-align: left;
+  border-bottom: 2px solid var(--floatBorderColor);
+}
+.pref-table td {
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--floatBorderColor);
+  color: var(--editorColor);
+}
+.pref-table tbody tr:hover {
+  background: var(--floatHoverColor);
+}
+.pref-table td.empty {
+  text-align: center;
+  color: var(--iconColor);
+}
+.pref-table .btn-icon {
   padding: 1px 2px;
   margin: 5px 10px;
   color: var(--themeColor);
   background: none;
   border: none;
+  cursor: pointer;
+  font-size: 13px;
 }
-.el-table button:hover,
-.el-table button:active {
+.pref-table .btn-icon:hover,
+.pref-table .btn-icon:active {
   opacity: 0.9;
   background: none;
   border: none;
-}
-</style>
-<style>
-.pref-spellchecker .el-table table {
-  margin: 0;
-  border: none;
-}
-.pref-spellchecker .el-table th,
-.pref-spellchecker .el-table tr {
-  background: var(--editorBgColor);
-}
-.pref-spellchecker .el-table th.el-table__cell.is-leaf,
-.pref-spellchecker .el-table th,
-.pref-spellchecker .el-table td {
-  border: none;
-}
-.pref-spellchecker .el-table th.el-table__cell.is-leaf:last-child,
-.pref-spellchecker .el-table th:last-child,
-.pref-spellchecker .el-table td:last-child {
-  border-right: 1px solid var(--tableBorderColor);
-}
-.pref-spellchecker .el-table--border::after,
-.pref-spellchecker .el-table--group::after,
-.pref-spellchecker .el-table::before,
-.pref-spellchecker .el-table__fixed-right::before,
-.pref-spellchecker .el-table__fixed::before {
-  background: var(--tableBorderColor);
-}
-.pref-spellchecker .el-table__body tr.hover-row.current-row > td,
-.pref-spellchecker
-  .el-table__body
-  tr.hover-row.el-table__row--striped.current-row
-  > td,
-.pref-spellchecker .el-table__body tr.hover-row.el-table__row--striped > td,
-.pref-spellchecker .el-table__body tr.hover-row > td {
-  background: var(--selectionColor);
-}
-.pref-spellchecker .el-table .el-table__cell {
-  padding: 2px 0;
-  margin: 4px 6px;
-}
-
-.pref-spellchecker li.el-select-dropdown__item {
-  color: var(--editorColor);
-  height: 30px;
-}
-.pref-spellchecker li.el-select-dropdown__item.hover,
-li.el-select-dropdown__item:hover {
-  background: var(--floatHoverColor);
-}
-.pref-spellchecker div.el-select-dropdown {
-  background: var(--floatBgColor);
-  border-color: var(--floatBorderColor);
-  & .popper__arrow {
-    display: none;
-  }
-}
-.pref-spellchecker input.el-input__inner {
-  height: 30px;
-  background: var(--inputBgColor);
-  color: var(--editorColor);
-  border-color: var(--editorColor10);
-}
-.pref-spellchecker .el-input__wrapper {
-  background-color: var(--inputBgColor);
-}
-.pref-spellchecker .el-input__icon,
-.pref-spellchecker .el-input__inner {
-  line-height: 30px;
 }
 </style>

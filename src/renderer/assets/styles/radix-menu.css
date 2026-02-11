@@ -1,0 +1,112 @@
+/* ══════════════════════════════════════════════
+   Radix Menu — shared styles for DropdownMenu & ContextMenu
+   Uses existing CSS variables for theming
+   ══════════════════════════════════════════════ */
+
+/* ── Menu panel (shared by all levels) ── */
+.radix-menu-content {
+  min-width: 160px;
+  background: var(--floatBgColor);
+  border: 1px solid var(--floatBorderColor);
+  border-radius: 4px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  padding: 4px 0;
+  z-index: 10001;
+  animation-duration: 120ms;
+  animation-timing-function: ease-out;
+}
+.radix-menu-content[data-side='bottom'] {
+  animation-name: radix-menu-slide-down;
+}
+.radix-menu-content[data-side='right'] {
+  animation-name: radix-menu-slide-right;
+}
+
+@keyframes radix-menu-slide-down {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+@keyframes radix-menu-slide-right {
+  from {
+    opacity: 0;
+    transform: translateX(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+/* ── Menu item (base) ── */
+.radix-menu-item {
+  display: flex;
+  align-items: center;
+  height: 28px;
+  padding: 0 12px 0 24px;
+  font-size: 13px;
+  color: var(--editorColor);
+  cursor: default;
+  user-select: none;
+  white-space: nowrap;
+  outline: none;
+  position: relative;
+  border-radius: 2px;
+  margin: 0 4px;
+}
+.radix-menu-item[data-highlighted] {
+  background: var(--floatHoverColor);
+}
+.radix-menu-item[data-disabled] {
+  color: var(--editorColor30);
+  pointer-events: none;
+}
+
+/* ── Sub-trigger: extra right padding for arrow ── */
+.radix-menu-sub-trigger {
+  padding-right: 24px;
+}
+
+/* ── Indicator (check ✓ / radio ●) — absolutely positioned in left padding ── */
+.radix-menu-indicator {
+  position: absolute;
+  left: 4px;
+  width: 20px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+}
+
+/* ── Label ── */
+.radix-menu-label {
+  flex: 1;
+}
+
+/* ── Accelerator / shortcut ── */
+.radix-menu-accel {
+  margin-left: 28px;
+  color: var(--editorColor30);
+  font-size: 12px;
+  flex-shrink: 0;
+}
+
+/* ── Submenu arrow ── */
+.radix-menu-arrow {
+  position: absolute;
+  right: 8px;
+  font-size: 9px;
+  color: var(--editorColor30);
+}
+
+/* ── Separator ── */
+.radix-menu-separator {
+  height: 1px;
+  margin: 4px 8px;
+  background: var(--floatBorderColor);
+}

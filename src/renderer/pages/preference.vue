@@ -1,15 +1,13 @@
 <template>
-  <div class="pref-container">
+  <div class="pref-container" v-if="init">
     <title-bar v-if="showCustomTitleBar"></title-bar>
     <side-bar></side-bar>
-    <div
-      class="pref-content"
-      :class="{ frameless: titleBarStyle === 'custom' || isOsx }"
-    >
+    <div class="pref-content" :class="{ frameless: titleBarStyle === 'custom' || isOsx }">
       <div class="title-bar" v-if="!showCustomTitleBar"></div>
       <router-view class="pref-setting"></router-view>
     </div>
   </div>
+  <div class="pref-placeholder" v-else></div>
 </template>
 
 <script lang="ts">
@@ -23,11 +21,13 @@ import { DEFAULT_STYLE } from '@/config'
 import { isOsx } from '@/util'
 
 export default {
-  data () {
+  data() {
     this.isOsx = isOsx
-    return {}
+    return {
+      init: false
+    }
   },
-  setup () {
+  setup() {
     const { hideLoadingPage } = useLoadingPage()
     return { hideLoadingPage }
   },
@@ -37,7 +37,7 @@ export default {
   },
   computed: {
     ...mapState(usePreferencesStore, ['theme', 'titleBarStyle']),
-    showCustomTitleBar () {
+    showCustomTitleBar() {
       return this.titleBarStyle === 'custom' && !this.isOsx
     }
   },
@@ -48,29 +48,48 @@ export default {
       }
     }
   },
-  created () {
-    this.$nextTick(() => {
+  created() {
+    this.$nextTick(async () => {
       const state = window.marktext.initialState || DEFAULT_STYLE
       addThemeStyle(state.theme)
 
       usePreferencesStore().ASK_FOR_USER_PREFERENCE()
-      this.hideLoadingPage()
+
+      // Set init flag to render content
+      this.init = true
+
+      // Wait for next tick so DOM is ready, then show window and hide loading page
+      this.$nextTick(async () => {
+        this.hideLoadingPage()
+        // Show the window now that UI is ready (avoids startup flash)
+        try {
+          const { invoke } = await import('@tauri-apps/api/core')
+          await invoke('show_settings_window')
+        } catch (e) {
+          console.error('Failed to show settings window:', e)
+        }
+      })
     })
   }
 }
 </script>
 
 <style>
+.pref-placeholder {
+  width: 100%;
+  height: 100%;
+  background: var(--editorBgColor);
+}
 .pref-container {
   --prefSideBarWidth: 280px;
 
-  width: 100vw;
-  height: 100vh;
-  max-width: 100vw;
-  max-height: 100vh;
+  width: 100%;
+  height: 100%;
   position: fixed;
   top: 0;
   left: 0;
+  right: 0;
+  bottom: 0;
   display: flex;
   background: var(--editorBgColor);
 
@@ -88,7 +107,7 @@ export default {
     flex: 1;
     display: flex;
     flex-direction: column;
-    max-width: calc(100vw - var(--prefSideBarWidth));
+    max-width: calc(100% - var(--prefSideBarWidth));
     & .title-bar {
       width: 100%;
       height: var(--titleBarHeight);
