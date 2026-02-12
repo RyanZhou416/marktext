@@ -7,16 +7,14 @@ import { useEditorStore } from '../stores/editor'
  * Composable for file operations
  * Replaces fileMixins
  */
-export function useFile () {
+export function useFile() {
   const editorStore = useEditorStore()
 
-  function handleSearchResultClick (searchMatch, searchResult) {
+  function handleSearchResultClick(searchMatch, searchResult) {
     const { range } = searchMatch
     const { filePath } = searchResult
 
-    const openedTab = editorStore.tabs.find((file) =>
-      isSamePathSync(file.pathname, filePath)
-    )
+    const openedTab = editorStore.tabs.find(file => isSamePathSync(file.pathname, filePath))
     const cursor = {
       isCollapsed: range[0][0] !== range[1][0],
       anchor: {
@@ -50,12 +48,10 @@ export function useFile () {
     }
   }
 
-  function handleFileClick (file) {
+  function handleFileClick(file) {
     const { isMarkdown, pathname } = file
     if (!isMarkdown) return
-    const openedTab = editorStore.tabs.find((f) =>
-      isSamePathSync(f.pathname, pathname)
-    )
+    const openedTab = editorStore.tabs.find(f => isSamePathSync(f.pathname, pathname))
     if (openedTab) {
       if (editorStore.currentFile === openedTab) {
         return

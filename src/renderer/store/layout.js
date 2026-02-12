@@ -15,21 +15,17 @@ const state = {
 const getters = {}
 
 const mutations = {
-  SET_LAYOUT (state, layout) {
+  SET_LAYOUT(state, layout) {
     if (layout.showSideBar !== undefined) {
       const { windowId } = window.marktext.env
-      ipcRenderer.send(
-        'mt::update-sidebar-menu',
-        windowId,
-        !!layout.showSideBar
-      )
+      ipcRenderer.send('mt::update-sidebar-menu', windowId, !!layout.showSideBar)
     }
     Object.assign(state, layout)
   },
-  TOGGLE_LAYOUT_ENTRY (state, entryName) {
+  TOGGLE_LAYOUT_ENTRY(state, entryName) {
     state[entryName] = !state[entryName]
   },
-  SET_SIDE_BAR_WIDTH (state, width) {
+  SET_SIDE_BAR_WIDTH(state, width) {
     // TODO: Add side bar to session (GH#732).
     localStorage.setItem('side-bar-width', Math.max(+width, 220))
     state.sideBarWidth = width
@@ -37,13 +33,12 @@ const mutations = {
 }
 
 const actions = {
-  LISTEN_FOR_LAYOUT ({ state, commit, dispatch }) {
+  LISTEN_FOR_LAYOUT({ state, commit, dispatch }) {
     ipcRenderer.on('mt::set-view-layout', (e, layout) => {
       if (layout.rightColumn) {
         commit('SET_LAYOUT', {
           ...layout,
-          rightColumn:
-            layout.rightColumn === state.rightColumn ? '' : layout.rightColumn,
+          rightColumn: layout.rightColumn === state.rightColumn ? '' : layout.rightColumn,
           showSideBar: true
         })
       } else {
@@ -57,7 +52,7 @@ const actions = {
       dispatch('DISPATCH_LAYOUT_MENU_ITEMS')
     })
 
-    bus.$on('view:toggle-layout-entry', (entryName) => {
+    bus.$on('view:toggle-layout-entry', entryName => {
       commit('TOGGLE_LAYOUT_ENTRY', entryName)
       const { windowId } = window.marktext.env
       ipcRenderer.send('mt::view-layout-changed', windowId, {
@@ -66,7 +61,7 @@ const actions = {
     })
   },
 
-  DISPATCH_LAYOUT_MENU_ITEMS ({ state }) {
+  DISPATCH_LAYOUT_MENU_ITEMS({ state }) {
     const { windowId } = window.marktext.env
     const { showTabBar, showSideBar } = state
     ipcRenderer.send('mt::view-layout-changed', windowId, {
@@ -75,7 +70,7 @@ const actions = {
     })
   },
 
-  CHANGE_SIDE_BAR_WIDTH ({ commit }, width) {
+  CHANGE_SIDE_BAR_WIDTH({ commit }, width) {
     commit('SET_SIDE_BAR_WIDTH', width)
   }
 }

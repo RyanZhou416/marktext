@@ -13,10 +13,7 @@ export const isUpdatable = () => {
   } else if (processInfo.env.APPIMAGE) {
     // We are running as AppImage.
     return true
-  } else if (
-    processInfo.platform === 'win32' &&
-    isFile(path.join(resourcesPath, 'md.ico'))
-  ) {
+  } else if (processInfo.platform === 'win32' && isFile(path.join(resourcesPath, 'md.ico'))) {
     // Windows is a little but tricky. The update resource file is always available and
     // there is no way to check the target type at runtime (electron-builder#4119).
     // As workaround we check whether "md.ico" exists that is only included in the setup.

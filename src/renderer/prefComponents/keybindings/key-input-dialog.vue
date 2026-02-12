@@ -13,14 +13,14 @@
       <div class="key-input-wrapper">
         <div class="input-wrapper">
           <input
-            tabindex="0"
-            type="text"
             ref="intputTextbox"
             v-model="keybindingInputValue"
+            tabindex="0"
+            type="text"
             class="input-textbox"
+            :placeholder="placeholderText"
             @keydown="handleKeyDown"
             @keyup="handleKeyUp"
-            :placeholder="placeholderText"
           />
         </div>
         <div class="footer">
@@ -76,6 +76,14 @@ export default {
   components: {
     AppDialog
   },
+
+  props: {
+    onCommit: Function,
+    showWithId: {
+      type: String,
+      default: null
+    }
+  },
   data() {
     this.needCommitOnClose = true
     this.currentKeybinding = null
@@ -85,14 +93,6 @@ export default {
       placeholderText: this.defaultPlaceholderText,
       isKeybindingValid: true,
       keybindingInputValue: ''
-    }
-  },
-
-  props: {
-    onCommit: Function,
-    showWithId: {
-      type: String,
-      default: null
     }
   },
 

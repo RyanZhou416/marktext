@@ -15,7 +15,7 @@ const matchString = (text, value, options) => {
   }
 
   if (!isRegexp) {
-    regStr = value.replace(SPECIAL_CHAR_REG, (p) => {
+    regStr = value.replace(SPECIAL_CHAR_REG, p => {
       return p === '\\' ? '\\\\' : `\\${p}`
     })
   }
@@ -101,7 +101,7 @@ const searchCtrl = ContentState => {
     }
   }
 
-  ContentState.prototype.find = function (action/* prev next */) {
+  ContentState.prototype.find = function (action /* prev next */) {
     let { matches, index } = this.searchMatches
     const len = matches.length
     if (!len) return
@@ -124,15 +124,17 @@ const searchCtrl = ContentState => {
 
         if (text && typeof text === 'string') {
           const strMatches = matchString(text, value, options)
-          matches.push(...strMatches.map(({ index, match, subMatches }) => {
-            return {
-              key,
-              start: index,
-              end: index + match.length,
-              match,
-              subMatches
-            }
-          }))
+          matches.push(
+            ...strMatches.map(({ index, match, subMatches }) => {
+              return {
+                key,
+                start: index,
+                end: index + match.length,
+                match,
+                subMatches
+              }
+            })
+          )
         }
         if (block.children.length) {
           travel(block.children)

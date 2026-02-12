@@ -11,7 +11,7 @@ const loaded: string[] = ['en', 'zh-CN']
  * so we MUST use `.value` to set it. Using direct assignment (`locale = x`)
  * would silently replace the ref and break reactivity entirely.
  */
-function setLocale (i18n: I18n, locale: string): void {
+function setLocale(i18n: I18n, locale: string): void {
   const g = i18n.global as any
   if (g.locale && typeof g.locale === 'object' && 'value' in g.locale) {
     // vue-i18n v10: locale is a WritableComputedRef
@@ -27,7 +27,7 @@ function setLocale (i18n: I18n, locale: string): void {
  * this simply switches the active locale. For future locales not yet
  * bundled, it falls back to a dynamic import.
  */
-export async function loadLocale (i18n: I18n, locale: string): Promise<void> {
+export async function loadLocale(i18n: I18n, locale: string): Promise<void> {
   if (loaded.includes(locale)) {
     setLocale(i18n, locale)
     return

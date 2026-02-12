@@ -31,6 +31,12 @@ import SourceCode from './sourceCode.vue'
 import TabNotifications from './notifications.vue'
 
 export default {
+  components: {
+    Tabs,
+    Editor,
+    SourceCode,
+    TabNotifications
+  },
   props: {
     markdown: {
       type: String,
@@ -58,12 +64,6 @@ export default {
       type: String,
       required: true
     }
-  },
-  components: {
-    Tabs,
-    Editor,
-    SourceCode,
-    TabNotifications
   },
   computed: {
     ...mapState(useLayoutStore, ['showSideBar', 'sideBarWidth'])

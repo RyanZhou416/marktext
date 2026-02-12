@@ -7,7 +7,7 @@ const t = (key: string) => (i18n.global as any).t(key)
 
 export const useNotificationStore = defineStore('notification', {
   actions: {
-    LISTEN_FOR_NOTIFICATION () {
+    LISTEN_FOR_NOTIFICATION() {
       const DEFAULT_OPTS = {
         title: t('notification.information'),
         type: 'primary' as const,

@@ -9,7 +9,11 @@ const FUNCTION_TYPE_LANG = {
 }
 
 const containerCtrl = ContentState => {
-  ContentState.prototype.createContainerBlock = function (functionType, value = '', style = undefined) {
+  ContentState.prototype.createContainerBlock = function (
+    functionType,
+    value = '',
+    style = undefined
+  ) {
     const figureBlock = this.createBlock('figure', {
       functionType
     })
@@ -64,7 +68,8 @@ const containerCtrl = ContentState => {
     return { preBlock, preview }
   }
 
-  ContentState.prototype.initContainerBlock = function (functionType, block, style = undefined) { // p block
+  ContentState.prototype.initContainerBlock = function (functionType, block, style = undefined) {
+    // p block
     block.type = 'figure'
     block.functionType = functionType
     block.children = []

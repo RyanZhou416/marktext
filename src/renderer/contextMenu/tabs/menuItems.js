@@ -1,7 +1,7 @@
 import * as contextMenu from './actions'
 import i18n from '@/i18n'
 
-const t = (key) => i18n.global.t(key)
+const t = key => i18n.global.t(key)
 
 // NOTE: This are mutable fields that may change at runtime.
 
@@ -10,57 +10,71 @@ export const SEPARATOR = {
 }
 
 export const CLOSE_THIS = {
-  get label () { return t('contextMenu.tabs.close') },
+  get label() {
+    return t('contextMenu.tabs.close')
+  },
   id: 'closeThisTab',
-  click (menuItem, browserWindow) {
+  click(menuItem, browserWindow) {
     contextMenu.closeThis(menuItem._tabId)
   }
 }
 
 export const CLOSE_OTHERS = {
-  get label () { return t('contextMenu.tabs.closeOthers') },
+  get label() {
+    return t('contextMenu.tabs.closeOthers')
+  },
   id: 'closeOtherTabs',
-  click (menuItem, browserWindow) {
+  click(menuItem, browserWindow) {
     contextMenu.closeOthers(menuItem._tabId)
   }
 }
 
 export const CLOSE_SAVED = {
-  get label () { return t('contextMenu.tabs.closeSaved') },
+  get label() {
+    return t('contextMenu.tabs.closeSaved')
+  },
   id: 'closeSavedTabs',
-  click (menuItem, browserWindow) {
+  click(menuItem, browserWindow) {
     contextMenu.closeSaved()
   }
 }
 
 export const CLOSE_ALL = {
-  get label () { return t('contextMenu.tabs.closeAll') },
+  get label() {
+    return t('contextMenu.tabs.closeAll')
+  },
   id: 'closeAllTabs',
-  click (menuItem, browserWindow) {
+  click(menuItem, browserWindow) {
     contextMenu.closeAll()
   }
 }
 
 export const RENAME = {
-  get label () { return t('contextMenu.tabs.rename') },
+  get label() {
+    return t('contextMenu.tabs.rename')
+  },
   id: 'renameFile',
-  click (menuItem, browserWindow) {
+  click(menuItem, browserWindow) {
     contextMenu.rename(menuItem._tabId)
   }
 }
 
 export const COPY_PATH = {
-  get label () { return t('contextMenu.tabs.copyPath') },
+  get label() {
+    return t('contextMenu.tabs.copyPath')
+  },
   id: 'copyPath',
-  click (menuItem, browserWindow) {
+  click(menuItem, browserWindow) {
     contextMenu.copyPath(menuItem._tabId)
   }
 }
 
 export const SHOW_IN_FOLDER = {
-  get label () { return t('contextMenu.tabs.showInFolder') },
+  get label() {
+    return t('contextMenu.tabs.showInFolder')
+  },
   id: 'showInFolder',
-  click (menuItem, browserWindow) {
+  click(menuItem, browserWindow) {
     contextMenu.showInFolder(menuItem._tabId)
   }
 }

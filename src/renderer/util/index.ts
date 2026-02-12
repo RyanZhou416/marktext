@@ -15,7 +15,7 @@ export const delay = (time: number): CancelablePromise<void> => {
   const p = new Promise<void>((resolve, reject) => {
     rejectFn = reject
     timerId = setTimeout(() => {
-      (p as CancelablePromise<void>).cancel = () => {}
+      ;(p as CancelablePromise<void>).cancel = () => {}
       rejectFn = null
       resolve()
     }, time)
@@ -35,7 +35,7 @@ let id = 0
 
 export const serialize = function (params: Record<string, string | number | boolean>): string {
   return Object.keys(params)
-    .map((key) => `${key}=${encodeURI(String(params[key]))}`)
+    .map(key => `${key}=${encodeURI(String(params[key]))}`)
     .join('&')
 }
 
@@ -73,7 +73,9 @@ export const adjustCursor = (
     } else {
       // cursor is not at the second line to table
       if (cursor.ch <= line.indexOf('|')) newCursor!.ch = line.indexOf('|') + 1
-      if (cursor.ch >= line.lastIndexOf('|')) { newCursor!.ch = line.lastIndexOf('|') - 1 }
+      if (cursor.ch >= line.lastIndexOf('|')) {
+        newCursor!.ch = line.lastIndexOf('|') - 1
+      }
     }
   }
 
@@ -126,9 +128,7 @@ export const animatedScrollTo = function (
 
   const animateScroll = function (): void {
     const now = +new Date()
-    const val = Math.floor(
-      easeInOutQuad(now - animationStart, start, change, duration)
-    )
+    const val = Math.floor(easeInOutQuad(now - animationStart, start, change, duration))
 
     element.scrollTop = val
 
@@ -168,7 +168,10 @@ export const cloneObj = (obj: any, deepCopy: boolean = true): any => {
  * @param obj Object to clone
  * @param inheritFromObject Whether the clone should inherit from `Object`
  */
-export const cloneObject = (obj: Record<string, any>, inheritFromObject: boolean = true): Record<string, any> => {
+export const cloneObject = (
+  obj: Record<string, any>,
+  inheritFromObject: boolean = true
+): Record<string, any> => {
   return Object.assign(inheritFromObject ? {} : Object.create(null), obj)
 }
 

@@ -11,7 +11,7 @@
         :platform="platform"
         :is-saved="isSaved"
       ></title-bar>
-      <div class="editor-placeholder" v-if="!init"></div>
+      <div v-if="!init" class="editor-placeholder"></div>
       <recent v-if="!hasCurrentFile && init"></recent>
       <editor-with-tabs
         v-if="hasCurrentFile && init"
@@ -29,8 +29,10 @@
       <tweet></tweet>
       <import-modal></import-modal>
     </div>
-    <Toaster position="top-right" :duration="8000" rich-colors />
   </div>
+  <Teleport to="body">
+    <Toaster position="top-right" :duration="8000" rich-colors />
+  </Teleport>
 </template>
 
 <script lang="ts">
@@ -64,7 +66,7 @@ import { DEFAULT_STYLE } from '@/config'
 import { ipcRenderer, initMenuEvents, initDragDrop, initOpenFilesListener } from '../util/tauri'
 
 export default {
-  name: 'marktext',
+  name: 'Marktext',
   components: {
     Recent,
     EditorWithTabs,

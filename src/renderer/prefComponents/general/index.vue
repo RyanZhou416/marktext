@@ -9,7 +9,7 @@
         <bool
           :description="$t('settings.general.autoSaveDesc')"
           :bool="autoSave"
-          :onChange="value => onSelectChange('autoSave', value)"
+          :on-change="value => onSelectChange('autoSave', value)"
         ></bool>
         <range
           :description="$t('settings.general.autoSaveDelay')"
@@ -18,7 +18,7 @@
           :max="10000"
           unit="ms"
           :step="100"
-          :onChange="value => onSelectChange('autoSaveDelay', value)"
+          :on-change="value => onSelectChange('autoSaveDelay', value)"
         ></range>
       </template>
     </compound>
@@ -33,28 +33,28 @@
           :description="$t('settings.general.titleBarStyle')"
           :value="titleBarStyle"
           :options="titleBarStyleOpts"
-          :onChange="value => onSelectChange('titleBarStyle', value)"
+          :on-change="value => onSelectChange('titleBarStyle', value)"
         ></cur-select>
         <bool
           :description="$t('settings.general.hideScrollbar')"
           :bool="hideScrollbar"
-          :onChange="value => onSelectChange('hideScrollbar', value)"
+          :on-change="value => onSelectChange('hideScrollbar', value)"
         ></bool>
         <bool
           :description="$t('settings.general.openFilesInNewWindow')"
           :bool="openFilesInNewWindow"
-          :onChange="value => onSelectChange('openFilesInNewWindow', value)"
+          :on-change="value => onSelectChange('openFilesInNewWindow', value)"
         ></bool>
         <bool
           :description="$t('settings.general.openFoldersInNewWindow')"
           :bool="openFolderInNewWindow"
-          :onChange="value => onSelectChange('openFolderInNewWindow', value)"
+          :on-change="value => onSelectChange('openFolderInNewWindow', value)"
         ></bool>
         <cur-select
           :description="$t('settings.general.zoom')"
           :value="zoom"
           :options="zoomOptions"
-          :onChange="value => onSelectChange('zoom', value)"
+          :on-change="value => onSelectChange('zoom', value)"
         ></cur-select>
       </template>
     </compound>
@@ -67,7 +67,7 @@
         <bool
           :description="$t('settings.general.wordWrapInToc')"
           :bool="wordWrapInToc"
-          :onChange="value => onSelectChange('wordWrapInToc', value)"
+          :on-change="value => onSelectChange('wordWrapInToc', value)"
         ></bool>
 
         <!-- TODO: The description is very bad and the entry isn't used by the editor. -->
@@ -75,7 +75,7 @@
           :description="$t('settings.general.fileSortBy')"
           :value="fileSortBy"
           :options="fileSortByOpts"
-          :onChange="value => onSelectChange('fileSortBy', value)"
+          :on-change="value => onSelectChange('fileSortBy', value)"
           :disable="true"
         ></cur-select>
       </template>
@@ -89,14 +89,14 @@
         <section class="startup-action-ctrl">
           <div class="radio-group">
             <label class="radio-label">
-              <input type="radio" value="folder" v-model="startUpAction" />
+              <input v-model="startUpAction" type="radio" value="folder" />
               {{ $t('settings.general.openDefaultDir') }}<span>: {{ defaultDirectoryToOpen }}</span>
             </label>
             <button class="btn-default pref-btn" @click="selectDefaultDirectoryToOpen">
               {{ $t('settings.general.selectFolder') }}
             </button>
             <label class="radio-label">
-              <input type="radio" value="blank" v-model="startUpAction" />
+              <input v-model="startUpAction" type="radio" value="blank" />
               {{ $t('settings.general.openBlankPage') }}
             </label>
           </div>
@@ -113,7 +113,7 @@
           :description="$t('settings.general.language')"
           :value="language"
           :options="languageOptions"
-          :onChange="value => onLanguageChange(value)"
+          :on-change="value => onLanguageChange(value)"
         ></cur-select>
       </template>
     </compound>

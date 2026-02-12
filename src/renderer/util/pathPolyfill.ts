@@ -40,8 +40,8 @@ interface PathModule {
 }
 
 // Detect platform from userAgent
-const isWindows: boolean = typeof navigator !== 'undefined' &&
-  navigator.userAgent.toLowerCase().includes('win')
+const isWindows: boolean =
+  typeof navigator !== 'undefined' && navigator.userAgent.toLowerCase().includes('win')
 
 const sep: string = isWindows ? '\\' : '/'
 const delimiter: string = isWindows ? ';' : ':'
@@ -49,12 +49,13 @@ const delimiter: string = isWindows ? ';' : ':'
 /**
  * Normalize a path, resolving '..' and '.' segments
  */
-function normalize (path: string): string {
+function normalize(path: string): string {
   if (!path || path.length === 0) return '.'
 
   const isAbsolutePath: boolean = isAbsolute(path)
-  const trailingSep: boolean = path.charCodeAt(path.length - 1) === 47 || // /
-                      path.charCodeAt(path.length - 1) === 92 // \
+  const trailingSep: boolean =
+    path.charCodeAt(path.length - 1) === 47 || // /
+    path.charCodeAt(path.length - 1) === 92 // \
 
   // Normalize separators
   path = path.replace(/[/\\]+/g, sep)
@@ -84,7 +85,11 @@ function normalize (path: string): string {
     }
   }
 
-  if (isAbsolutePath && !normalized.startsWith(sep) && !(isWindows && normalized.charAt(1) === ':')) {
+  if (
+    isAbsolutePath &&
+    !normalized.startsWith(sep) &&
+    !(isWindows && normalized.charAt(1) === ':')
+  ) {
     normalized = sep + normalized
   }
 
@@ -98,7 +103,7 @@ function normalize (path: string): string {
 /**
  * Join path segments
  */
-function join (...paths: string[]): string {
+function join(...paths: string[]): string {
   if (paths.length === 0) return '.'
 
   let joined: string = ''
@@ -118,7 +123,7 @@ function join (...paths: string[]): string {
 /**
  * Resolve paths to an absolute path
  */
-function resolve (...paths: string[]): string {
+function resolve(...paths: string[]): string {
   let resolved: string = ''
 
   for (let i: number = paths.length - 1; i >= 0 && !isAbsolute(resolved); i--) {
@@ -138,7 +143,7 @@ function resolve (...paths: string[]): string {
 /**
  * Get the directory name of a path
  */
-function dirname (path: string): string {
+function dirname(path: string): string {
   if (!path || path.length === 0) return '.'
 
   path = normalize(path)
@@ -164,7 +169,7 @@ function dirname (path: string): string {
 /**
  * Get the base name of a path
  */
-function basename (path: string, ext?: string): string {
+function basename(path: string, ext?: string): string {
   if (!path || path.length === 0) return ''
 
   path = normalize(path)
@@ -188,7 +193,7 @@ function basename (path: string, ext?: string): string {
 /**
  * Get the extension of a path
  */
-function extname (path: string): string {
+function extname(path: string): string {
   if (!path || path.length === 0) return ''
 
   const base: string = basename(path)
@@ -202,7 +207,7 @@ function extname (path: string): string {
 /**
  * Check if a path is absolute
  */
-function isAbsolute (path: string): boolean {
+function isAbsolute(path: string): boolean {
   if (!path || path.length === 0) return false
 
   // Unix absolute path
@@ -216,7 +221,8 @@ function isAbsolute (path: string): boolean {
 
     // Drive letter (A-Z or a-z)
     if ((code0 >= 65 && code0 <= 90) || (code0 >= 97 && code0 <= 122)) {
-      if (code1 === 58 && (code2 === 47 || code2 === 92)) { // : and / or \
+      if (code1 === 58 && (code2 === 47 || code2 === 92)) {
+        // : and / or \
         return true
       }
     }
@@ -237,7 +243,7 @@ function isAbsolute (path: string): boolean {
 /**
  * Get relative path from 'from' to 'to'
  */
-function relative (from: string, to: string): string {
+function relative(from: string, to: string): string {
   if (from === to) return ''
 
   from = resolve(from)
@@ -278,7 +284,7 @@ function relative (from: string, to: string): string {
 /**
  * Parse a path into components
  */
-function parse (path: string): ParsedPath {
+function parse(path: string): ParsedPath {
   const result: ParsedPath = {
     root: '',
     dir: '',
@@ -311,7 +317,7 @@ function parse (path: string): ParsedPath {
 /**
  * Format a path from components
  */
-function format (pathObject: PathObject): string {
+function format(pathObject: PathObject): string {
   if (!pathObject) return ''
 
   const { root = '', dir, base, name, ext } = pathObject

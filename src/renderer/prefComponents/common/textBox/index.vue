@@ -2,7 +2,7 @@
   <section class="pref-text-box-item" :class="{ 'ag-underdevelop': disable }">
     <div class="description">
       <span>{{ description }}:</span>
-      <i class="el-icon-info" v-if="more" @click="handleMoreClick"></i>
+      <i v-if="more" class="el-icon-info" @click="handleMoreClick"></i>
     </div>
     <input
       class="input pref-input"
@@ -27,13 +27,6 @@
 import { shell } from '../../../util/tauri'
 
 export default {
-  data() {
-    this.inputTimer = null
-    return {
-      inputText: this.input,
-      invalidInput: false
-    }
-  },
   props: {
     description: String,
     notes: String,
@@ -57,6 +50,13 @@ export default {
       default() {
         return /(.*?)/
       }
+    }
+  },
+  data() {
+    this.inputTimer = null
+    return {
+      inputText: this.input,
+      invalidInput: false
     }
   },
   watch: {

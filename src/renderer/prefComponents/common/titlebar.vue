@@ -1,9 +1,6 @@
 <template>
   <div class="title-bar">
-    <div
-      class="frameless-titlebar-button frameless-titlebar-close"
-      @click.stop="handleCloseClick"
-    >
+    <div class="frameless-titlebar-button frameless-titlebar-close" @click.stop="handleCloseClick">
       <div>
         <svg width="10" height="10">
           <path :d="windowIconClose" />
@@ -18,12 +15,12 @@ import { ipcRenderer } from '../../util/tauri'
 import { closePath } from '../../assets/window-controls.js'
 
 export default {
-  data () {
+  data() {
     this.windowIconClose = closePath
     return {}
   },
   methods: {
-    handleCloseClick () {
+    handleCloseClick() {
       ipcRenderer.send('mt::window-close')
     }
   }

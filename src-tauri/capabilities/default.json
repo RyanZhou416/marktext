@@ -48,7 +48,6 @@
     "os:allow-os-type",
     "os:allow-platform",
     "os:allow-arch",
-    "os:allow-locale",
-    "updater:default"
+    "os:allow-locale"
   ]
 }

@@ -1,6 +1,6 @@
 <template>
   <section class="pref-select-item" :class="{ 'ag-underdevelop': disable }">
-    <div class="description" v-if="description">
+    <div v-if="description" class="description">
       <span>{{ description }}:</span>
       <i v-if="more" class="info-icon" @click="handleMoreClick">
         <svg

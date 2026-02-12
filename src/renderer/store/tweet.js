@@ -8,7 +8,7 @@ const getters = {}
 const mutations = {}
 
 const actions = {
-  LISTEN_FOR_TWEET () {
+  LISTEN_FOR_TWEET() {
     ipcRenderer.on('mt::tweet', (e, type) => {
       if (type === 'twitter') {
         bus.$emit('tweetDialog')

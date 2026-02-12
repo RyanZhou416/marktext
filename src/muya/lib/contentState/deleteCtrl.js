@@ -42,14 +42,14 @@ const deleteCtrl = ContentState => {
       }
       return this.singleRender(startBlock)
     }
-    if (
-      /h\d|span/.test(type) &&
-      start.offset === text.length
-    ) {
+    if (/h\d|span/.test(type) && start.offset === text.length) {
       event.preventDefault()
       if (nextBlock && /h\d|span/.test(nextBlock.type)) {
         // if cursor at the end of code block-language input, do nothing!
-        if (nextBlock.functionType === 'codeContent' && startBlock.functionType === 'languageInput') {
+        if (
+          nextBlock.functionType === 'codeContent' &&
+          startBlock.functionType === 'languageInput'
+        ) {
           return
         }
 

@@ -32,30 +32,33 @@ export const useCommandCenterStore = defineStore('commandCenter', {
   }),
 
   actions: {
-    REGISTER_COMMAND (command: any) {
+    REGISTER_COMMAND(command: any) {
       this.rootCommand.subcommands.push(command)
     },
 
-    SORT_COMMANDS () {
+    SORT_COMMANDS() {
       this.rootCommand.subcommands.sort((a: any, b: any) =>
         a.description.localeCompare(b.description)
       )
     },
 
-    LISTEN_COMMAND_CENTER_BUS () {
+    LISTEN_COMMAND_CENTER_BUS() {
       bus.$on('cmd::sort-commands', () => {
         this.SORT_COMMANDS()
       })
 
-      ipcRenderer.on('mt::keybindings-response', (e: any, keybindingMap: Record<string, string>) => {
-        const { subcommands } = this.rootCommand
-        for (const entry of subcommands) {
-          const value = keybindingMap[entry.id]
-          if (value) {
-            entry.shortcut = normalizeAccelerator(value)
+      ipcRenderer.on(
+        'mt::keybindings-response',
+        (e: any, keybindingMap: Record<string, string>) => {
+          const { subcommands } = this.rootCommand
+          for (const entry of subcommands) {
+            const value = keybindingMap[entry.id]
+            if (value) {
+              entry.shortcut = normalizeAccelerator(value)
+            }
           }
         }
-      })
+      )
 
       bus.$on('cmd::register-command', (command: any) => {
         this.REGISTER_COMMAND(command)

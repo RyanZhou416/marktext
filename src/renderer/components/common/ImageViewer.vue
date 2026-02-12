@@ -2,14 +2,14 @@
   <Teleport to="body">
     <div
       v-if="visible"
+      ref="overlayRef"
       class="image-viewer-overlay"
+      tabindex="-1"
       @click.self="handleClose"
       @keydown.esc="handleClose"
-      tabindex="-1"
-      ref="overlayRef"
     >
       <button class="image-viewer-close" aria-label="Close" @click="handleClose">×</button>
-      <img v-if="currentUrl" :src="currentUrl" class="image-viewer-img" @click.stop alt="" />
+      <img v-if="currentUrl" :src="currentUrl" class="image-viewer-img" alt="" @click.stop />
     </div>
   </Teleport>
 </template>

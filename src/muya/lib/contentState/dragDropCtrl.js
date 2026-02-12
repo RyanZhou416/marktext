@@ -1,5 +1,10 @@
 import { findNearestParagraph, findOutMostParagraph } from '../selection/dom'
-import { verticalPositionInRect, getUniqueId, getImageInfo as getImageSrc, checkImageContentType } from '../utils'
+import {
+  verticalPositionInRect,
+  getUniqueId,
+  getImageInfo as getImageSrc,
+  checkImageContentType
+} from '../utils'
 import { getImageInfo } from '../utils/getImageInfo'
 import { URL_REG, IMAGE_EXT_REG } from '../config'
 
@@ -76,7 +81,10 @@ const dragDropCtrl = ContentState => {
     }
 
     if (event.dataTransfer.types.indexOf('Files') >= 0) {
-      if (event.dataTransfer.items.length === 1 && event.dataTransfer.items[0].type.indexOf('image') > -1) {
+      if (
+        event.dataTransfer.items.length === 1 &&
+        event.dataTransfer.items[0].type.indexOf('image') > -1
+      ) {
         event.preventDefault()
         this.createGhost(event)
         event.dataTransfer.dropEffect = 'copy'
@@ -142,9 +150,10 @@ const dragDropCtrl = ContentState => {
         const { name } = image
         // Use webUtils.getPathForFile() for contextIsolation compatibility
         // Fall back to image.path for non-Electron environments
-        const path = (window.electronAPI && window.electronAPI.webUtils)
-          ? window.electronAPI.webUtils.getPathForFile(image)
-          : image.path
+        const path =
+          window.electronAPI && window.electronAPI.webUtils
+            ? window.electronAPI.webUtils.getPathForFile(image)
+            : image.path
         const id = `loading-${getUniqueId()}`
         const text = `![${id}](${path})`
         const imageBlock = this.createBlockP(text)

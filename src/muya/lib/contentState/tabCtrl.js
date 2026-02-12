@@ -36,7 +36,19 @@ const parseSelector = (str = '') => {
   return { tag, id, className, isVoid }
 }
 
-const BOTH_SIDES_FORMATS = ['strong', 'em', 'inline_code', 'image', 'link', 'reference_image', 'reference_link', 'emoji', 'del', 'html_tag', 'inline_math']
+const BOTH_SIDES_FORMATS = [
+  'strong',
+  'em',
+  'inline_code',
+  'image',
+  'link',
+  'reference_image',
+  'reference_link',
+  'emoji',
+  'del',
+  'html_tag',
+  'inline_math'
+]
 
 const tabCtrl = ContentState => {
   ContentState.prototype.findNextCell = function (block) {
@@ -194,8 +206,10 @@ const tabCtrl = ContentState => {
     const startBlock = this.getBlock(start.key)
     const endBlock = this.getBlock(end.key)
     if (start.key === end.key && start.offset === end.offset) {
-      startBlock.text = startBlock.text.substring(0, start.offset) +
-        tabCharacter + endBlock.text.substring(end.offset)
+      startBlock.text =
+        startBlock.text.substring(0, start.offset) +
+        tabCharacter +
+        endBlock.text.substring(end.offset)
       const key = start.key
       const offset = start.offset + tabCharacter.length
       this.cursor = {
@@ -216,7 +230,18 @@ const tabCtrl = ContentState => {
     let result = null
     const walkTokens = tkns => {
       for (const token of tkns) {
-        const { marker, type, range, children, srcAndTitle, hrefAndTitle, backlash, closeTag, isFullLink, label } = token
+        const {
+          marker,
+          type,
+          range,
+          children,
+          srcAndTitle,
+          hrefAndTitle,
+          backlash,
+          closeTag,
+          isFullLink,
+          label
+        } = token
         const { start, end } = range
         if (BOTH_SIDES_FORMATS.includes(type) && offset > start && offset < end) {
           switch (type) {
@@ -342,7 +367,9 @@ const tabCtrl = ContentState => {
       start.key === end.key &&
       start.offset === end.offset &&
       startBlock.type === 'span' &&
-      (!startBlock.functionType || startBlock.functionType === 'codeContent' && /markup|html|xml|svg|mathml/.test(startBlock.lang))
+      (!startBlock.functionType ||
+        (startBlock.functionType === 'codeContent' &&
+          /markup|html|xml|svg|mathml/.test(startBlock.lang)))
     ) {
       const { text } = startBlock
       const lastWordBeforeCursor = text.substring(0, start.offset).split(/\s+/).pop()
@@ -400,9 +427,7 @@ const tabCtrl = ContentState => {
     // Handle `tab` key in table cell.
     let nextCell
     if (start.key === end.key && startBlock.functionType === 'cellContent') {
-      nextCell = event.shiftKey
-        ? this.findPreviousCell(startBlock)
-        : this.findNextCell(startBlock)
+      nextCell = event.shiftKey ? this.findPreviousCell(startBlock) : this.findNextCell(startBlock)
     } else if (endBlock.functionType === 'cellContent') {
       nextCell = endBlock
     }

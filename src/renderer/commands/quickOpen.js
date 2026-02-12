@@ -12,7 +12,7 @@ const SPECIAL_CHARS = /[\[\]\\^$.\|\?\*\+\(\)\/]{1}/g // eslint-disable-line no-
 
 // The quick open command
 class QuickOpenCommand {
-  constructor (stores) {
+  constructor(stores) {
     this.id = 'file.quick-open'
     this.description = 'File: Quick Open'
     this.placeholder = 'Search file to open'
@@ -29,7 +29,7 @@ class QuickOpenCommand {
     this._cancelFn = null
   }
 
-  search = async (query) => {
+  search = async query => {
     // Show opened files when no query given.
     if (!query) {
       return this.subcommands
@@ -58,10 +58,10 @@ class QuickOpenCommand {
     }
 
     this.subcommands = _editorState.tabs
-      .map((t) => t.pathname)
+      .map(t => t.pathname)
       // Filter untitled tabs
-      .filter((t) => !!t)
-      .map((pathname) => {
+      .filter(t => !!t)
+      .map(pathname => {
         const item = { id: pathname }
         Object.assign(item, this._getPath(pathname))
         return item
@@ -74,7 +74,7 @@ class QuickOpenCommand {
     bus.$emit('show-command-palette', this)
   }
 
-  executeSubcommand = async (id) => {
+  executeSubcommand = async id => {
     const { windowId } = window.marktext.env
     ipcRenderer.send('mt::open-file-by-window-id', windowId, id)
   }
@@ -85,7 +85,7 @@ class QuickOpenCommand {
 
   // --- private ------------------------------------------
 
-  _doSearch = (query) => {
+  _doSearch = query => {
     this._cancelFn = null
     const { _editorState, _folderState } = this
     const isRootDirOpened = !!_folderState.projectTree
@@ -102,7 +102,7 @@ class QuickOpenCommand {
     // Add files that are not in the current root directory but opened.
     if (tabsAvailable) {
       const re = new RegExp(
-        query.replace(SPECIAL_CHARS, (p) => {
+        query.replace(SPECIAL_CHARS, p => {
           if (p === '*') return '.*'
           return p === '\\' ? '\\\\' : `\\${p}`
         }),
@@ -122,7 +122,7 @@ class QuickOpenCommand {
     }
 
     if (!isRootDirOpened) {
-      return searchResult.map((pathname) => {
+      return searchResult.map(pathname => {
         return {
           id: pathname,
           description: pathname,
@@ -136,11 +136,11 @@ class QuickOpenCommand {
       let canceled = false
       const promises = this._directorySearcher
         .search([rootPath], '', {
-          didMatch: (result) => {
+          didMatch: result => {
             if (canceled) return
             searchResult.push(result)
           },
-          didSearchPaths: (numPathsFound) => {
+          didSearchPaths: numPathsFound => {
             // Cancel when more than 30 files were found. User should specify the search query.
             if (!canceled && numPathsFound > 30) {
               canceled = true
@@ -156,14 +156,14 @@ class QuickOpenCommand {
         .then(() => {
           this._cancelFn = null
           resolve(
-            searchResult.map((pathname) => {
+            searchResult.map(pathname => {
               const item = { id: pathname }
               Object.assign(item, this._getPath(pathname))
               return item
             })
           )
         })
-        .catch((error) => {
+        .catch(error => {
           this._cancelFn = null
           reject(error)
         })
@@ -178,7 +178,7 @@ class QuickOpenCommand {
     })
   }
 
-  _getInclusions = (query) => {
+  _getInclusions = query => {
     // NOTE: This will fail on `foo.m` because we search for `foo.m.md`.
     if (hasMarkdownExtension(query)) {
       return [`*${query}`]
@@ -191,7 +191,7 @@ class QuickOpenCommand {
     return inclusions
   }
 
-  _getPath = (pathname) => {
+  _getPath = pathname => {
     const rootPath = this._folderState.projectTree.pathname
     if (!isChildOfDirectory(rootPath, pathname)) {
       return { title: pathname, description: pathname }

@@ -4,9 +4,9 @@
     <text-box
       :description="$t('settings.image.globalImageFolder')"
       :input="imageFolderPath"
-      :regexValidator="/^(?:$|([a-zA-Z]:)?[\/\\].*$)/"
-      :defaultValue="folderPathPlaceholder"
-      :onChange="value => modifyImageFolderPath(value)"
+      :regex-validator="/^(?:$|([a-zA-Z]:)?[\/\\].*$)/"
+      :default-value="folderPathPlaceholder"
+      :on-change="value => modifyImageFolderPath(value)"
     ></text-box>
     <div class="folder-buttons">
       <button
@@ -26,16 +26,16 @@
           :description="$t('settings.image.preferRelative')"
           more="https://github.com/marktext/marktext/blob/develop/docs/IMAGES.md"
           :bool="imagePreferRelativeDirectory"
-          :onChange="value => onSelectChange('imagePreferRelativeDirectory', value)"
+          :on-change="value => onSelectChange('imagePreferRelativeDirectory', value)"
         ></bool>
       </template>
       <template #children>
         <text-box
           :description="$t('settings.image.relativeFolderName')"
           :input="imageRelativeDirectoryName"
-          :regexValidator="/^(?:$|(?![a-zA-Z]:)[^\/\\].*$)/"
-          :defaultValue="relativeDirectoryNamePlaceholder"
-          :onChange="value => onSelectChange('imageRelativeDirectoryName', value)"
+          :regex-validator="/^(?:$|(?![a-zA-Z]:)[^\/\\].*$)/"
+          :default-value="relativeDirectoryNamePlaceholder"
+          :on-change="value => onSelectChange('imageRelativeDirectoryName', value)"
         ></text-box>
         <div class="footnote">
           {{ $t('settings.image.filenameNote') }}

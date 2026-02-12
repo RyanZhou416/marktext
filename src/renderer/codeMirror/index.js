@@ -51,9 +51,7 @@ const getModeFromName = name => {
 
 export const search = text => {
   const matchedLangs = filter(languages, text, { key: 'name' })
-  return matchedLangs
-    .map(({ name }) => getModeFromName(name))
-    .filter(lang => !!lang)
+  return matchedLangs.map(({ name }) => getModeFromName(name)).filter(lang => !!lang)
 }
 
 /**
@@ -126,9 +124,9 @@ export const setMode = (doc, text) => {
 
   if (!m) {
     const errMsg = !text
-      ? 'You\'d better provided a language mode when you create code block'
+      ? "You'd better provided a language mode when you create code block"
       : `${text} is not a valid language mode!`
-    return Promise.reject(errMsg) // eslint-disable-line prefer-promise-reject-errors
+    return Promise.reject(errMsg)
   }
 
   const { mode, mime } = m.mode

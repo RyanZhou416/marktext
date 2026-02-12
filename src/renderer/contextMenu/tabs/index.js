@@ -14,13 +14,13 @@ const SHOW_IN_FOLDER = { label: 'Show in folder', id: 'showInFolder', enabled: t
 
 // Action handlers map
 const actionHandlers = {
-  closeThisTab: (tabId) => contextMenu.closeThis(tabId),
-  closeOtherTabs: (tabId) => contextMenu.closeOthers(tabId),
+  closeThisTab: tabId => contextMenu.closeThis(tabId),
+  closeOtherTabs: tabId => contextMenu.closeOthers(tabId),
   closeSavedTabs: () => contextMenu.closeSaved(),
   closeAllTabs: () => contextMenu.closeAll(),
-  renameFile: (tabId) => contextMenu.rename(tabId),
-  copyPath: (tabId) => contextMenu.copyPath(tabId),
-  showInFolder: (tabId) => contextMenu.showInFolder(tabId)
+  renameFile: tabId => contextMenu.rename(tabId),
+  copyPath: tabId => contextMenu.copyPath(tabId),
+  showInFolder: tabId => contextMenu.showInFolder(tabId)
 }
 
 // Listen for context menu action from main process

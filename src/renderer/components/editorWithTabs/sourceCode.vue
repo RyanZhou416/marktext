@@ -1,9 +1,5 @@
 <template>
-  <div
-    class="source-code"
-    ref="sourceCode"
-  >
-  </div>
+  <div ref="sourceCode" class="source-code"></div>
 </template>
 
 <script lang="ts">
@@ -29,11 +25,11 @@ export default {
   computed: {
     ...mapState(usePreferencesStore, ['theme', 'sourceCode']),
     ...mapState(useEditorStore, {
-      currentTab: (store) => store.currentFile
+      currentTab: store => store.currentFile
     })
   },
 
-  data () {
+  data() {
     return {
       contentState: null,
       editor: null,
@@ -52,7 +48,7 @@ export default {
     }
   },
 
-  created () {
+  created() {
     this.$nextTick(() => {
       // TODO: Should we load markdown from the tab or mapped vue property?
       const { id } = this.currentTab
@@ -71,7 +67,7 @@ export default {
         // solution would be to set a fixed height like in #791 but then the scrollbar is not on
         // the right side. Please also see CodeMirror#1104.
         viewportMargin: Infinity,
-        lineNumberFormatter (line) {
+        lineNumberFormatter(line) {
           if (line % 10 === 0 || line === 1) {
             return line
           } else {
@@ -88,7 +84,7 @@ export default {
       }
 
       // Init CodeMirror
-      const editor = this.editor = codeMirror(container, codeMirrorConfig)
+      const editor = (this.editor = codeMirror(container, codeMirrorConfig))
 
       bus.$on('file-loaded', this.handleFileChange)
       bus.$on('invalidate-image-cache', this.handleInvalidateImageCache)
@@ -116,7 +112,7 @@ export default {
       this.tabId = id
     })
   },
-  beforeUnmount () {
+  beforeUnmount() {
     // NOTE: Clear timer and manually commit changes. After mode switching and cleanup may follow
     // further key inputs, so ignore all inputs.
     this.viewDestroyed = true
@@ -133,7 +129,7 @@ export default {
     bus.$emit('file-changed', { id: this.tabId, markdown, cursor, renderCursor: true })
   },
   methods: {
-    handleImageAction ({ id, result, alt }) {
+    handleImageAction({ id, result, alt }) {
       const { editor } = this
       const value = editor.getValue()
       const focus = editor.getCursor('focus')
@@ -182,7 +178,7 @@ export default {
         }
       }
     },
-    listenChange () {
+    listenChange() {
       const { editor } = this
       editor.on('cursorActivity', cm => {
         const { cursor, markdown } = this.getMarkdownAndCursor(cm)
@@ -193,17 +189,24 @@ export default {
           // See "beforeDestroy" note
           if (!this.viewDestroyed) {
             if (this.tabId) {
-              useEditorStore().LISTEN_FOR_CONTENT_CHANGE({ id: this.tabId, markdown, wordCount, cursor })
+              useEditorStore().LISTEN_FOR_CONTENT_CHANGE({
+                id: this.tabId,
+                markdown,
+                wordCount,
+                cursor
+              })
             } else {
               // This may occur during tab switching but should not occur otherwise.
-              console.warn('LISTEN_FOR_CONTENT_CHANGE: Cannot commit changes because not tab id was set!')
+              console.warn(
+                'LISTEN_FOR_CONTENT_CHANGE: Cannot commit changes because not tab id was set!'
+              )
             }
           }
         }, 1000)
       })
     },
     // Another tab was selected - only listen to get changes but don't set history or other things.
-    handleFileChange ({ id, markdown, cursor }) {
+    handleFileChange({ id, markdown, cursor }) {
       this.prepareTabSwitch()
 
       const { editor } = this
@@ -220,7 +223,7 @@ export default {
       this.tabId = id
     },
     // Get markdown and cursor from CodeMirror.
-    getMarkdownAndCursor (cm) {
+    getMarkdownAndCursor(cm) {
       let focus = cm.getCursor('head')
       let anchor = cm.getCursor('anchor')
       const markdown = cm.getValue()
@@ -244,7 +247,7 @@ export default {
       return { cursor: { focus, anchor }, markdown }
     },
     // Commit changes from old tab. Problem: tab was already switched, so commit changes with old tab id.
-    prepareTabSwitch () {
+    prepareTabSwitch() {
       if (this.commitTimer) clearTimeout(this.commitTimer)
       if (this.tabId) {
         const { editor } = this
@@ -254,7 +257,7 @@ export default {
       }
     },
 
-    handleSelectAll () {
+    handleSelectAll() {
       if (!this.sourceCode) {
         return
       }
@@ -271,7 +274,7 @@ export default {
       }
     },
 
-    handleInvalidateImageCache () {
+    handleInvalidateImageCache() {
       if (this.editor) {
         this.editor.invalidateImageCache()
       }
@@ -281,23 +284,23 @@ export default {
 </script>
 
 <style>
-  .source-code {
-    height: calc(100vh - var(--titleBarHeight));
-    box-sizing: border-box;
-    overflow: auto;
-  }
-  .source-code .CodeMirror {
-    height: auto;
-    margin: 50px auto;
-    max-width: var(--editorAreaWidth);
-    background: transparent;
-  }
-  .source-code .CodeMirror-gutters {
-    border-right: none;
-    background-color: transparent;
-  }
-  .source-code .CodeMirror-activeline-background,
-  .source-code .CodeMirror-activeline-gutter {
-    background: var(--floatHoverColor);
-  }
+.source-code {
+  height: calc(100vh - var(--titleBarHeight));
+  box-sizing: border-box;
+  overflow: auto;
+}
+.source-code .CodeMirror {
+  height: auto;
+  margin: 50px auto;
+  max-width: var(--editorAreaWidth);
+  background: transparent;
+}
+.source-code .CodeMirror-gutters {
+  border-right: none;
+  background-color: transparent;
+}
+.source-code .CodeMirror-activeline-background,
+.source-code .CodeMirror-activeline-gutter {
+  background: var(--floatHoverColor);
+}
 </style>

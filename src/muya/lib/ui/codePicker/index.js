@@ -18,7 +18,7 @@ const defaultOptions = {
 class CodePicker extends BaseScrollFloat {
   static pluginName = 'codePicker'
 
-  constructor (muya, options = {}) {
+  constructor(muya, options = {}) {
     const name = 'ag-list-picker'
     const opts = Object.assign({}, defaultOptions, options)
     super(muya, name, opts)
@@ -28,7 +28,7 @@ class CodePicker extends BaseScrollFloat {
     this.listen()
   }
 
-  listen () {
+  listen() {
     super.listen()
     const { eventCenter } = this.muya
     eventCenter.subscribe('muya-code-picker', ({ reference, lang, cb }) => {
@@ -44,7 +44,7 @@ class CodePicker extends BaseScrollFloat {
     })
   }
 
-  render () {
+  render() {
     const { renderArray, oldVnode, scrollElement, activeItem } = this
     let children = renderArray.map(item => {
       let iconClassNames
@@ -56,26 +56,41 @@ class CodePicker extends BaseScrollFloat {
       // Because `markdown mode in Codemirror` don't have extensions.
       // if still can not get the className, add a common className 'atom-icon light-cyan'
       if (!iconClassNames) {
-        iconClassNames = item.name === 'markdown' ? fileIcons.getClassByName('fackname.md') : 'atom-icon light-cyan'
+        iconClassNames =
+          item.name === 'markdown'
+            ? fileIcons.getClassByName('fackname.md')
+            : 'atom-icon light-cyan'
       }
-      const iconSelector = 'span' + iconClassNames.split(/\s/).map(s => `.${s}`).join('')
+      const iconSelector =
+        'span' +
+        iconClassNames
+          .split(/\s/)
+          .map(s => `.${s}`)
+          .join('')
       const icon = h('div.icon-wrapper', h(iconSelector))
       const text = h('div.language', item.name)
       const selector = activeItem === item ? 'li.item.active' : 'li.item'
-      return h(selector, {
-        dataset: {
-          label: item.name
-        },
-        on: {
-          click: () => {
-            this.selectItem(item)
+      return h(
+        selector,
+        {
+          dataset: {
+            label: item.name
+          },
+          on: {
+            click: () => {
+              this.selectItem(item)
+            }
           }
-        }
-      }, [icon, text])
+        },
+        [icon, text]
+      )
     })
 
     if (children.length === 0) {
-      children = h('div.no-result', (this.muya && this.muya._t) ? this.muya._t('editor.quickInsert.noResult') : 'No result')
+      children = h(
+        'div.no-result',
+        this.muya && this.muya._t ? this.muya._t('editor.quickInsert.noResult') : 'No result'
+      )
     }
     const vnode = h('ul', children)
 
@@ -87,7 +102,7 @@ class CodePicker extends BaseScrollFloat {
     this.oldVnode = vnode
   }
 
-  getItemElement (item) {
+  getItemElement(item) {
     const { name } = item
     return this.floatBox.querySelector(`[data-label="${name}"]`)
   }

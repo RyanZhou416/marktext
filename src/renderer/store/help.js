@@ -71,15 +71,23 @@ export const getFileStateFromData = data => {
   })
 }
 
-export const getBlankFileState = (tabs, defaultEncoding = 'utf8', lineEnding = 'lf', markdown = '') => {
+export const getBlankFileState = (
+  tabs,
+  defaultEncoding = 'utf8',
+  lineEnding = 'lf',
+  markdown = ''
+) => {
   const fileState = cloneObj(defaultFileState, true)
-  let untitleId = Math.max(...tabs.map(f => {
-    if (f.pathname === '') {
-      return +f.filename.split('-')[1]
-    } else {
-      return 0
-    }
-  }), 0)
+  let untitleId = Math.max(
+    ...tabs.map(f => {
+      if (f.pathname === '') {
+        return +f.filename.split('-')[1]
+      } else {
+        return 0
+      }
+    }),
+    0
+  )
 
   const id = getUniqueId()
 
@@ -98,7 +106,13 @@ export const getBlankFileState = (tabs, defaultEncoding = 'utf8', lineEnding = '
   })
 }
 
-export const getSingleFileState = ({ id = getUniqueId(), markdown, filename, pathname, options }) => {
+export const getSingleFileState = ({
+  id = getUniqueId(),
+  markdown,
+  filename,
+  pathname,
+  options
+}) => {
   // TODO(refactor:renderer/editor): Replace this function with `createDocumentState`.
 
   const fileState = cloneObj(defaultFileState, true)
@@ -155,8 +169,10 @@ export const createDocumentState = (markdownDocument, id = getUniqueId()) => {
 
 const assertLineEnding = (adjustLineEndingOnSave, lineEnding) => {
   lineEnding = lineEnding.toLowerCase()
-  if ((adjustLineEndingOnSave && lineEnding !== 'crlf') ||
-    (!adjustLineEndingOnSave && lineEnding === 'crlf')) {
+  if (
+    (adjustLineEndingOnSave && lineEnding !== 'crlf') ||
+    (!adjustLineEndingOnSave && lineEnding === 'crlf')
+  ) {
     console.error('Assertion failed: Line ending is "CRLF" but document is saved as "LF".')
   }
 }

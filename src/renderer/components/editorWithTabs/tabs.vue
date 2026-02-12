@@ -1,6 +1,6 @@
 <template>
   <div class="editor-tabs">
-    <div class="scrollable-tabs" ref="tabContainer">
+    <div ref="tabContainer" class="scrollable-tabs">
       <ul ref="tabDropContainer" class="tabs-container">
         <TabContextMenu
           v-for="file of tabs"
@@ -49,83 +49,17 @@ export default {
   components: {
     TabContextMenu
   },
+  setup() {
+    const { selectFile, removeFileInTab } = useTabs()
+    return { selectFile, removeFileInTab }
+  },
   data() {
     this.autoScroller = null
     this.drake = null
     return {}
   },
-  setup() {
-    const { selectFile, removeFileInTab } = useTabs()
-    return { selectFile, removeFileInTab }
-  },
   computed: {
     ...mapState(useEditorStore, ['currentFile', 'tabs'])
-  },
-  methods: {
-    newFile() {
-      useEditorStore().NEW_UNTITLED_TAB({})
-    },
-    handleTabScroll(event) {
-      // Use mouse wheel value first but prioritize X value more (e.g. touchpad input).
-      let delta = event.deltaY
-      if (event.deltaX !== 0) {
-        delta = event.deltaX
-      }
-
-      const tabs = this.$refs.tabContainer
-      const newLeft = Math.max(0, Math.min(tabs.scrollLeft + delta, tabs.scrollWidth))
-      tabs.scrollLeft = newLeft
-    },
-    closeTab(tabId) {
-      const tab = this.tabs.find(f => f.id === tabId)
-      if (tab) {
-        useEditorStore().CLOSE_TAB(tab)
-      }
-    },
-    closeOthers(tabId) {
-      const tab = this.tabs.find(f => f.id === tabId)
-      if (tab) {
-        useEditorStore().CLOSE_OTHER_TABS(tab)
-      }
-    },
-    closeSaved() {
-      useEditorStore().CLOSE_SAVED_TABS()
-    },
-    closeAll() {
-      useEditorStore().CLOSE_ALL_TABS()
-    },
-    rename(tabId) {
-      const tab = this.tabs.find(f => f.id === tabId)
-      if (tab && tab.pathname) {
-        useEditorStore().RENAME_FILE(tab)
-      }
-    },
-    copyPath(tabId) {
-      const tab = this.tabs.find(f => f.id === tabId)
-      if (tab && tab.pathname) {
-        clipboard.writeText(tab.pathname)
-      }
-    },
-    showInFolder(tabId) {
-      const tab = this.tabs.find(f => f.id === tabId)
-      if (tab && tab.pathname) {
-        shell.showItemInFolder(tab.pathname)
-      }
-    },
-    handleTabAction(action: string, tab: any) {
-      if (!tab.id) return
-      const actionMap: Record<string, () => void> = {
-        close: () => this.closeTab(tab.id),
-        closeOthers: () => this.closeOthers(tab.id),
-        closeSaved: () => this.closeSaved(),
-        closeAll: () => this.closeAll(),
-        rename: () => this.rename(tab.id),
-        copyPath: () => this.copyPath(tab.id),
-        showInFolder: () => this.showInFolder(tab.id)
-      }
-      const handler = actionMap[action]
-      if (handler) handler()
-    }
   },
   created() {
     this.$nextTick(() => {
@@ -202,6 +136,72 @@ export default {
     bus.$off('TABS::rename', this.rename)
     bus.$off('TABS::copy-path', this.copyPath)
     bus.$off('TABS::show-in-folder', this.showInFolder)
+  },
+  methods: {
+    newFile() {
+      useEditorStore().NEW_UNTITLED_TAB({})
+    },
+    handleTabScroll(event) {
+      // Use mouse wheel value first but prioritize X value more (e.g. touchpad input).
+      let delta = event.deltaY
+      if (event.deltaX !== 0) {
+        delta = event.deltaX
+      }
+
+      const tabs = this.$refs.tabContainer
+      const newLeft = Math.max(0, Math.min(tabs.scrollLeft + delta, tabs.scrollWidth))
+      tabs.scrollLeft = newLeft
+    },
+    closeTab(tabId) {
+      const tab = this.tabs.find(f => f.id === tabId)
+      if (tab) {
+        useEditorStore().CLOSE_TAB(tab)
+      }
+    },
+    closeOthers(tabId) {
+      const tab = this.tabs.find(f => f.id === tabId)
+      if (tab) {
+        useEditorStore().CLOSE_OTHER_TABS(tab)
+      }
+    },
+    closeSaved() {
+      useEditorStore().CLOSE_SAVED_TABS()
+    },
+    closeAll() {
+      useEditorStore().CLOSE_ALL_TABS()
+    },
+    rename(tabId) {
+      const tab = this.tabs.find(f => f.id === tabId)
+      if (tab && tab.pathname) {
+        useEditorStore().RENAME_FILE(tab)
+      }
+    },
+    copyPath(tabId) {
+      const tab = this.tabs.find(f => f.id === tabId)
+      if (tab && tab.pathname) {
+        clipboard.writeText(tab.pathname)
+      }
+    },
+    showInFolder(tabId) {
+      const tab = this.tabs.find(f => f.id === tabId)
+      if (tab && tab.pathname) {
+        shell.showItemInFolder(tab.pathname)
+      }
+    },
+    handleTabAction(action: string, tab: any) {
+      if (!tab.id) return
+      const actionMap: Record<string, () => void> = {
+        close: () => this.closeTab(tab.id),
+        closeOthers: () => this.closeOthers(tab.id),
+        closeSaved: () => this.closeSaved(),
+        closeAll: () => this.closeAll(),
+        rename: () => this.rename(tab.id),
+        copyPath: () => this.copyPath(tab.id),
+        showInFolder: () => this.showInFolder(tab.id)
+      }
+      const handler = actionMap[action]
+      if (handler) handler()
+    }
   }
 }
 </script>

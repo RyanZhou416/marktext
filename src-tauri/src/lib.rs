@@ -72,7 +72,8 @@ pub fn run() {
     let cli_args = parse_cli_args();
     let portable_dir = check_portable_mode();
 
-    tauri::Builder::default()
+    #[allow(unused_mut)]
+    let mut builder = tauri::Builder::default()
         .plugin(tauri_plugin_shell::init())
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_clipboard_manager::init())
@@ -105,9 +106,14 @@ pub fn run() {
             if !files.is_empty() {
                 let _ = app.emit("open-files", files);
             }
-        }))
-        .plugin(tauri_plugin_updater::Builder::new().build())
-        .setup(move |app| {
+        }));
+
+    #[cfg(feature = "updater")]
+    {
+        builder = builder.plugin(tauri_plugin_updater::Builder::new().build());
+    }
+
+    builder.setup(move |app| {
             log::info!("MarkText Tauri starting...");
 
             // Determine user data directory
@@ -222,7 +228,7 @@ pub fn run() {
                     files_json,
                 );
 
-                let window = tauri::WebviewWindowBuilder::new(
+                let win_builder = tauri::WebviewWindowBuilder::new(
                     app,
                     "main",
                     tauri::WebviewUrl::default(),
@@ -233,9 +239,11 @@ pub fn run() {
                 .resizable(true)
                 .decorations(!use_custom_titlebar)
                 .visible(false) // Start hidden to avoid flash; frontend calls show_main_window when ready
-                .initialization_script(&js)
-                .build()
+                .initialization_script(&js);
+
+                let window = win_builder.build()
                 .expect("Failed to create main window");
+
 
                 log::info!("Main window created (titleBarStyle={})", title_bar_style);
 

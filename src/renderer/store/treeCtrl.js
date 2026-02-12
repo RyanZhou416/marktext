@@ -32,7 +32,7 @@ export const addFile = (tree, file) => {
   let currentFolder = tree
   let currentSubFolders = tree.folders
   for (const directoryName of subDirectories) {
-    let childFolder = currentSubFolders.find((f) => f.name === directoryName)
+    let childFolder = currentSubFolders.find(f => f.name === directoryName)
     if (!childFolder) {
       childFolder = {
         id: getUniqueId(),
@@ -54,7 +54,7 @@ export const addFile = (tree, file) => {
   }
 
   // Add file to related directory
-  if (!currentFolder.files.find((f) => f.name === name)) {
+  if (!currentFolder.files.find(f => f.name === name)) {
     // Remove file content from object.
     const fileCopy = {
       id: getUniqueId(),
@@ -66,7 +66,7 @@ export const addFile = (tree, file) => {
       pathname: file.pathname
     }
 
-    const idx = currentFolder.files.findIndex((f) => {
+    const idx = currentFolder.files.findIndex(f => {
       return f.name.localeCompare(name) > 0
     })
     if (idx !== -1) {
@@ -89,7 +89,7 @@ export const addDirectory = (tree, dir) => {
   let currentPath = tree.pathname
   let currentSubFolders = tree.folders
   for (const directoryName of subDirectories) {
-    let childFolder = currentSubFolders.find((f) => f.name === directoryName)
+    let childFolder = currentSubFolders.find(f => f.name === directoryName)
     if (!childFolder) {
       childFolder = {
         id: getUniqueId(),
@@ -124,13 +124,13 @@ export const unlinkFile = (tree, file) => {
   let currentFolder = tree
   let currentSubFolders = tree.folders
   for (const directoryName of subDirectories) {
-    const childFolder = currentSubFolders.find((f) => f.name === directoryName)
+    const childFolder = currentSubFolders.find(f => f.name === directoryName)
     if (!childFolder) return
     currentFolder = childFolder
     currentSubFolders = childFolder.folders
   }
 
-  const index = currentFolder.files.findIndex((f) => f.pathname === pathname)
+  const index = currentFolder.files.findIndex(f => f.pathname === pathname)
   if (index !== -1) {
     currentFolder.files.splice(index, 1)
   }
@@ -149,12 +149,12 @@ export const unlinkDirectory = (tree, dir) => {
   subDirectories.pop()
   let currentFolder = tree.folders
   for (const directoryName of subDirectories) {
-    const childFolder = currentFolder.find((f) => f.name === directoryName)
+    const childFolder = currentFolder.find(f => f.name === directoryName)
     if (!childFolder) return
     currentFolder = childFolder.folders
   }
 
-  const index = currentFolder.findIndex((f) => f.pathname === pathname)
+  const index = currentFolder.findIndex(f => f.pathname === pathname)
   if (index !== -1) {
     currentFolder.splice(index, 1)
   }

@@ -13,7 +13,7 @@
           :max="32"
           unit="px"
           :step="1"
-          :onChange="value => onSelectChange('fontSize', value)"
+          :on-change="value => onSelectChange('fontSize', value)"
         ></range>
         <range
           :description="$t('settings.editor.lineHeight')"
@@ -21,19 +21,19 @@
           :min="1.2"
           :max="2.0"
           :step="0.1"
-          :onChange="value => onSelectChange('lineHeight', value)"
+          :on-change="value => onSelectChange('lineHeight', value)"
         ></range>
         <font-text-box
           :description="$t('settings.editor.fontFamily')"
           :value="editorFontFamily"
-          :onChange="value => onSelectChange('editorFontFamily', value)"
+          :on-change="value => onSelectChange('editorFontFamily', value)"
         ></font-text-box>
         <text-box
           :description="$t('settings.editor.maxWidth')"
           :notes="$t('settings.editor.maxWidthNotes')"
           :input="editorLineWidth"
-          :regexValidator="/^(?:$|[0-9]+(?:ch|px|%)$)/"
-          :onChange="value => onSelectChange('editorLineWidth', value)"
+          :regex-validator="/^(?:$|[0-9]+(?:ch|px|%)$)/"
+          :on-change="value => onSelectChange('editorLineWidth', value)"
         ></text-box>
       </template>
     </compound>
@@ -50,25 +50,25 @@
           :max="28"
           unit="px"
           :step="1"
-          :onChange="value => onSelectChange('codeFontSize', value)"
+          :on-change="value => onSelectChange('codeFontSize', value)"
         ></range>
         <font-text-box
           :description="$t('settings.editor.fontFamily')"
-          :onlyMonospace="true"
+          :only-monospace="true"
           :value="codeFontFamily"
-          :onChange="value => onSelectChange('codeFontFamily', value)"
+          :on-change="value => onSelectChange('codeFontFamily', value)"
         ></font-text-box>
         <!-- FIXME: Disabled due to #1648. -->
         <bool
           v-show="false"
           :description="$t('settings.editor.showLineNumbers')"
           :bool="codeBlockLineNumbers"
-          :onChange="value => onSelectChange('codeBlockLineNumbers', value)"
+          :on-change="value => onSelectChange('codeBlockLineNumbers', value)"
         ></bool>
         <bool
           :description="$t('settings.editor.removeEmptyLines')"
           :bool="trimUnnecessaryCodeBlockEmptyLines"
-          :onChange="value => onSelectChange('trimUnnecessaryCodeBlockEmptyLines', value)"
+          :on-change="value => onSelectChange('trimUnnecessaryCodeBlockEmptyLines', value)"
         ></bool>
       </template>
     </compound>
@@ -81,17 +81,17 @@
         <bool
           :description="$t('settings.editor.autoCloseBrackets')"
           :bool="autoPairBracket"
-          :onChange="value => onSelectChange('autoPairBracket', value)"
+          :on-change="value => onSelectChange('autoPairBracket', value)"
         ></bool>
         <bool
           :description="$t('settings.editor.autoCompleteMarkdown')"
           :bool="autoPairMarkdownSyntax"
-          :onChange="value => onSelectChange('autoPairMarkdownSyntax', value)"
+          :on-change="value => onSelectChange('autoPairMarkdownSyntax', value)"
         ></bool>
         <bool
           :description="$t('settings.editor.autoCloseQuotes')"
           :bool="autoPairQuote"
-          :onChange="value => onSelectChange('autoPairQuote', value)"
+          :on-change="value => onSelectChange('autoPairQuote', value)"
         ></bool>
       </template>
     </compound>
@@ -105,30 +105,30 @@
           :description="$t('settings.editor.tabWidth')"
           :value="tabSize"
           :options="tabSizeOptions"
-          :onChange="value => onSelectChange('tabSize', value)"
+          :on-change="value => onSelectChange('tabSize', value)"
         ></cur-select>
         <cur-select
           :description="$t('settings.editor.lineSeparator')"
           :value="endOfLine"
           :options="endOfLineOpts"
-          :onChange="value => onSelectChange('endOfLine', value)"
+          :on-change="value => onSelectChange('endOfLine', value)"
         ></cur-select>
         <cur-select
           :description="$t('settings.editor.defaultEncoding')"
           :value="defaultEncoding"
           :options="defaultEncodingOptions"
-          :onChange="value => onSelectChange('defaultEncoding', value)"
+          :on-change="value => onSelectChange('defaultEncoding', value)"
         ></cur-select>
         <bool
           :description="$t('settings.editor.autoDetectEncoding')"
           :bool="autoGuessEncoding"
-          :onChange="value => onSelectChange('autoGuessEncoding', value)"
+          :on-change="value => onSelectChange('autoGuessEncoding', value)"
         ></bool>
         <cur-select
           :description="$t('settings.editor.trailingNewline')"
           :value="trimTrailingNewline"
           :options="trimTrailingNewlineOpts"
-          :onChange="value => onSelectChange('trimTrailingNewline', value)"
+          :on-change="value => onSelectChange('trimTrailingNewline', value)"
         ></cur-select>
       </template>
     </compound>
@@ -142,22 +142,22 @@
           :description="$t('settings.editor.textDirection')"
           :value="textDirection"
           :options="textDirectionOpts"
-          :onChange="value => onSelectChange('textDirection', value)"
+          :on-change="value => onSelectChange('textDirection', value)"
         ></cur-select>
         <bool
           :description="$t('settings.editor.hideQuickInsert')"
           :bool="hideQuickInsertHint"
-          :onChange="value => onSelectChange('hideQuickInsertHint', value)"
+          :on-change="value => onSelectChange('hideQuickInsertHint', value)"
         ></bool>
         <bool
           :description="$t('settings.editor.hideLinkPopup')"
           :bool="hideLinkPopup"
-          :onChange="value => onSelectChange('hideLinkPopup', value)"
+          :on-change="value => onSelectChange('hideLinkPopup', value)"
         ></bool>
         <bool
           :description="$t('settings.editor.autoCheck')"
           :bool="autoCheck"
-          :onChange="value => onSelectChange('autoCheck', value)"
+          :on-change="value => onSelectChange('autoCheck', value)"
         ></bool>
       </template>
     </compound>
@@ -192,19 +192,19 @@ export default {
     Separator,
     TextBox
   },
-  data () {
+  data() {
     this.tabSizeOptions = tabSizeOptions
     this.defaultEncodingOptions = getDefaultEncodingOptions()
     return {}
   },
   computed: {
-    endOfLineOpts () {
+    endOfLineOpts() {
       return endOfLineOptions(this.$t)
     },
-    textDirectionOpts () {
+    textDirectionOpts() {
       return textDirectionOptions(this.$t)
     },
-    trimTrailingNewlineOpts () {
+    trimTrailingNewlineOpts() {
       return trimTrailingNewlineOptions(this.$t)
     },
     ...mapState(usePreferencesStore, [
@@ -231,7 +231,7 @@ export default {
     ])
   },
   methods: {
-    onSelectChange (type, value) {
+    onSelectChange(type, value) {
       const preferencesStore = usePreferencesStore()
       preferencesStore.SET_SINGLE_PREFERENCE({ type, value })
     }
@@ -240,16 +240,16 @@ export default {
 </script>
 
 <style scoped>
-  .pref-editor {
-    & .image-ctrl {
-      font-size: 14px;
-      user-select: none;
+.pref-editor {
+  & .image-ctrl {
+    font-size: 14px;
+    user-select: none;
+    margin: 20px 0;
+    color: var(--editorColor);
+    & label {
+      display: block;
       margin: 20px 0;
-      color: var(--editorColor);
-      & label {
-        display: block;
-        margin: 20px 0;
-      }
     }
   }
+}
 </style>

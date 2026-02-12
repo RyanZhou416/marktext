@@ -25,8 +25,16 @@ const tableSelectCellsCtrl = ContentState => {
       selectedCells: []
     }
 
-    const mouseMoveId = eventCenter.attachDOMEvent(document.body, 'mousemove', this.handleCellMouseMove.bind(this))
-    const mouseUpId = eventCenter.attachDOMEvent(document.body, 'mouseup', this.handleCellMouseUp.bind(this))
+    const mouseMoveId = eventCenter.attachDOMEvent(
+      document.body,
+      'mousemove',
+      this.handleCellMouseMove.bind(this)
+    )
+    const mouseUpId = eventCenter.attachDOMEvent(
+      document.body,
+      'mouseup',
+      this.handleCellMouseUp.bind(this)
+    )
     this.cellSelectEventIds.push(mouseMoveId, mouseUpId)
   }
 
@@ -175,7 +183,8 @@ const tableSelectCellsCtrl = ContentState => {
 
     const isOneColumnSelected = rows.size === +row + 1 && isSameColumn
     const isOneRowSelected = cells.length === +column + 1 && rows.size === 1
-    const isWholeTableSelected = rows.size === +row + 1 && cells.length === (+row + 1) * (+column + 1)
+    const isWholeTableSelected =
+      rows.size === +row + 1 && cells.length === (+row + 1) * (+column + 1)
 
     if (isCut && isWholeTableSelected) {
       this.selectedTableCells = null
@@ -193,18 +202,24 @@ const tableSelectCellsCtrl = ContentState => {
       this.selectedTableCells = null
       if (isOneColumnSelected) {
         // Remove one empty column
-        return this.editTable({
-          location: 'current',
-          action: 'remove',
-          target: 'column'
-        }, cellContentKey)
+        return this.editTable(
+          {
+            location: 'current',
+            action: 'remove',
+            target: 'column'
+          },
+          cellContentKey
+        )
       } else if (isOneRowSelected) {
         // Remove one empty row
-        return this.editTable({
-          location: 'current',
-          action: 'remove',
-          target: 'row'
-        }, cellContentKey)
+        return this.editTable(
+          {
+            location: 'current',
+            action: 'remove',
+            target: 'row'
+          },
+          cellContentKey
+        )
       } else if (isWholeTableSelected) {
         // Select whole empty table
         return this.deleteParagraph(tableId)
@@ -257,7 +272,11 @@ const tableSelectCellsCtrl = ContentState => {
     const { selectedTableCells } = this
     const table = selectedTableCells ? this.getBlock(selectedTableCells.tableId) : {}
     const { row, column } = table
-    if (selectedTableCells && table && selectedTableCells.cells.length === (+row + 1) * (+column + 1)) {
+    if (
+      selectedTableCells &&
+      table &&
+      selectedTableCells.cells.length === (+row + 1) * (+column + 1)
+    ) {
       return table
     }
 

@@ -22,37 +22,28 @@
           </div> -->
       </div>
     </div>
-    <div class="matches" v-if="showSearchMatches">
+    <div v-if="showSearchMatches" class="matches">
       <ul>
         <li
-          class="text-overflow"
           v-for="(searchMatch, index) of getMatches"
           :key="index"
+          class="text-overflow"
           :searchMatch="searchMatch"
           :title="searchMatch.lineText"
           @click="handleSearchResultClick(searchMatch, searchResult)"
         >
           <!-- <span class="line-number">{{ searchMatch.range[0][0] }}</span> -->
           <span>{{
-            ellipsisText(
-              searchMatch.lineText.substring(0, searchMatch.range[0][1])
-            )
+            ellipsisText(searchMatch.lineText.substring(0, searchMatch.range[0][1]))
           }}</span>
           <span class="highlight">{{
-            searchMatch.lineText.substring(
-              searchMatch.range[0][1],
-              searchMatch.range[1][1]
-            )
+            searchMatch.lineText.substring(searchMatch.range[0][1], searchMatch.range[1][1])
           }}</span>
-          <span>{{
-            searchMatch.lineText.substring(searchMatch.range[1][1])
-          }}</span>
+          <span>{{ searchMatch.lineText.substring(searchMatch.range[1][1]) }}</span>
         </li>
       </ul>
       <div v-if="!allMatchesShown">
-        <div class="button tiny" @click="handleShowMoreMatches">
-          Show more matches
-        </div>
+        <div class="button tiny" @click="handleShowMoreMatches">Show more matches</div>
       </div>
     </div>
   </div>
@@ -66,27 +57,27 @@ import { useFile } from '../../composables/useFile'
 import { PATH_SEPARATOR } from '../../config'
 
 export default {
-  setup () {
-    const { handleSearchResultClick, handleFileClick } = useFile()
-    return { handleSearchResultClick, handleFileClick }
-  },
-  data () {
-    return {
-      showSearchMatches: this.searchResult.matches.length <= 20,
-      allMatchesShown: this.searchResult.matches.length <= 10,
-      shownMatches: 10
-    }
-  },
   props: {
     searchResult: {
       type: Object,
       required: true
     }
   },
+  setup() {
+    const { handleSearchResultClick, handleFileClick } = useFile()
+    return { handleSearchResultClick, handleFileClick }
+  },
+  data() {
+    return {
+      showSearchMatches: this.searchResult.matches.length <= 20,
+      allMatchesShown: this.searchResult.matches.length <= 10,
+      shownMatches: 10
+    }
+  },
   computed: {
     ...mapState(useEditorStore, ['tabs', 'currentFile']),
 
-    getMatches () {
+    getMatches() {
       if (this.searchResult.matches.length === 0 || this.allMatchesShown) {
         return this.searchResult.matches
       }
@@ -94,52 +85,40 @@ export default {
     },
 
     // Return filename without extension.
-    filename () {
-      return path.basename(
-        this.searchResult.filePath,
-        path.extname(this.searchResult.filePath)
-      )
+    filename() {
+      return path.basename(this.searchResult.filePath, path.extname(this.searchResult.filePath))
     },
 
-    matchCount () {
+    matchCount() {
       return this.searchResult.matches.length
     },
 
     // Return the filename extension or null.
-    extension () {
+    extension() {
       return path.extname(this.searchResult.filePath)
     },
 
     // Return the parent directory with trailing path separator.
-    dirname () {
-      return path.join(
-        path.dirname(this.searchResult.filePath),
-        PATH_SEPARATOR
-      )
+    dirname() {
+      return path.join(path.dirname(this.searchResult.filePath), PATH_SEPARATOR)
     }
   },
   methods: {
-    toggleSearchMatches () {
+    toggleSearchMatches() {
       this.showSearchMatches = !this.showSearchMatches
     },
 
-    handleShowMoreMatches (event) {
+    handleShowMoreMatches(event) {
       this.shownMatches += 15
-      if (
-        event.ctrlKey ||
-        event.metaKey ||
-        this.shownMatches >= this.searchResult.matches.length
-      ) {
+      if (event.ctrlKey || event.metaKey || this.shownMatches >= this.searchResult.matches.length) {
         this.allMatchesShown = true
       }
     },
 
-    ellipsisText (text) {
+    ellipsisText(text) {
       const len = text.length
       const MAX_PRETEXT_LEN = 6
-      return len > MAX_PRETEXT_LEN
-        ? `...${text.substring(len - MAX_PRETEXT_LEN)}`
-        : text
+      return len > MAX_PRETEXT_LEN ? `...${text.substring(len - MAX_PRETEXT_LEN)}` : text
     }
   }
 }

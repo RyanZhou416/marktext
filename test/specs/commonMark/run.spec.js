@@ -1,6 +1,6 @@
 // This file is copy from marked and modified.
-import { removeCustomClass, padding } from '../help'
-import { MT_MARKED_OPTIONS } from '../config'
+const { removeCustomClass, padding } = require('../help')
+const { MT_MARKED_OPTIONS } = require('../config')
 const fetch = require('node-fetch')
 const markedJs = require('marked')
 const marked = require('../../../src/muya/lib/parser/marked/index.js').default
@@ -13,7 +13,9 @@ const options = { ignoreSelfClosingSlash: true, ignoreAttributes: ['id', 'class'
 const htmlDiffer = new HtmlDiffer(options)
 
 const getSpecs = async () => {
-  const version = await fetch('https://raw.githubusercontent.com/commonmark/commonmark.js/master/package.json')
+  const version = await fetch(
+    'https://raw.githubusercontent.com/commonmark/commonmark.js/master/package.json'
+  )
     .then(res => res.json())
     .then(pkg => pkg.version.replace(/^(\d+\.\d+).*$/, '$1'))
 
@@ -22,12 +24,13 @@ const getSpecs = async () => {
     .then(specs => ({ specs, version }))
 }
 
-const getMarkedSpecs = async (version) => {
-  return fetch(`https://raw.githubusercontent.com/markedjs/marked/master/test/specs/commonmark/commonmark.${version}.json`)
-    .then(res => res.json())
+const getMarkedSpecs = async version => {
+  return fetch(
+    `https://raw.githubusercontent.com/markedjs/marked/master/test/specs/commonmark/commonmark.${version}.json`
+  ).then(res => res.json())
 }
 
-export const writeResult = (version, specs, markedSpecs, type = 'commonmark') => {
+const writeResult = (version, specs, markedSpecs, type = 'commonmark') => {
   let result = '## Test Result\n\n'
   const totalCount = specs.length
   const failedCount = specs.filter(s => s.shouldFail).length
@@ -67,12 +70,13 @@ export const writeResult = (version, specs, markedSpecs, type = 'commonmark') =>
 
     result += `|${padding(key, sectionMaxLen)}`
     result += `|${padding(failed + '/' + count, failedTotalLen)}`
-    result += `|${padding(((count - failed) / count * 100).toFixed(2) + '%', percentageLen)}|\n`
+    result += `|${padding((((count - failed) / count) * 100).toFixed(2) + '%', percentageLen)}|\n`
   }
 
   result += '\n'
 
-  specs.filter(s => s.shouldFail)
+  specs
+    .filter(s => s.shouldFail)
     .forEach(spec => {
       const expectedHtml = spec.html
       const acturalHtml = marked(spec.markdown, MT_MARKED_OPTIONS)
@@ -86,7 +90,8 @@ export const writeResult = (version, specs, markedSpecs, type = 'commonmark') =>
       result += `${acturalHtml}\n`
       result += '```\n\n'
     })
-  const failedPath = type === 'commonmark' ? `./${type}.${version}.md` : `../gfm/${type}.${version}.md`
+  const failedPath =
+    type === 'commonmark' ? `./${type}.${version}.md` : `../gfm/${type}.${version}.md`
   fs.writeFileSync(path.join(__dirname, failedPath), result)
   // compare with markedjs
   let compareResult = '## Compare with `marked.js`\n\n'
@@ -128,9 +133,14 @@ const diffAndGenerateResult = async () => {
       spec.shouldFail = true
     }
   })
-  fs.writeFileSync(path.join(__dirname, `./commonmark.${version}.json`), JSON.stringify(specs, null, 2) + '\n')
+  fs.writeFileSync(
+    path.join(__dirname, `./commonmark.${version}.json`),
+    JSON.stringify(specs, null, 2) + '\n'
+  )
   writeResult(version, specs, markedSpecs, 'commonmark')
 }
+
+module.exports = { writeResult }
 
 try {
   diffAndGenerateResult()

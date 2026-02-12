@@ -20,7 +20,7 @@ export const transformAliasToOrigin = langs => {
       const language = Object.keys(languages).find(name => {
         const l = languages[name]
         if (l.alias) {
-          return l.alias === lang || Array.isArray(l.alias) && l.alias.includes(lang)
+          return l.alias === lang || (Array.isArray(l.alias) && l.alias.includes(lang))
         }
         return false
       })
@@ -42,17 +42,21 @@ export const transformAliasToOrigin = langs => {
 // However, globbing node_modules is generally discouraged but necessary here for dynamic loading
 const prismComponents = import.meta.glob('/node_modules/prismjs/components/prism-*.js')
 // Also try relative path fallback if the above fails in some environments
-const prismComponentsRelative = import.meta.glob('../../../../node_modules/prismjs/components/prism-*.js')
+const prismComponentsRelative = import.meta.glob(
+  '../../../../node_modules/prismjs/components/prism-*.js'
+)
 
-function initLoadLanguage (Prism) {
-  return async function loadLanguages (langs) {
+function initLoadLanguage(Prism) {
+  return async function loadLanguages(langs) {
     // If no argument is passed, load all components
     if (!langs) {
       langs = Object.keys(languages).filter(lang => lang !== 'meta')
     }
 
     if (langs && !langs.length) {
-      return Promise.reject(new Error('The first parameter should be a list of load languages or single language.'))
+      return Promise.reject(
+        new Error('The first parameter should be a list of load languages or single language.')
+      )
     }
 
     if (!Array.isArray(langs)) {
@@ -88,9 +92,10 @@ function initLoadLanguage (Prism) {
           let loader = prismComponents[key] || prismComponentsRelative[relativeKey]
 
           if (!loader) {
-             // Fallback: try to find key that ends with prism-{lang}.js
-            const foundKey = Object.keys(prismComponents).find(k => k.endsWith(`/prism-${lang}.js`)) ||
-                              Object.keys(prismComponentsRelative).find(k => k.endsWith(`/prism-${lang}.js`))
+            // Fallback: try to find key that ends with prism-{lang}.js
+            const foundKey =
+              Object.keys(prismComponents).find(k => k.endsWith(`/prism-${lang}.js`)) ||
+              Object.keys(prismComponentsRelative).find(k => k.endsWith(`/prism-${lang}.js`))
             if (foundKey) {
               loader = prismComponents[foundKey] || prismComponentsRelative[foundKey]
             }

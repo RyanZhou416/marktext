@@ -2,7 +2,7 @@ import { getUniqueId, loadImage } from '../../../utils'
 import { insertAfter, operateClassName } from '../../../utils/domManipulate'
 import { CLASS_OR_ID } from '../../../config'
 
-export default function loadImageAsync (imageInfo, attrs, className, imageClass) {
+export default function loadImageAsync(imageInfo, attrs, className, imageClass) {
   const { src, isUnknownType } = imageInfo
   let id
   let isSuccess
@@ -28,7 +28,11 @@ export default function loadImageAsync (imageInfo, attrs, className, imageClass)
         const img = document.createElement('img')
         let dispMsec = Date.now()
         let touchMsec = dispMsec
-        if (/^file:\/\//.test(src) || /^https:\/\/asset\.localhost\//.test(src) || /^asset:\/\/localhost\//.test(src)) {
+        if (
+          /^file:\/\//.test(src) ||
+          /^https:\/\/asset\.localhost\//.test(src) ||
+          /^asset:\/\/localhost\//.test(src)
+        ) {
           domsrc = url + (url.includes('?') ? '&' : '?') + 'msec=' + dispMsec
         } else {
           domsrc = url

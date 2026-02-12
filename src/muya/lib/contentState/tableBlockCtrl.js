@@ -96,7 +96,9 @@ const tableBlockCtrl = ContentState => {
     const columns = rowHeader.length
     const rows = 2
 
-    const table = this.createTableInFigure({ rows, columns }, [rowHeader.map(text => ({ text, align: '' }))])
+    const table = this.createTableInFigure({ rows, columns }, [
+      rowHeader.map(text => ({ text, align: '' }))
+    ])
 
     block.type = 'figure'
     block.text = ''
@@ -108,7 +110,9 @@ const tableBlockCtrl = ContentState => {
   }
 
   ContentState.prototype.tableToolBarClick = function (type) {
-    const { start: { key } } = this.cursor
+    const {
+      start: { key }
+    } = this.cursor
     const block = this.getBlock(key)
     const parentBlock = this.getParent(block)
     if (block.functionType !== 'cellContent') {
@@ -243,7 +247,7 @@ const tableBlockCtrl = ContentState => {
     if (cellContentKey) {
       block = this.getBlock(cellContentKey)
     } else {
-      ({ start, end } = this.cursor)
+      ;({ start, end } = this.cursor)
       if (start.key !== end.key) {
         throw new Error('Cursor is not in one block, can not editTable')
       }
@@ -267,9 +271,10 @@ const tableBlockCtrl = ContentState => {
 
     if (target === 'row') {
       if (action === 'insert') {
-        const newRow = (location === 'previous' && cellBlock.type === 'th')
-          ? this.createRow(currentRow, true)
-          : this.createRow(currentRow, false)
+        const newRow =
+          location === 'previous' && cellBlock.type === 'th'
+            ? this.createRow(currentRow, true)
+            : this.createRow(currentRow, false)
         if (location === 'previous') {
           this.insertBefore(newRow, currentRow)
           if (cellBlock.type === 'th') {
@@ -312,7 +317,8 @@ const tableBlockCtrl = ContentState => {
             cursorBlock = firstRow.children[columnIndex].children[0]
           }
           if (cellBlock.type === 'td' && (currentRow.preSibling || currentRow.nextSibling)) {
-            cursorBlock = (this.getNextSibling(currentRow) || this.getPreSibling(currentRow)).children[columnIndex].children[0]
+            cursorBlock = (this.getNextSibling(currentRow) || this.getPreSibling(currentRow))
+              .children[columnIndex].children[0]
             this.removeBlock(currentRow)
           }
         } else {
@@ -333,7 +339,7 @@ const tableBlockCtrl = ContentState => {
       }
     } else if (target === 'column') {
       if (action === 'insert') {
-        [...thead.children, ...tbody.children].forEach(tableRow => {
+        ;[...thead.children, ...tbody.children].forEach(tableRow => {
           const targetCell = tableRow.children[columnIndex]
           const cell = this.createBlock(targetCell.type, {
             align: ''
@@ -351,15 +357,21 @@ const tableBlockCtrl = ContentState => {
             cell.column = i
           })
         })
-        cursorBlock = location === 'left' ? this.getPreSibling(cellBlock).children[0] : this.getNextSibling(cellBlock).children[0]
+        cursorBlock =
+          location === 'left'
+            ? this.getPreSibling(cellBlock).children[0]
+            : this.getNextSibling(cellBlock).children[0]
         // handle remove column
       } else {
         if (currentRow.children.length <= 2) return
-        [...thead.children, ...tbody.children].forEach(tableRow => {
+        ;[...thead.children, ...tbody.children].forEach(tableRow => {
           const targetCell = tableRow.children[columnIndex]
-          const removeCell = location === 'left'
-            ? this.getPreSibling(targetCell)
-            : (location === 'current' ? targetCell : this.getNextSibling(targetCell))
+          const removeCell =
+            location === 'left'
+              ? this.getPreSibling(targetCell)
+              : location === 'current'
+                ? targetCell
+                : this.getNextSibling(targetCell)
           if (removeCell === cellBlock) {
             cursorBlock = this.findNextBlockInLocation(block)
           }
@@ -394,8 +406,7 @@ const tableBlockCtrl = ContentState => {
     const endBlock = this.getBlock(end.key)
     const startParents = this.getParents(startBlock)
     const endParents = this.getParents(endBlock)
-    const affiliation = startParents
-      .filter(p => endParents.includes(p))
+    const affiliation = startParents.filter(p => endParents.includes(p))
 
     if (affiliation.length) {
       const figure = affiliation.find(p => p.type === 'figure')
@@ -408,7 +419,7 @@ const tableBlockCtrl = ContentState => {
     if (type !== 'p') return false
     const { text } = block.children[0]
     const match = TABLE_BLOCK_REG.exec(text)
-    return (match && isLengthEven(match[1]) && isLengthEven(match[2])) ? this.initTable(block) : false
+    return match && isLengthEven(match[1]) && isLengthEven(match[2]) ? this.initTable(block) : false
   }
 }
 

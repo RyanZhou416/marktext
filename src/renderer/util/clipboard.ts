@@ -23,10 +23,7 @@ export const guessClipboardFilePath = (): string => {
     return Array.isArray(result) && result.length ? result[0] : ''
   } else if (isWindows) {
     const rawFilePath: string = clipboard.read('FileNameW')
-    const filePath: string = rawFilePath.replace(
-      new RegExp(String.fromCharCode(0), 'g'),
-      ''
-    )
+    const filePath: string = rawFilePath.replace(new RegExp(String.fromCharCode(0), 'g'), '')
     return filePath && typeof filePath === 'string' ? filePath : ''
   } else {
     return ''

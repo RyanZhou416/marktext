@@ -99,26 +99,23 @@ const state = {
 const getters = {}
 
 const mutations = {
-  SET_USER_PREFERENCE (state, preference) {
-    Object.keys(preference).forEach((key) => {
-      if (
-        typeof preference[key] !== 'undefined' &&
-        typeof state[key] !== 'undefined'
-      ) {
+  SET_USER_PREFERENCE(state, preference) {
+    Object.keys(preference).forEach(key => {
+      if (typeof preference[key] !== 'undefined' && typeof state[key] !== 'undefined') {
         state[key] = preference[key]
       }
     })
   },
-  SET_MODE (state, { type, checked }) {
+  SET_MODE(state, { type, checked }) {
     state[type] = checked
   },
-  TOGGLE_VIEW_MODE (state, entryName) {
+  TOGGLE_VIEW_MODE(state, entryName) {
     state[entryName] = !state[entryName]
   }
 }
 
 const actions = {
-  ASK_FOR_USER_PREFERENCE ({ commit }) {
+  ASK_FOR_USER_PREFERENCE({ commit }) {
     ipcRenderer.send('mt::ask-for-user-preference')
     ipcRenderer.send('mt::ask-for-user-data')
 
@@ -127,24 +124,24 @@ const actions = {
     })
   },
 
-  SET_SINGLE_PREFERENCE ({ commit }, { type, value }) {
+  SET_SINGLE_PREFERENCE({ commit }, { type, value }) {
     // save to electron-store
     ipcRenderer.send('mt::set-user-preference', { [type]: value })
   },
 
-  SET_USER_DATA ({ commit }, { type, value }) {
+  SET_USER_DATA({ commit }, { type, value }) {
     ipcRenderer.send('mt::set-user-data', { [type]: value })
   },
 
-  SET_IMAGE_FOLDER_PATH ({ commit }, value) {
+  SET_IMAGE_FOLDER_PATH({ commit }, value) {
     ipcRenderer.send('mt::ask-for-modify-image-folder-path', value)
   },
 
-  SELECT_DEFAULT_DIRECTORY_TO_OPEN ({ commit }) {
+  SELECT_DEFAULT_DIRECTORY_TO_OPEN({ commit }) {
     ipcRenderer.send('mt::select-default-directory-to-open')
   },
 
-  LISTEN_FOR_VIEW ({ commit, dispatch }) {
+  LISTEN_FOR_VIEW({ commit, dispatch }) {
     ipcRenderer.on('mt::show-command-palette', () => {
       bus.$emit('show-command-palette')
     })
@@ -155,14 +152,14 @@ const actions = {
   },
 
   // Toggle a view option and notify main process to toggle menu item.
-  LISTEN_TOGGLE_VIEW ({ commit, dispatch, state }) {
-    bus.$on('view:toggle-view-entry', (entryName) => {
+  LISTEN_TOGGLE_VIEW({ commit, dispatch, state }) {
+    bus.$on('view:toggle-view-entry', entryName => {
       commit('TOGGLE_VIEW_MODE', entryName)
       dispatch('DISPATCH_EDITOR_VIEW_STATE', { [entryName]: state[entryName] })
     })
   },
 
-  DISPATCH_EDITOR_VIEW_STATE (_, viewState) {
+  DISPATCH_EDITOR_VIEW_STATE(_, viewState) {
     const { windowId } = window.marktext.env
     ipcRenderer.send('mt::view-layout-changed', windowId, viewState)
   }

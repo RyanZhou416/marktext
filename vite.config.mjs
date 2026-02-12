@@ -35,6 +35,7 @@ export default defineConfig({
   build: {
     outDir: resolve(__dirname, 'out/renderer'),
     emptyOutDir: true,
+    target: 'esnext',
     rollupOptions: {
       input: {
         index: resolve(__dirname, 'src/renderer/index.html')
@@ -99,13 +100,15 @@ export default defineConfig({
       'vue',
       'pinia',
       'vue-router',
-      'element-plus',
+      'radix-vue',
       'snabbdom',
       'snabbdom-to-html',
       'mermaid',
       'katex',
       'prismjs',
-      'mitt'
+      'mitt',
+      '@vueuse/core',
+      'vue-sonner'
     ],
     exclude: [
       '@tauri-apps/api',
@@ -118,7 +121,7 @@ export default defineConfig({
       '@tauri-apps/plugin-window-state'
     ],
     esbuildOptions: {
-      target: 'es2020',
+      target: 'esnext',
       define: {
         global: 'globalThis',
         'process.env.NODE_DEBUG': 'false'

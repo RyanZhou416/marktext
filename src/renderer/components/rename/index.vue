@@ -3,7 +3,13 @@
     <AppDialog v-model:open="showRename" title="Rename" width="410px">
       <div class="search-wrapper">
         <div class="input-wrapper">
-          <input type="text" v-model="tempName" class="search" @keyup.13="confirm" ref="search" />
+          <input
+            ref="search"
+            v-model="tempName"
+            type="text"
+            class="search"
+            @keyup.enter="confirm"
+          />
           <svg class="icon" aria-hidden="true" @click="confirm">
             <use xlink:href="#icon-markdown"></use>
           </svg>

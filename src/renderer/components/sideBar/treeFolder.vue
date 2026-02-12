@@ -2,12 +2,12 @@
   <div class="side-bar-folder">
     <FileContextMenu :has-paste-content="!!clipboard" @action="handleContextAction">
       <div
+        ref="folder"
         class="folder-name"
-        @click="folderNameClick"
         :style="{ 'padding-left': `${depth * 20 + 20}px` }"
         :class="[{ active: folder.id === activeItem.id }]"
         :title="folder.pathname"
-        ref="folder"
+        @click="folderNameClick"
       >
         <svg class="icon" aria-hidden="true">
           <use
@@ -15,18 +15,18 @@
           ></use>
         </svg>
         <input
-          type="text"
-          @click.stop="noop"
-          class="rename"
           v-if="renameCache === folder.pathname"
-          v-model="newName"
           ref="renameInput"
+          v-model="newName"
+          type="text"
+          class="rename"
+          @click.stop="noop"
           @keydown.enter="rename"
         />
         <span v-else class="text-overflow">{{ folder.name }}</span>
       </div>
     </FileContextMenu>
-    <div class="folder-contents" v-if="!folder.isCollapsed">
+    <div v-if="!folder.isCollapsed" class="folder-contents">
       <folder
         v-for="(childFolder, index) of folder.folders"
         :key="index + 'folder'"
@@ -34,13 +34,13 @@
         :depth="depth + 1"
       ></folder>
       <input
-        type="text"
         v-if="createCache.dirname === folder.pathname"
+        ref="input"
+        v-model="createName"
+        type="text"
         class="new-input"
         :style="{ 'margin-left': `${depth * 5 + 15}px` }"
-        ref="input"
         @keydown.enter="handleInputEnter"
-        v-model="createName"
       />
       <file
         v-for="(file, index) of folder.files"
@@ -61,20 +61,10 @@ import { ref, toRef } from 'vue'
 import { useCreateFileOrDirectory } from '../../composables/useCreateFileOrDirectory'
 
 export default {
-  setup(props) {
-    const inputRef = ref(null)
-    const folderRef = toRef(props, 'folder')
-    const { createName, handleInputFocus, handleInputEnter } = useCreateFileOrDirectory(
-      inputRef,
-      folderRef
-    )
-    return { createName, handleInputFocus, handleInputEnter, input: inputRef }
-  },
-  name: 'folder',
-  data() {
-    return {
-      newName: ''
-    }
+  name: 'Folder',
+  components: {
+    File: () => import('./treeFile.vue'),
+    FileContextMenu
   },
   props: {
     folder: {
@@ -86,9 +76,19 @@ export default {
       required: true
     }
   },
-  components: {
-    File: () => import('./treeFile.vue'),
-    FileContextMenu
+  setup(props) {
+    const inputRef = ref(null)
+    const folderRef = toRef(props, 'folder')
+    const { createName, handleInputFocus, handleInputEnter } = useCreateFileOrDirectory(
+      inputRef,
+      folderRef
+    )
+    return { createName, handleInputFocus, handleInputEnter, input: inputRef }
+  },
+  data() {
+    return {
+      newName: ''
+    }
   },
   computed: {
     ...mapState(useProjectStore, ['renameCache', 'createCache', 'activeItem', 'clipboard'])

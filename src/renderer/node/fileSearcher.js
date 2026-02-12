@@ -5,7 +5,7 @@ const { spawn } = childProcess
 
 // Use ripgrep searcher to search for files on disk only.
 class FileSearcher extends RipgrepDirectorySearcher {
-  searchInDirectory (directoryPath, pattern, options, numPathsFound) {
+  searchInDirectory(directoryPath, pattern, options, numPathsFound) {
     const args = ['--files']
 
     if (options.followSymlinks) {
@@ -18,10 +18,7 @@ class FileSearcher extends RipgrepDirectorySearcher {
       args.push('--no-ignore')
     }
 
-    for (const inclusion of this.prepareGlobs(
-      options.inclusions,
-      directoryPath
-    )) {
+    for (const inclusion of this.prepareGlobs(options.inclusions, directoryPath)) {
       args.push('--iglob', inclusion)
     }
 
@@ -53,15 +50,15 @@ class FileSearcher extends RipgrepDirectorySearcher {
           resolve()
         }
       })
-      child.on('error', (err) => {
+      child.on('error', err => {
         reject(err)
       })
 
-      child.stderr.on('data', (chunk) => {
+      child.stderr.on('data', chunk => {
         bufferError += chunk
       })
 
-      child.stdout.on('data', (chunk) => {
+      child.stdout.on('data', chunk => {
         if (cancelled) {
           return
         }

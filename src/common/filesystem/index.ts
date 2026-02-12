@@ -40,9 +40,16 @@ if (typeof window !== 'undefined' && (window as any).electronAPI) {
   const api = (window as any).electronAPI
   fs = {
     existsSync: api.fs.existsSync || ((): boolean => false),
-    lstatSync: api.fs.lstatSync || ((): LstatResult => ({ isDirectory: () => false, isFile: () => false, isSymbolicLink: () => false })),
+    lstatSync:
+      api.fs.lstatSync ||
+      ((): LstatResult => ({
+        isDirectory: () => false,
+        isFile: () => false,
+        isSymbolicLink: () => false
+      })),
     readlinkSync: api.fs.readlinkSync || ((): string => ''),
-    mkdirSync: (p: string, opts?: { recursive?: boolean }): void => api.fs.mkdirSync ? api.fs.mkdirSync(p, opts) : undefined,
+    mkdirSync: (p: string, opts?: { recursive?: boolean }): void =>
+      api.fs.mkdirSync ? api.fs.mkdirSync(p, opts) : undefined,
     ensureDirSync: (dirPath: string): void => {
       try {
         if (api.fs.mkdirSync) api.fs.mkdirSync(dirPath, { recursive: true })
@@ -57,10 +64,15 @@ if (typeof window !== 'undefined' && (window as any).electronAPI) {
   path = api.path
 } else {
   // 降级 stub - API 未初始化时使用
-  const sep: string = typeof navigator !== 'undefined' && navigator.platform.startsWith('Win') ? '\\' : '/'
+  const sep: string =
+    typeof navigator !== 'undefined' && navigator.platform.startsWith('Win') ? '\\' : '/'
   fs = {
     existsSync: (): boolean => false,
-    lstatSync: (): LstatResult => ({ isDirectory: () => false, isFile: () => false, isSymbolicLink: () => false }),
+    lstatSync: (): LstatResult => ({
+      isDirectory: () => false,
+      isFile: () => false,
+      isSymbolicLink: () => false
+    }),
     readlinkSync: (): string => '',
     mkdirSync: (): void => {},
     ensureDirSync: (): void => {}
@@ -69,9 +81,18 @@ if (typeof window !== 'undefined' && (window as any).electronAPI) {
     access: (): Promise<void> => Promise.reject(new Error('fs.access not available'))
   }
   path = {
-    join: (...args: string[]): string => args.filter(Boolean).join(sep).replace(/[/\\]+/g, sep),
-    resolve: (...args: string[]): string => args.filter(Boolean).join(sep).replace(/[/\\]+/g, sep),
-    dirname: (p: string): string => p ? p.substring(0, Math.max(p.lastIndexOf('/'), p.lastIndexOf('\\'))) || sep : '.',
+    join: (...args: string[]): string =>
+      args
+        .filter(Boolean)
+        .join(sep)
+        .replace(/[/\\]+/g, sep),
+    resolve: (...args: string[]): string =>
+      args
+        .filter(Boolean)
+        .join(sep)
+        .replace(/[/\\]+/g, sep),
+    dirname: (p: string): string =>
+      p ? p.substring(0, Math.max(p.lastIndexOf('/'), p.lastIndexOf('\\'))) || sep : '.',
     basename: (p: string, ext?: string): string => {
       if (!p) return ''
       let base = p.substring(Math.max(p.lastIndexOf('/'), p.lastIndexOf('\\')) + 1)
@@ -84,7 +105,7 @@ if (typeof window !== 'undefined' && (window as any).electronAPI) {
       const dotIdx = base.lastIndexOf('.')
       return dotIdx > 0 ? base.slice(dotIdx) : ''
     },
-    normalize: (p: string): string => p ? p.replace(/[/\\]+/g, sep) : '.',
+    normalize: (p: string): string => (p ? p.replace(/[/\\]+/g, sep) : '.'),
     isAbsolute: (p: string): boolean => {
       if (!p) return false
       if (sep === '\\') return /^[A-Za-z]:[/\\]/.test(p)

@@ -115,6 +115,15 @@ export default {
     AppMenu,
     AppTooltip
   },
+  props: {
+    project: Object,
+    filename: String,
+    pathname: String,
+    active: Boolean,
+    wordCount: Object,
+    platform: String,
+    isSaved: Boolean
+  },
   setup(props: any) {
     const windowTitle = computed(() => {
       const hasOpenFolder = props.project && props.project.name
@@ -163,15 +172,6 @@ export default {
     ipcRenderer.on('mt::window-enter-full-screen', this.onEnterFullScreen)
     ipcRenderer.on('mt::window-leave-full-screen', this.onLeaveFullScreen)
   },
-  props: {
-    project: Object,
-    filename: String,
-    pathname: String,
-    active: Boolean,
-    wordCount: Object,
-    platform: String,
-    isSaved: Boolean
-  },
   computed: {
     ...mapState(usePreferencesStore, [
       'titleBarStyle',
@@ -218,6 +218,12 @@ export default {
       else if (le === 'lf') ids.add('edit.line-ending-lf')
       return ids
     }
+  },
+  beforeUnmount() {
+    ipcRenderer.off('window-maximize', this.onMaximize)
+    ipcRenderer.off('window-unmaximize', this.onUnmaximize)
+    ipcRenderer.off('window-enter-full-screen', this.onEnterFullScreen)
+    ipcRenderer.off('window-leave-full-screen', this.onLeaveFullScreen)
   },
 
   methods: {
@@ -276,12 +282,6 @@ export default {
     onLeaveFullScreen() {
       this.isFullScreen = false
     }
-  },
-  beforeUnmount() {
-    ipcRenderer.off('window-maximize', this.onMaximize)
-    ipcRenderer.off('window-unmaximize', this.onUnmaximize)
-    ipcRenderer.off('window-enter-full-screen', this.onEnterFullScreen)
-    ipcRenderer.off('window-leave-full-screen', this.onLeaveFullScreen)
   }
 }
 </script>

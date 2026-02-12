@@ -13,7 +13,7 @@
 const overlayMode = CodeMirror => {
   CodeMirror.overlayMode = function (base, overlay, combine) {
     return {
-      startState () {
+      startState() {
         return {
           base: CodeMirror.startState(base),
           overlay: CodeMirror.startState(overlay),
@@ -25,7 +25,7 @@ const overlayMode = CodeMirror => {
         }
       },
 
-      copyState (state) {
+      copyState(state) {
         return {
           base: CodeMirror.copyState(base, state.base),
           overlay: CodeMirror.copyState(overlay, state.overlay),
@@ -36,9 +36,11 @@ const overlayMode = CodeMirror => {
         }
       },
 
-      token (stream, state) {
-        if (stream !== state.streamSeen ||
-          Math.min(state.basePos, state.overlayPos) < stream.start) {
+      token(stream, state) {
+        if (
+          stream !== state.streamSeen ||
+          Math.min(state.basePos, state.overlayPos) < stream.start
+        ) {
           state.streamSeen = stream
           state.basePos = state.overlayPos = stream.start
         }
@@ -61,28 +63,29 @@ const overlayMode = CodeMirror => {
         if (state.overlayCur === null) {
           return state.baseCur
         } else if (
-          (state.baseCur !== null &&
-          state.overlay.combineTokens) ||
+          (state.baseCur !== null && state.overlay.combineTokens) ||
           (combine && state.overlay.combineTokens === null)
         ) {
           return state.baseCur + ' ' + state.overlayCur
         } else return state.overlayCur
       },
 
-      indent: base.indent && function (state, textAfter) {
-        return base.indent(state.base, textAfter)
-      },
+      indent:
+        base.indent &&
+        function (state, textAfter) {
+          return base.indent(state.base, textAfter)
+        },
 
       electricChars: base.electricChars,
 
-      innerMode (state) {
+      innerMode(state) {
         return {
           state: state.base,
           mode: base
         }
       },
 
-      blankLine (state) {
+      blankLine(state) {
         let baseToken
         let overlayToken
         if (base.blankLine) baseToken = base.blankLine(state.base)
@@ -90,7 +93,9 @@ const overlayMode = CodeMirror => {
 
         return overlayToken == null
           ? baseToken
-          : (combine && baseToken != null ? baseToken + ' ' + overlayToken : overlayToken)
+          : combine && baseToken != null
+            ? baseToken + ' ' + overlayToken
+            : overlayToken
       }
     }
   }

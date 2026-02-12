@@ -12,7 +12,7 @@ class Node {
   slug: string | null
   children: Node[]
 
-  constructor (item: TocItem) {
+  constructor(item: TocItem) {
     const { parent, lvl, content, slug } = item
     this.parent = parent ?? null
     this.lvl = lvl
@@ -22,7 +22,7 @@ class Node {
   }
 
   // Add child node.
-  addChild (node: Node): void {
+  addChild(node: Node): void {
     this.children.push(node)
   }
 }

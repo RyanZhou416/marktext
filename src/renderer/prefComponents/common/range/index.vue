@@ -2,10 +2,10 @@
   <section class="pref-range-item" :class="{ 'ag-underdevelop': disable }">
     <div class="description">
       <span>{{ description }}:</span>
-      <span class="value" v-if="selectValue"
+      <span v-if="selectValue" class="value"
         >{{ selectValue }} <span v-if="unit">{{ unit }}</span></span
       >
-      <i class="el-icon-info" v-if="more" @click="handleMoreClick"></i>
+      <i v-if="more" class="el-icon-info" @click="handleMoreClick"></i>
     </div>
     <input
       type="range"

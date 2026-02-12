@@ -1,7 +1,12 @@
 import katex from 'katex'
 import prism, { loadedLanguages, transformAliasToOrigin } from '../../../prism/'
 import 'katex/dist/contrib/mhchem.min.js'
-import { CLASS_OR_ID, DEVICE_MEMORY, PREVIEW_DOMPURIFY_CONFIG, HAS_TEXT_BLOCK_REG } from '../../../config'
+import {
+  CLASS_OR_ID,
+  DEVICE_MEMORY,
+  PREVIEW_DOMPURIFY_CONFIG,
+  HAS_TEXT_BLOCK_REG
+} from '../../../config'
 import { tokenizer } from '../../'
 import { snakeToCamel, sanitize, escapeHTML, getLongUniqueId, getImageInfo } from '../../../utils'
 import { h, htmlToVNode } from '../snabbdom'
@@ -27,10 +32,9 @@ const getHighlightHtml = (text, highlights, escape = false, handleLineEnding = f
     const className = active ? 'ag-highlight' : 'ag-selection'
     let highlightContent = text.substring(start, end)
     if (handleLineEnding && text.endsWith('\n') && end === text.length) {
-      highlightContent = highlightContent.substring(start, end - 1) +
-      (escape
-        ? getEscapeHTML('ag-line-end', '\n')
-        : '<span class="ag-line-end">\n</span>')
+      highlightContent =
+        highlightContent.substring(start, end - 1) +
+        (escape ? getEscapeHTML('ag-line-end', '\n') : '<span class="ag-line-end">\n</span>')
     }
     code += escape
       ? getEscapeHTML(className, highlightContent)
@@ -39,10 +43,9 @@ const getHighlightHtml = (text, highlights, escape = false, handleLineEnding = f
   }
   if (pos !== text.length) {
     if (handleLineEnding && text.endsWith('\n')) {
-      code += text.substring(pos, text.length - 1) +
-      (escape
-        ? getEscapeHTML('ag-line-end', '\n')
-        : '<span class="ag-line-end">\n</span>')
+      code +=
+        text.substring(pos, text.length - 1) +
+        (escape ? getEscapeHTML('ag-line-end', '\n') : '<span class="ag-line-end">\n</span>')
     } else {
       code += text.substring(pos)
     }
@@ -67,21 +70,13 @@ const hasReferenceToken = tokens => {
   return result
 }
 
-export default function renderLeafBlock (parent, block, activeBlocks, matches, useCache = false) {
+export default function renderLeafBlock(parent, block, activeBlocks, matches, useCache = false) {
   const { loadMathMap } = this
   const { cursor } = this.muya.contentState
   let selector = this.getSelector(block, activeBlocks)
   // highlight search key in block
   const highlights = matches.filter(m => m.key === block.key)
-  const {
-    text,
-    type,
-    checked,
-    key,
-    lang,
-    functionType,
-    editable
-  } = block
+  const { text, type, checked, key, lang, functionType, editable } = block
 
   const data = {
     props: {},
@@ -114,7 +109,10 @@ export default function renderLeafBlock (parent, block, activeBlocks, matches, u
         this.tokenCache.set(text, tokens)
       }
     }
-    children = tokens.reduce((acc, token) => [...acc, ...this[snakeToCamel(token.type)](h, cursor, block, token)], [])
+    children = tokens.reduce(
+      (acc, token) => [...acc, ...this[snakeToCamel(token.type)](h, cursor, block, token)],
+      []
+    )
   }
 
   if (editable === false) {
@@ -214,7 +212,7 @@ export default function renderLeafBlock (parent, block, activeBlocks, matches, u
 
     Object.assign(data.attrs, {
       type: 'checkbox',
-      style: `top: ${(fontSize * lineHeight / 2 - 8).toFixed(2)}px`
+      style: `top: ${((fontSize * lineHeight) / 2 - 8).toFixed(2)}px`
     })
 
     selector = `${type}#${key}.${CLASS_OR_ID.AG_TASK_LIST_ITEM_CHECKBOX}`

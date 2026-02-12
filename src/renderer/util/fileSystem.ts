@@ -1,10 +1,4 @@
-import {
-  path,
-  fs as electronFs,
-  os,
-  childProcess as cp,
-  crypto
-} from './tauri'
+import { path, fs as electronFs, os, childProcess as cp, crypto } from './tauri'
 import dayjs from 'dayjs'
 import { Octokit } from '@octokit/rest'
 import { isImageFile } from 'common/filesystem/paths'
@@ -67,19 +61,26 @@ const fse: FseModule = {
       await electronFs.copyFile(src, dest)
     }
   },
-  writeFile: (filepath: string, data: string, encoding?: string): Promise<void> => electronFs.writeFile(filepath, data, { encoding }),
+  writeFile: (filepath: string, data: string, encoding?: string): Promise<void> =>
+    electronFs.writeFile(filepath, data, { encoding }),
   unlink: (filepath: string): Promise<void> => electronFs.unlink(filepath),
   stat: (filepath: string): Promise<any> => electronFs.stat(filepath),
   readFile: (filepath: string): Promise<string> => electronFs.readFile(filepath)
 }
 
 export const create = async (pathname: string, type: string): Promise<void> => {
-  return type === 'directory'
-    ? fse.ensureDir(pathname)
-    : fse.outputFile(pathname, '')
+  return type === 'directory' ? fse.ensureDir(pathname) : fse.outputFile(pathname, '')
 }
 
-export const paste = async ({ src, dest, type }: { src: string; dest: string; type: string }): Promise<void> => {
+export const paste = async ({
+  src,
+  dest,
+  type
+}: {
+  src: string
+  dest: string
+  type: string
+}): Promise<void> => {
   return type === 'cut' ? fse.move(src, dest) : fse.copy(src, dest)
 }
 
@@ -163,10 +164,7 @@ export const moveImageToFolder = async (
     }
   } else {
     const file = image as File
-    const imagePath = path.join(
-      outputDir,
-      `${dayjs().format('YYYY-MM-DD-HH-mm-ss')}-${file.name}`
-    )
+    const imagePath = path.join(outputDir, `${dayjs().format('YYYY-MM-DD-HH-mm-ss')}-${file.name}`)
     const binaryString: string = await new Promise((resolve, reject) => {
       const fileReader = new FileReader()
       fileReader.onload = () => {
@@ -204,12 +202,7 @@ export const uploadImage = async (
   image: string | File,
   preferences: UploadPreferences
 ): Promise<string> => {
-  const {
-    currentUploader,
-    imageBed,
-    githubToken: auth,
-    cliScript
-  } = preferences
+  const { currentUploader, imageBed, githubToken: auth, cliScript } = preferences
   const { owner, repo, branch } = imageBed.github
   const isPath = typeof image === 'string'
   const MAX_SIZE = 5 * 1024 * 1024
@@ -228,12 +221,8 @@ export const uploadImage = async (
     const octokit = new Octokit({
       auth
     })
-    const path =
-      dayjs().format('YYYY/MM') +
-      `/${dayjs().format('DD-HH-mm-ss')}-${filename}`
-    const message = `Upload by MarkText at ${dayjs().format(
-      'YYYY-MM-DD HH:mm:ss'
-    )}`
+    const path = dayjs().format('YYYY/MM') + `/${dayjs().format('DD-HH-mm-ss')}-${filename}`
+    const message = `Upload by MarkText at ${dayjs().format('YYYY-MM-DD HH:mm:ss')}`
     const payload: Record<string, any> = {
       owner,
       repo,
@@ -255,7 +244,10 @@ export const uploadImage = async (
       })
   }
 
-  const uploadByCommand = async (uploader: string, filepath: string | ArrayBuffer): Promise<void> => {
+  const uploadByCommand = async (
+    uploader: string,
+    filepath: string | ArrayBuffer
+  ): Promise<void> => {
     let isPath = true
     if (typeof filepath !== 'string') {
       isPath = false
@@ -292,9 +284,7 @@ export const uploadImage = async (
   }
 
   const notification = (): void => {
-    rj!(
-      'Cannot upload more than 5M image, the image will be copied to the image folder'
-    )
+    rj!('Cannot upload more than 5M image, the image will be copied to the image folder')
   }
 
   if (isPath) {
@@ -353,9 +343,7 @@ export const isFileExecutableSync = (filepath: string): boolean => {
     const stat = statSync(filepath)
     return (
       stat.isFile() &&
-      (stat.mode &
-        (constants.S_IXUSR | constants.S_IXGRP | constants.S_IXOTH)) !==
-        0
+      (stat.mode & (constants.S_IXUSR | constants.S_IXGRP | constants.S_IXOTH)) !== 0
     )
   } catch (err) {
     // err ignored

@@ -1,18 +1,6 @@
 import { isEqualAccelerator } from 'common/keybinding'
 
-const characterKeys = [
-  '0',
-  '1',
-  '9',
-  'A',
-  'b',
-  'G',
-  'Z',
-  '~',
-  '!',
-  '@',
-  '#'
-]
+const characterKeys = ['0', '1', '9', 'A', 'b', 'G', 'Z', '~', '!', '@', '#']
 
 const nonCharacterKeys = [
   'F1',

@@ -21,7 +21,7 @@ export const useProjectStore = defineStore('project', {
   }),
 
   actions: {
-    SET_ROOT_DIRECTORY (pathname: string) {
+    SET_ROOT_DIRECTORY(pathname: string) {
       let name = path.basename(pathname)
       if (!name) {
         name = pathname
@@ -37,47 +37,47 @@ export const useProjectStore = defineStore('project', {
       }
     },
 
-    SET_NEWFILENAME (name: string) {
+    SET_NEWFILENAME(name: string) {
       this.newFileNameCache = name
     },
 
-    ADD_FILE (change: any) {
+    ADD_FILE(change: any) {
       const { projectTree } = this
       addFile(projectTree, change)
     },
 
-    UNLINK_FILE (change: any) {
+    UNLINK_FILE(change: any) {
       const { projectTree } = this
       unlinkFile(projectTree, change)
     },
 
-    ADD_DIRECTORY (change: any) {
+    ADD_DIRECTORY(change: any) {
       const { projectTree } = this
       addDirectory(projectTree, change)
     },
 
-    UNLINK_DIRECTORY (change: any) {
+    UNLINK_DIRECTORY(change: any) {
       const { projectTree } = this
       unlinkDirectory(projectTree, change)
     },
 
-    SET_ACTIVE_ITEM (activeItem: any) {
+    SET_ACTIVE_ITEM(activeItem: any) {
       this.activeItem = activeItem
     },
 
-    SET_CLIPBOARD (data: any) {
+    SET_CLIPBOARD(data: any) {
       this.clipboard = data
     },
 
-    CREATE_PATH (cache: any) {
+    CREATE_PATH(cache: any) {
       this.createCache = cache
     },
 
-    SET_RENAME_CACHE (cache: string | null) {
+    SET_RENAME_CACHE(cache: string | null) {
       this.renameCache = cache
     },
 
-    LISTEN_FOR_LOAD_PROJECT () {
+    LISTEN_FOR_LOAD_PROJECT() {
       ipcRenderer.on('mt::open-directory', (e: any, pathname: string) => {
         this.SET_ROOT_DIRECTORY(pathname)
         const layout = useLayoutStore()
@@ -90,18 +90,14 @@ export const useProjectStore = defineStore('project', {
       })
     },
 
-    LISTEN_FOR_UPDATE_PROJECT () {
+    LISTEN_FOR_UPDATE_PROJECT() {
       const editor = useEditorStore()
       ipcRenderer.on('mt::update-object-tree', (e: any, { type, change }: any) => {
         switch (type) {
           case 'add': {
             const { pathname, data, isMarkdown } = change
             this.ADD_FILE(change)
-            if (
-              isMarkdown &&
-              this.newFileNameCache &&
-              pathname === this.newFileNameCache
-            ) {
+            if (isMarkdown && this.newFileNameCache && pathname === this.newFileNameCache) {
               const fileState = getFileStateFromData(data)
               editor.UPDATE_CURRENT_FILE(fileState)
               this.SET_NEWFILENAME('')
@@ -129,19 +125,19 @@ export const useProjectStore = defineStore('project', {
       })
     },
 
-    CHANGE_ACTIVE_ITEM (activeItem: any) {
+    CHANGE_ACTIVE_ITEM(activeItem: any) {
       this.SET_ACTIVE_ITEM(activeItem)
     },
 
-    CHANGE_CLIPBOARD (data: any) {
+    CHANGE_CLIPBOARD(data: any) {
       this.SET_CLIPBOARD(data)
     },
 
-    ASK_FOR_OPEN_PROJECT () {
+    ASK_FOR_OPEN_PROJECT() {
       ipcRenderer.send('mt::ask-for-open-project-in-sidebar')
     },
 
-    LISTEN_FOR_SIDEBAR_CONTEXT_MENU () {
+    LISTEN_FOR_SIDEBAR_CONTEXT_MENU() {
       bus.$on('SIDEBAR::show-in-folder', () => {
         const { pathname } = this.activeItem
         shell.showItemInFolder(pathname)
@@ -171,8 +167,7 @@ export const useProjectStore = defineStore('project', {
         const { pathname, isDirectory } = this.activeItem
         const dirname = isDirectory ? pathname : path.dirname(pathname)
         if (clipboard && clipboard.src) {
-          clipboard.dest =
-            dirname + PATH_SEPARATOR + path.basename(clipboard.src)
+          clipboard.dest = dirname + PATH_SEPARATOR + path.basename(clipboard.src)
 
           if (path.normalize(clipboard.src) === path.normalize(clipboard.dest)) {
             notice.notify({
@@ -203,7 +198,7 @@ export const useProjectStore = defineStore('project', {
       })
     },
 
-    CREATE_FILE_DIRECTORY (name: string) {
+    CREATE_FILE_DIRECTORY(name: string) {
       const { dirname, type } = this.createCache
 
       if (type === 'file' && !hasMarkdownExtension(name)) {
@@ -228,7 +223,7 @@ export const useProjectStore = defineStore('project', {
         })
     },
 
-    RENAME_IN_SIDEBAR (name: string) {
+    RENAME_IN_SIDEBAR(name: string) {
       const src = this.renameCache!
       const dirname = path.dirname(src)
       const dest = dirname + PATH_SEPARATOR + name
@@ -238,7 +233,7 @@ export const useProjectStore = defineStore('project', {
       })
     },
 
-    OPEN_SETTING_WINDOW () {
+    OPEN_SETTING_WINDOW() {
       ipcRenderer.send('mt::open-setting-window')
     }
   }

@@ -22,7 +22,7 @@
   },
   "bundle": {
     "active": true,
-    "targets": ["msi", "nsis"],
+    "targets": [],
     "icon": [
       "../resources/icons/32x32/icon.png",
       "../resources/icons/128x128/icon.png",
@@ -49,10 +49,5 @@
       }
     }
   },
-  "plugins": {
-    "updater": {
-      "endpoints": ["https://github.com/marktext/marktext/releases/latest/download/latest.json"],
-      "pubkey": ""
-    }
-  }
+  "plugins": {}
 }

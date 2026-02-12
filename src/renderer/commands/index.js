@@ -12,23 +12,23 @@ export { default as SpellcheckerLanguageCommand } from './spellcheckerLanguage'
 export { default as TrailingNewlineCommand } from './trailingNewline'
 
 export class RootCommand {
-  constructor (subcommands = []) {
+  constructor(subcommands = []) {
     this.id = '#'
     this.description = '#'
     this.subcommands = subcommands
     this.subcommandSelectedIndex = -1
   }
 
-  async run () {}
-  async unload () {}
+  async run() {}
+  async unload() {}
 
   // Execute the command.
-  async execute () {
+  async execute() {
     throw new Error('Root command.')
   }
 }
 
-const focusEditorAndExecute = (fn) => {
+const focusEditorAndExecute = fn => {
   setTimeout(() => bus.$emit('editor-focus'), 10)
   setTimeout(() => fn(), 150)
 }
@@ -164,17 +164,13 @@ const commands = [
   {
     id: 'edit.create-paragraph',
     execute: async () => {
-      focusEditorAndExecute(() =>
-        bus.$emit('createParagraph', 'createParagraph')
-      )
+      focusEditorAndExecute(() => bus.$emit('createParagraph', 'createParagraph'))
     }
   },
   {
     id: 'edit.delete-paragraph',
     execute: async () => {
-      focusEditorAndExecute(() =>
-        bus.$emit('deleteParagraph', 'deleteParagraph')
-      )
+      focusEditorAndExecute(() => bus.$emit('deleteParagraph', 'deleteParagraph'))
     }
   },
   {
@@ -191,7 +187,8 @@ const commands = [
       await delay(150)
       bus.$emit('findNext', 'findNext')
     }
-  }, {
+  },
+  {
     id: 'edit.find-previous',
     description: 'Edit: Find Previous',
     execute: async () => {
@@ -568,9 +565,7 @@ const commands = [
   {
     id: 'view.typewriter-mode',
     execute: async () => {
-      focusEditorAndExecute(() =>
-        bus.$emit('view:toggle-view-entry', 'typewriter')
-      )
+      focusEditorAndExecute(() => bus.$emit('view:toggle-view-entry', 'typewriter'))
     }
   },
   {
@@ -629,17 +624,13 @@ const commands = [
   {
     id: 'docs.user-guide',
     execute: async () => {
-      shell.openExternal(
-        'https://github.com/marktext/marktext/blob/master/docs/README.md'
-      )
+      shell.openExternal('https://github.com/marktext/marktext/blob/master/docs/README.md')
     }
   },
   {
     id: 'docs.markdown-syntax',
     execute: async () => {
-      shell.openExternal(
-        'https://github.com/marktext/marktext/blob/master/docs/MARKDOWN_SYNTAX.md'
-      )
+      shell.openExternal('https://github.com/marktext/marktext/blob/master/docs/MARKDOWN_SYNTAX.md')
     }
   },
 

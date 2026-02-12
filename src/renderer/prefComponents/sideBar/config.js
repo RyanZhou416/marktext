@@ -8,55 +8,72 @@ import KeyBindingIcon from '@/assets/icons/pref_key_binding.svg'
 
 import preferences from 'common/preferences-schema.json'
 
-export const category = (t) => [{
-  name: t('settings.general'),
-  label: 'general',
-  icon: GeneralIcon,
-  path: '/preference/general'
-}, {
-  name: t('settings.editor'),
-  label: 'editor',
-  icon: EditorIcon,
-  path: '/preference/editor'
-}, {
-  name: t('settings.markdown'),
-  label: 'markdown',
-  icon: MarkdownIcon,
-  path: '/preference/markdown'
-}, {
-  name: t('settings.spelling'),
-  label: 'spelling',
-  icon: SpellIcon,
-  path: '/preference/spelling'
-}, {
-  name: t('settings.theme'),
-  label: 'theme',
-  icon: ThemeIcon,
-  path: '/preference/theme'
-}, {
-  name: t('settings.image'),
-  label: 'image',
-  icon: ImageIcon,
-  path: '/preference/image'
-}, {
-  name: t('settings.keyBindings'),
-  label: 'keybindings',
-  icon: KeyBindingIcon,
-  path: '/preference/keybindings'
-}]
+export const category = t => [
+  {
+    name: t('settings.general'),
+    label: 'general',
+    icon: GeneralIcon,
+    path: '/preference/general'
+  },
+  {
+    name: t('settings.editor'),
+    label: 'editor',
+    icon: EditorIcon,
+    path: '/preference/editor'
+  },
+  {
+    name: t('settings.markdown'),
+    label: 'markdown',
+    icon: MarkdownIcon,
+    path: '/preference/markdown'
+  },
+  {
+    name: t('settings.spelling'),
+    label: 'spelling',
+    icon: SpellIcon,
+    path: '/preference/spelling'
+  },
+  {
+    name: t('settings.theme'),
+    label: 'theme',
+    icon: ThemeIcon,
+    path: '/preference/theme'
+  },
+  {
+    name: t('settings.image'),
+    label: 'image',
+    icon: ImageIcon,
+    path: '/preference/image'
+  },
+  {
+    name: t('settings.keyBindings'),
+    label: 'keybindings',
+    icon: KeyBindingIcon,
+    path: '/preference/keybindings'
+  }
+]
 
-export const searchContent = Object.keys(preferences).map(k => {
-  const { description, enum: emums } = preferences[k]
-  let [category, preference] = description.split('--')
-  if (Array.isArray(emums)) {
-    preference += ` optional values: ${emums.join(', ')}`
-  }
-  return {
-    category,
-    preference
-  }
-})
+export const searchContent = Object.keys(preferences)
+  .map(k => {
+    const { description, enum: emums } = preferences[k]
+    let [category, preference] = description.split('--')
+    if (Array.isArray(emums)) {
+      preference += ` optional values: ${emums.join(', ')}`
+    }
+    return {
+      category,
+      preference
+    }
+  })
   .filter(({ category: ca }) => {
-    const validLabels = ['general', 'editor', 'markdown', 'spelling', 'theme', 'image', 'keybindings']
+    const validLabels = [
+      'general',
+      'editor',
+      'markdown',
+      'spelling',
+      'theme',
+      'image',
+      'keybindings'
+    ]
     return validLabels.includes(ca.toLowerCase())
   })

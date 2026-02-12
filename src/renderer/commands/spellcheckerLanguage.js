@@ -6,7 +6,7 @@ import { getLanguageName } from '@/spellchecker/languageMap'
 
 // Command to switch the spellchecker language
 class SpellcheckerLanguageCommand {
-  constructor (spellchecker) {
+  constructor(spellchecker) {
     this.id = 'spellchecker.switch-language'
     this.description = 'Spelling: Switch language'
     this.placeholder = 'Select a language to switch to'

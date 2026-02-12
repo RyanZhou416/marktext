@@ -32,6 +32,7 @@ vs-*.json
 src-tauri/target/
 src-tauri/gen/
 src-tauri/Cargo.lock
+src-tauri/.cargo/
 *.rs.bk
 **/*.rs.bk
 

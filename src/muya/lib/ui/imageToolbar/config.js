@@ -6,9 +6,9 @@ import rightIcon from '../../assets/pngicon/algin_right/2.png'
 import deleteIcon from '../../assets/pngicon/image_delete/2.png'
 
 // Translation function - injected from outside, defaults to identity
-let _t = (key) => key
+let _t = key => key
 
-export const setImageToolbarTranslator = (t) => {
+export const setImageToolbarTranslator = t => {
   _t = t
 }
 

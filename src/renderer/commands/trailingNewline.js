@@ -2,14 +2,10 @@ import { ipcRenderer } from '../util/tauri'
 import { delay } from '@/util'
 import bus from '../bus'
 
-const descriptions = [
-  'Trim all trailing newlines',
-  'Ensure single newline',
-  'Disabled'
-]
+const descriptions = ['Trim all trailing newlines', 'Ensure single newline', 'Disabled']
 
 class TrailingNewlineCommand {
-  constructor (editorState) {
+  constructor(editorState) {
     this.id = 'file.trailing-newline'
     this.description = 'File: Trailing Newline'
     this.placeholder = 'Select an option'

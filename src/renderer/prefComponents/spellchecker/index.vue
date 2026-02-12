@@ -6,7 +6,7 @@
         <bool
           :description="$t('settings.spelling.enable')"
           :bool="spellcheckerEnabled"
-          :onChange="handleSpellcheckerEnabled"
+          :on-change="handleSpellcheckerEnabled"
         ></bool>
       </template>
       <template #children>
@@ -14,7 +14,7 @@
           :description="$t('settings.spelling.hideMarks')"
           :bool="spellcheckerNoUnderline"
           :disable="!spellcheckerEnabled"
-          :onChange="value => onSelectChange('spellcheckerNoUnderline', value)"
+          :on-change="value => onSelectChange('spellcheckerNoUnderline', value)"
         ></bool>
         <bool
           v-show="isOsx"
@@ -28,7 +28,7 @@
           :value="spellcheckerLanguage"
           :options="availableDictionaries"
           :disable="!spellcheckerEnabled"
-          :onChange="handleSpellcheckerLanguage"
+          :on-change="handleSpellcheckerLanguage"
         ></cur-select>
       </template>
     </compound>
@@ -54,8 +54,8 @@
               <button
                 type="button"
                 class="btn-icon"
-                @click="handleDeleteClick(item)"
                 :title="$t('common.delete')"
+                @click="handleDeleteClick(item)"
               >
                 <i class="el-icon-delete"></i>
               </button>

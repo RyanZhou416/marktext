@@ -10,7 +10,7 @@ export class SpellChecker {
    *
    * @param {boolean} enabled Whether spell checking is enabled in settings.
    */
-  constructor (enabled = true, lang) {
+  constructor(enabled = true, lang) {
     this.enabled = enabled
     this.currentSpellcheckerLanguage = lang
 
@@ -22,7 +22,7 @@ export class SpellChecker {
   /**
    * Whether the spell checker is available and enabled.
    */
-  get isEnabled () {
+  get isEnabled() {
     return this.isProviderAvailable && this.enabled
   }
 
@@ -32,7 +32,7 @@ export class SpellChecker {
    * @param {string} lang The language to set.
    * @returns {Promise<boolean>}
    */
-  async activateSpellchecker (lang) {
+  async activateSpellchecker(lang) {
     try {
       this.enabled = true
       this.isProviderAvailable = true
@@ -40,9 +40,7 @@ export class SpellChecker {
         // No language string needed on macOS.
         return await ipcRenderer.invoke('mt::spellchecker-set-enabled', true)
       }
-      return await this.switchLanguage(
-        lang || this.currentSpellcheckerLanguage
-      )
+      return await this.switchLanguage(lang || this.currentSpellcheckerLanguage)
     } catch (error) {
       this.deactivateSpellchecker()
       throw error
@@ -52,7 +50,7 @@ export class SpellChecker {
   /**
    * Disables the native spell checker.
    */
-  deactivateSpellchecker () {
+  deactivateSpellchecker() {
     this.enabled = false
     this.isProviderAvailable = false
     ipcRenderer.invoke('mt::spellchecker-set-enabled', false)
@@ -61,14 +59,14 @@ export class SpellChecker {
   /**
    * Return the current language.
    */
-  get lang () {
+  get lang() {
     if (this.isEnabled) {
       return this.currentSpellcheckerLanguage
     }
     return ''
   }
 
-  set lang (lang) {
+  set lang(lang) {
     this.currentSpellcheckerLanguage = lang
   }
 
@@ -80,7 +78,7 @@ export class SpellChecker {
    * @param {string} lang The language code
    * @returns {Promise<boolean>} Return the language on success or null.
    */
-  async switchLanguage (lang) {
+  async switchLanguage(lang) {
     if (isOsx) {
       // NB: On macOS the OS spell checker is used and will detect the language automatically.
       return true
@@ -98,7 +96,7 @@ export class SpellChecker {
    * Returns a list of available dictionaries.
    * @returns {Promise<string[]>} Available dictionary languages.
    */
-  static async getAvailableDictionaries () {
+  static async getAvailableDictionaries() {
     if (isOsx) {
       // NB: On macOS the OS spell checker is used and will detect the language automatically.
       return []

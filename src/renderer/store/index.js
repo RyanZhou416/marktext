@@ -22,22 +22,22 @@ const state = {
 const getters = {}
 
 const mutations = {
-  SET_WIN_STATUS (state, status) {
+  SET_WIN_STATUS(state, status) {
     state.windowActive = status
   },
-  SET_INITIALIZED (state) {
+  SET_INITIALIZED(state) {
     state.init = true
   }
 }
 
 const actions = {
-  LINTEN_WIN_STATUS ({ commit, state }) {
+  LINTEN_WIN_STATUS({ commit, state }) {
     ipcRenderer.on('mt::window-active-status', (e, { status }) => {
       commit('SET_WIN_STATUS', status)
     })
   },
 
-  SEND_INITIALIZED ({ commit }) {
+  SEND_INITIALIZED({ commit }) {
     commit('SET_INITIALIZED')
   }
 }

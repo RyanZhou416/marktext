@@ -16,7 +16,7 @@ export default {
   },
 
   computed: {
-    dotSize () {
+    dotSize() {
       const size = `${this.size}px`
       return {
         width: size,
@@ -28,66 +28,66 @@ export default {
 </script>
 
 <style scoped>
-  .cpt-loading {
-    position: absolute;
-    top: 0;
-    left: 0;
-    display: flex;
-    align-items: center;
-    width: 100%;
-    height: 100%;
-  }
-  .loader {
-    width: 100%;
-    text-align: center;
+.cpt-loading {
+  position: absolute;
+  top: 0;
+  left: 0;
+  display: flex;
+  align-items: center;
+  width: 100%;
+  height: 100%;
+}
+.loader {
+  width: 100%;
+  text-align: center;
+}
+
+.loader span {
+  position: absolute;
+  display: inline-block;
+  border-radius: 50%;
+  animation: 3s infinite linear;
+}
+.loader span:nth-child(1) {
+  background: var(--themeColor);
+  animation: kiri 1.2s infinite linear;
+}
+.loader span:nth-child(2) {
+  z-index: 100;
+  background: var(--highlightColor);
+}
+.loader span:nth-child(3) {
+  background: var(--selectionColor);
+  animation: kanan 1.2s infinite linear;
+}
+
+@keyframes kanan {
+  0% {
+    transform: translateX(20px);
   }
 
-  .loader span {
-      position: absolute;
-      display: inline-block;
-      border-radius: 50%;
-      animation: 3s infinite linear;
-  }
-  .loader span:nth-child(1) {
-    background: var(--themeColor);
-    animation: kiri 1.2s infinite linear;
-  }
-  .loader span:nth-child(2) {
-    z-index: 100;
-    background: var(--highlightColor);
-  }
-  .loader span:nth-child(3) {
-    background: var(--selectionColor);
-    animation: kanan 1.2s infinite linear;
+  50% {
+    transform: translateX(-20px);
   }
 
-  @keyframes kanan {
-    0% {
-      transform: translateX(20px);
-    }
+  100% {
+    z-index: 200;
 
-    50% {
-      transform: translateX(-20px);
-    }
-
-    100% {
-      z-index: 200;
-
-      transform: translateX(20px);
-    }
+    transform: translateX(20px);
   }
+}
 
-  @keyframes kiri {
-    0% {
-      z-index: 200;
+@keyframes kiri {
+  0% {
+    z-index: 200;
 
-      transform: translateX(-20px);
-    }
-    50% {
-      transform: translateX(20px);
-    }
-    100% {
-      transform: translateX(-20px);
-    }
+    transform: translateX(-20px);
   }
+  50% {
+    transform: translateX(20px);
+  }
+  100% {
+    transform: translateX(-20px);
+  }
+}
 </style>

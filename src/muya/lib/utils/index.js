@@ -9,7 +9,7 @@ const TIMEOUT = 1500
  * In Tauri v2, `file://` protocol is blocked — use the `asset` protocol instead.
  * Falls back to `file://` for non-Tauri environments (Electron / browser).
  */
-export const toLocalFileUrl = (filePath) => {
+export const toLocalFileUrl = filePath => {
   if (typeof window !== 'undefined' && window.__TAURI_INTERNALS__) {
     // Tauri v2 asset protocol
     const encoded = encodeURIComponent(filePath)
@@ -28,7 +28,8 @@ const HTML_TAG_REPLACEMENTS = {
   "'": '&#39;'
 }
 
-export const isMetaKey = ({ key }) => key === 'Shift' || key === 'Control' || key === 'Alt' || key === 'Meta'
+export const isMetaKey = ({ key }) =>
+  key === 'Shift' || key === 'Control' || key === 'Alt' || key === 'Meta'
 
 export const noop = () => {}
 
@@ -212,7 +213,7 @@ export const getPageTitle = url => {
       }
     }
   }
-  const handleError = (e) => {
+  const handleError = e => {
     settle('')
   }
   req.open('GET', url)
@@ -245,7 +246,8 @@ export const checkImageContentType = url => {
         } else {
           settle(false)
         }
-      } else if (req.status === 405) { // status 405 means method not allowed, and just return true.(Solve issue#1297)
+      } else if (req.status === 405) {
+        // status 405 means method not allowed, and just return true.(Solve issue#1297)
         settle(true)
       } else {
         settle(false)
@@ -291,9 +293,10 @@ export const getImageInfo = (src, baseUrl = window.DIRNAME) => {
     } else {
       // Correct relative path on desktop. If we resolve a absolute path "path.resolve" doesn't do anything.
       // Use electronAPI.path (provided by Tauri bridge or Electron preload)
-      const pathModule = (typeof window !== 'undefined' && window.electronAPI && window.electronAPI.path)
-        ? window.electronAPI.path
-        : { resolve: (...args) => args.filter(Boolean).join('/') }
+      const pathModule =
+        typeof window !== 'undefined' && window.electronAPI && window.electronAPI.path
+          ? window.electronAPI.path
+          : { resolve: (...args) => args.filter(Boolean).join('/') }
       const resolvedPath = pathModule.resolve(baseUrl, src)
       return {
         isUnknownType: false,
@@ -333,7 +336,7 @@ export const escapeHTML = str =>
         '>': '&gt;',
         "'": '&#39;',
         '"': '&quot;'
-      }[tag] || tag)
+      })[tag] || tag
   )
 
 export const unescapeHTML = str =>
@@ -346,18 +349,19 @@ export const unescapeHTML = str =>
         '&gt;': '>',
         '&#39;': "'",
         '&quot;': '"'
-      }[tag] || tag)
+      })[tag] || tag
   )
 
 export const escapeInBlockHtml = html => {
-  return html
-    .replace(/(<(style|script|title)[^<>]*>)([\s\S]*?)(<\/\2>)/g, (m, p1, p2, p3, p4) => {
-      return `${escapeHTML(p1)}${p3}${escapeHTML(p4)}`
-    })
+  return html.replace(/(<(style|script|title)[^<>]*>)([\s\S]*?)(<\/\2>)/g, (m, p1, p2, p3, p4) => {
+    return `${escapeHTML(p1)}${p3}${escapeHTML(p4)}`
+  })
 }
 
 export const escapeHtmlTags = html => {
-  return html.replace(/[&<>"']/g, x => { return HTML_TAG_REPLACEMENTS[x] })
+  return html.replace(/[&<>"']/g, x => {
+    return HTML_TAG_REPLACEMENTS[x]
+  })
 }
 
 export const wordCount = markdown => {
@@ -392,7 +396,7 @@ export const sanitize = (html, purifyOptions, disableHtml) => {
 export const getParagraphReference = (ele, id) => {
   const { x, y, left, top, bottom, height } = ele.getBoundingClientRect()
   return {
-    getBoundingClientRect () {
+    getBoundingClientRect() {
       return { x, y, left, top, bottom, height, width: 0, right: left }
     },
     clientWidth: 0,
@@ -404,10 +408,10 @@ export const getParagraphReference = (ele, id) => {
 export const verticalPositionInRect = (event, rect) => {
   const { clientY } = event
   const { top, height } = rect
-  return (clientY - top) > (height / 2) ? 'down' : 'up'
+  return clientY - top > height / 2 ? 'down' : 'up'
 }
 
-export const collectFootnotes = (blocks) => {
+export const collectFootnotes = blocks => {
   const map = new Map()
   for (const block of blocks) {
     if (block.type === 'figure' && block.functionType === 'footnote') {

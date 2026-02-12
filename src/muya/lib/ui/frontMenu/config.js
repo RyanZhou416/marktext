@@ -13,32 +13,37 @@ const wholeSubMenu = Object.keys(quickInsertObj).reduce((acc, key) => {
 const COMMAND_KEY = isOsx ? '⌘' : '⌃'
 
 // Translation function - injected from outside, defaults to identity
-let _t = (key) => key
+let _t = key => key
 
-export const setFrontMenuTranslator = (t) => {
+export const setFrontMenuTranslator = t => {
   _t = t
 }
 
-export const getMenu = () => [{
-  icon: copyIcon,
-  label: 'duplicate',
-  text: _t('editor.frontMenu.duplicate'),
-  shortCut: `⇧${COMMAND_KEY}P`
-}, {
-  icon: turnIcon,
-  label: 'turnInto',
-  text: _t('editor.frontMenu.turnInto')
-}, {
-  icon: newIcon,
-  label: 'new',
-  text: _t('editor.frontMenu.newParagraph'),
-  shortCut: `⇧${COMMAND_KEY}N`
-}, {
-  icon: deleteIcon,
-  label: 'delete',
-  text: _t('editor.frontMenu.delete'),
-  shortCut: `⇧${COMMAND_KEY}D`
-}]
+export const getMenu = () => [
+  {
+    icon: copyIcon,
+    label: 'duplicate',
+    text: _t('editor.frontMenu.duplicate'),
+    shortCut: `⇧${COMMAND_KEY}P`
+  },
+  {
+    icon: turnIcon,
+    label: 'turnInto',
+    text: _t('editor.frontMenu.turnInto')
+  },
+  {
+    icon: newIcon,
+    label: 'new',
+    text: _t('editor.frontMenu.newParagraph'),
+    shortCut: `⇧${COMMAND_KEY}N`
+  },
+  {
+    icon: deleteIcon,
+    label: 'delete',
+    text: _t('editor.frontMenu.delete'),
+    shortCut: `⇧${COMMAND_KEY}D`
+  }
+]
 
 export const menu = getMenu()
 
@@ -124,9 +129,10 @@ export const getSubMenu = (block, startBlock, endBlock) => {
   switch (type) {
     case 'p': {
       return wholeSubMenu.filter(menuItem => {
-        const REG_EXP = startBlock.key === endBlock.key
-          ? /front-matter|hr|table/
-          : /front-matter|hr|table|heading/
+        const REG_EXP =
+          startBlock.key === endBlock.key
+            ? /front-matter|hr|table/
+            : /front-matter|hr|table|heading/
 
         return !REG_EXP.test(menuItem.label)
       })

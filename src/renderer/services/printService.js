@@ -7,7 +7,7 @@ class MarkdownPrint {
    * @param {string} html HTML string
    * @param {boolean} [renderStatic] Render for static files like PDF documents
    */
-  renderMarkdown (html, renderStatic = false) {
+  renderMarkdown(html, renderStatic = false) {
     this.clearup()
     const printContainer = document.createElement('article')
     printContainer.classList.add('print-container')
@@ -29,7 +29,7 @@ class MarkdownPrint {
   /**
    * Remove the print container from the window.
    */
-  clearup () {
+  clearup() {
     if (this.container) {
       this.container.remove()
     }

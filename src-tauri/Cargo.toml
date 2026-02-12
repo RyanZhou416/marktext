@@ -9,7 +9,9 @@ edition = "2021"
 
 [lib]
 name = "marktext_lib"
-crate-type = ["lib", "cdylib", "staticlib"]
+# "lib" for Rust usage, "cdylib" for Tauri system library
+# Add "staticlib" only if targeting iOS
+crate-type = ["lib", "cdylib"]
 
 [build-dependencies]
 tauri-build = { version = "2", features = [] }
@@ -24,7 +26,9 @@ tauri-plugin-window-state = "2"
 tauri-plugin-process = "2"
 tauri-plugin-os = "2"
 tauri-plugin-single-instance = "2"
-tauri-plugin-updater = "2"
+# updater brings reqwest + rustls + ring (~16s compile time)
+# Enable when auto-update is ready (requires pubkey in tauri.conf.json)
+tauri-plugin-updater = { version = "2", optional = true }
 
 # Font enumeration
 font-kit = "0.14"
@@ -32,8 +36,8 @@ font-kit = "0.14"
 # File watching
 notify = "7"
 
-# Async runtime
-tokio = { version = "1", features = ["full"] }
+# Async runtime (only fs + macros; Tauri provides the runtime)
+tokio = { version = "1", features = ["fs", "macros"] }
 
 # Serialization
 serde = { version = "1", features = ["derive"] }
@@ -47,17 +51,8 @@ anyhow = "1"
 hostname = "0.4"
 dirs = "5"
 
-# URL encoding
-urlencoding = "2"
-
 # Trash / recycle bin
 trash = "5"
-
-# CLI argument parsing
-clap = { version = "4", features = ["derive"] }
-
-# Secure credential storage
-keyring = "3"
 
 # Logging
 log = "0.4"
@@ -70,6 +65,7 @@ winapi = { version = "0.3", features = ["winuser"] }
 [features]
 default = []
 custom-protocol = ["tauri/custom-protocol"]
+updater = ["dep:tauri-plugin-updater"]
 
 # Dev profile: optimize dependencies for faster runtime without slowing down recompiles
 [profile.dev]

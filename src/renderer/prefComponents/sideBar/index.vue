@@ -41,8 +41,8 @@
         v-for="c of category"
         :key="c.name"
         class="item"
-        @click="handleCategoryItemClick(c)"
         :class="{ active: c.label === currentCategory }"
+        @click="handleCategoryItemClick(c)"
       >
         <svg :viewBox="c.icon.viewBox">
           <use :xlink:href="c.icon.url"></use>
@@ -100,6 +100,17 @@ export default {
       }
     }
   },
+
+  mounted() {
+    this.restaurants = this.loadAll()
+    if (this.$route && this.$route.name) {
+      this.currentCategory = this.$route.name
+    }
+    ipcRenderer.on('settings::change-tab', this.onIpcCategoryChange)
+  },
+  unmounted() {
+    ipcRenderer.removeAllListener('settings::change-tab', this.onIpcCategoryChange)
+  },
   methods: {
     displaySearchValue(item: SearchItem | null) {
       return item ? `${item.category}: ${item.preference}` : ''
@@ -141,17 +152,6 @@ export default {
         })
       }
     }
-  },
-
-  mounted() {
-    this.restaurants = this.loadAll()
-    if (this.$route && this.$route.name) {
-      this.currentCategory = this.$route.name
-    }
-    ipcRenderer.on('settings::change-tab', this.onIpcCategoryChange)
-  },
-  unmounted() {
-    ipcRenderer.removeAllListener('settings::change-tab', this.onIpcCategoryChange)
   }
 }
 </script>

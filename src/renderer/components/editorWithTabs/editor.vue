@@ -25,8 +25,8 @@
           <label>Rows</label>
           <input
             ref="rowInput"
-            type="number"
             v-model.number="tableChecker.rows"
+            type="number"
             min="1"
             max="30"
             class="input-number"
@@ -35,8 +35,8 @@
         <div class="form-item">
           <label>Columns</label>
           <input
-            type="number"
             v-model.number="tableChecker.columns"
+            type="number"
             min="1"
             max="20"
             class="input-number"
@@ -642,6 +642,40 @@ export default {
       setEditorWidth(editorLineWidth)
     })
   },
+  beforeUnmount() {
+    bus.$off('file-loaded', this.setMarkdownToEditor)
+    bus.$off('invalidate-image-cache', this.handleInvalidateImageCache)
+    bus.$off('undo', this.handleUndo)
+    bus.$off('redo', this.handleRedo)
+    bus.$off('selectAll', this.handleSelectAll)
+    bus.$off('export', this.handleExport)
+    bus.$off('print-service-clearup', this.handlePrintServiceClearup)
+    bus.$off('paragraph', this.handleEditParagraph)
+    bus.$off('format', this.handleInlineFormat)
+    bus.$off('searchValue', this.handleSearch)
+    bus.$off('replaceValue', this.handReplace)
+    bus.$off('find-action', this.handleFindAction)
+    bus.$off('insert-image', this.insertImage)
+    bus.$off('image-uploaded', this.handleUploadedImage)
+    bus.$off('file-changed', this.handleFileChange)
+    bus.$off('editor-blur', this.blurEditor)
+    bus.$off('editor-focus', this.focusEditor)
+    bus.$off('copyAsMarkdown', this.handleCopyPaste)
+    bus.$off('copyAsHtml', this.handleCopyPaste)
+    bus.$off('pasteAsPlainText', this.handleCopyPaste)
+    bus.$off('duplicate', this.handleParagraph)
+    bus.$off('createParagraph', this.handleParagraph)
+    bus.$off('deleteParagraph', this.handleParagraph)
+    bus.$off('insertParagraph', this.handleInsertParagraph)
+    bus.$off('scroll-to-header', this.scrollToHeader)
+    bus.$off('screenshot-captured', this.handleScreenShot)
+    bus.$off('switch-spellchecker-language', this.switchSpellcheckLanguage)
+    bus.$off('open-command-spellchecker-switch-language', this.openSpellcheckerLanguageCommand)
+    bus.$off('replace-misspelling', this.replaceMisspelling)
+
+    this.editor.destroy()
+    this.editor = null
+  },
   methods: {
     photoCreatorClick: url => {
       shell.openExternal(url)
@@ -1103,40 +1137,6 @@ export default {
         document.execCommand('paste')
       }
     }
-  },
-  beforeUnmount() {
-    bus.$off('file-loaded', this.setMarkdownToEditor)
-    bus.$off('invalidate-image-cache', this.handleInvalidateImageCache)
-    bus.$off('undo', this.handleUndo)
-    bus.$off('redo', this.handleRedo)
-    bus.$off('selectAll', this.handleSelectAll)
-    bus.$off('export', this.handleExport)
-    bus.$off('print-service-clearup', this.handlePrintServiceClearup)
-    bus.$off('paragraph', this.handleEditParagraph)
-    bus.$off('format', this.handleInlineFormat)
-    bus.$off('searchValue', this.handleSearch)
-    bus.$off('replaceValue', this.handReplace)
-    bus.$off('find-action', this.handleFindAction)
-    bus.$off('insert-image', this.insertImage)
-    bus.$off('image-uploaded', this.handleUploadedImage)
-    bus.$off('file-changed', this.handleFileChange)
-    bus.$off('editor-blur', this.blurEditor)
-    bus.$off('editor-focus', this.focusEditor)
-    bus.$off('copyAsMarkdown', this.handleCopyPaste)
-    bus.$off('copyAsHtml', this.handleCopyPaste)
-    bus.$off('pasteAsPlainText', this.handleCopyPaste)
-    bus.$off('duplicate', this.handleParagraph)
-    bus.$off('createParagraph', this.handleParagraph)
-    bus.$off('deleteParagraph', this.handleParagraph)
-    bus.$off('insertParagraph', this.handleInsertParagraph)
-    bus.$off('scroll-to-header', this.scrollToHeader)
-    bus.$off('screenshot-captured', this.handleScreenShot)
-    bus.$off('switch-spellchecker-language', this.switchSpellcheckLanguage)
-    bus.$off('open-command-spellchecker-switch-language', this.openSpellcheckerLanguageCommand)
-    bus.$off('replace-misspelling', this.replaceMisspelling)
-
-    this.editor.destroy()
-    this.editor = null
   }
 }
 </script>

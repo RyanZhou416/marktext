@@ -95,14 +95,11 @@ export const usePreferencesStore = defineStore('preferences', {
   }),
 
   actions: {
-    SET_USER_PREFERENCE (preference: Record<string, any>) {
+    SET_USER_PREFERENCE(preference: Record<string, any>) {
       const oldTitleBarStyle = this.titleBarStyle
-      Object.keys(preference).forEach((key) => {
-        if (
-          typeof preference[key] !== 'undefined' &&
-          typeof (this as any)[key] !== 'undefined'
-        ) {
-          (this as any)[key] = preference[key]
+      Object.keys(preference).forEach(key => {
+        if (typeof preference[key] !== 'undefined' && typeof (this as any)[key] !== 'undefined') {
+          ;(this as any)[key] = preference[key]
         }
       })
       // Hot-switch title bar style when it changes
@@ -111,25 +108,25 @@ export const usePreferencesStore = defineStore('preferences', {
       }
     },
 
-    SET_MODE ({ type, checked }: { type: string; checked: boolean }) {
-      (this as any)[type] = checked
+    SET_MODE({ type, checked }: { type: string; checked: boolean }) {
+      ;(this as any)[type] = checked
     },
 
-    TOGGLE_VIEW_MODE (entryName: string) {
+    TOGGLE_VIEW_MODE(entryName: string) {
       const current = (this as any)[entryName]
       // Mutual exclusion: when activating a mode, turn off the others
       const viewModes = ['sourceCode', 'typewriter', 'focus']
       if (!current && viewModes.includes(entryName)) {
         for (const mode of viewModes) {
           if (mode !== entryName) {
-            (this as any)[mode] = false
+            ;(this as any)[mode] = false
           }
         }
       }
-      (this as any)[entryName] = !current
+      ;(this as any)[entryName] = !current
     },
 
-    ASK_FOR_USER_PREFERENCE () {
+    ASK_FOR_USER_PREFERENCE() {
       ipcRenderer.send('mt::ask-for-user-preference')
       ipcRenderer.send('mt::ask-for-user-data')
 
@@ -139,38 +136,40 @@ export const usePreferencesStore = defineStore('preferences', {
 
       // Listen for cross-window preference changes (from other Tauri windows)
       if (isTauriAvailable()) {
-        import('@tauri-apps/api/event').then(({ listen }) => {
-          listen('mt::user-preference-changed', (event: any) => {
-            if (event.payload) {
-              this.SET_USER_PREFERENCE(event.payload)
-            }
+        import('@tauri-apps/api/event')
+          .then(({ listen }) => {
+            listen('mt::user-preference-changed', (event: any) => {
+              if (event.payload) {
+                this.SET_USER_PREFERENCE(event.payload)
+              }
+            })
           })
-        }).catch(() => {})
+          .catch(() => {})
       }
     },
 
-    SET_SINGLE_PREFERENCE ({ type, value }: { type: string; value: any }) {
+    SET_SINGLE_PREFERENCE({ type, value }: { type: string; value: any }) {
       // Update local state immediately so UI reflects the change
       if (typeof (this as any)[type] !== 'undefined') {
-        (this as any)[type] = value
+        ;(this as any)[type] = value
       }
       // Persist to backend
       ipcRenderer.send('mt::set-user-preference', { [type]: value })
     },
 
-    SET_USER_DATA ({ type, value }: { type: string; value: any }) {
+    SET_USER_DATA({ type, value }: { type: string; value: any }) {
       ipcRenderer.send('mt::set-user-data', { [type]: value })
     },
 
-    SET_IMAGE_FOLDER_PATH (value: string) {
+    SET_IMAGE_FOLDER_PATH(value: string) {
       ipcRenderer.send('mt::ask-for-modify-image-folder-path', value)
     },
 
-    SELECT_DEFAULT_DIRECTORY_TO_OPEN () {
+    SELECT_DEFAULT_DIRECTORY_TO_OPEN() {
       ipcRenderer.send('mt::select-default-directory-to-open')
     },
 
-    LISTEN_FOR_VIEW () {
+    LISTEN_FOR_VIEW() {
       ipcRenderer.on('mt::show-command-palette', () => {
         bus.$emit('show-command-palette')
       })
@@ -180,26 +179,28 @@ export const usePreferencesStore = defineStore('preferences', {
       })
     },
 
-    LISTEN_TOGGLE_VIEW () {
+    LISTEN_TOGGLE_VIEW() {
       bus.$on('view:toggle-view-entry', (entryName: any) => {
         this.TOGGLE_VIEW_MODE(entryName)
         this.DISPATCH_EDITOR_VIEW_STATE({ [entryName]: (this as any)[entryName] })
       })
     },
 
-    DISPATCH_EDITOR_VIEW_STATE (viewState: Record<string, any>) {
+    DISPATCH_EDITOR_VIEW_STATE(viewState: Record<string, any>) {
       const { windowId } = (window as any).marktext.env
       ipcRenderer.send('mt::view-layout-changed', windowId, viewState)
     },
 
     /** Call Rust to toggle native window decorations + menu visibility */
-    _applyTitleBarStyle (style: string) {
+    _applyTitleBarStyle(style: string) {
       if (isTauriAvailable()) {
-        import('@tauri-apps/api/core').then(({ invoke }) => {
-          invoke('set_title_bar_style', { style }).catch((e: any) => {
-            console.error('Failed to set title bar style:', e)
+        import('@tauri-apps/api/core')
+          .then(({ invoke }) => {
+            invoke('set_title_bar_style', { style }).catch((e: any) => {
+              console.error('Failed to set title bar style:', e)
+            })
           })
-        }).catch(() => {})
+          .catch(() => {})
       }
     }
   }

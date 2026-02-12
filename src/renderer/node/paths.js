@@ -27,7 +27,7 @@ class RendererPaths extends EnvPaths {
    *
    * @param {string} userDataPath The user data path.
    */
-  constructor (userDataPath) {
+  constructor(userDataPath) {
     if (!userDataPath) {
       throw new Error('No user data path is given.')
     }
@@ -46,7 +46,7 @@ class RendererPaths extends EnvPaths {
   }
 
   // Returns the path to ripgrep on disk.
-  get ripgrepBinaryPath () {
+  get ripgrepBinaryPath() {
     return this._ripgrepBinaryPath
   }
 }

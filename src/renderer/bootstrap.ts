@@ -143,7 +143,7 @@ const parseUrlArgs = (): ParsedUrlArgs => {
 
 const bootstrapRenderer = (): void => {
   // Register renderer exception handler
-  window.addEventListener('error', (event) => {
+  window.addEventListener('error', event => {
     if (event.error) {
       const { message, name, stack } = event.error
       const copy = {

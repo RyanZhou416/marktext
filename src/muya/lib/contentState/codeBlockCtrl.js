@@ -7,8 +7,8 @@ const CODE_UPDATE_REP = /^`{3,}(.*)/
 
 const codeBlockCtrl = ContentState => {
   /**
-  * check edit language
-  */
+   * check edit language
+   */
   ContentState.prototype.checkEditLanguage = function () {
     const { start } = selection.getCursorRange()
     if (!start) {
@@ -161,7 +161,6 @@ const codeBlockCtrl = ContentState => {
     // if (!codeBlockLineNumbers) {
     //   return
     // }
-
     // const codeBlocks = document.querySelectorAll('pre.line-numbers')
     // if (codeBlocks.length) {
     //   for (const ele of codeBlocks) {

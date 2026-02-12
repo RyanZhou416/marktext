@@ -89,7 +89,7 @@ pub async fn create_editor_window(
     );
 
     // Use initialization_script (runs BEFORE page JS) to guarantee __TAURI_ENV__ availability
-    let window = tauri::WebviewWindowBuilder::new(
+    let win_builder = tauri::WebviewWindowBuilder::new(
         &app,
         &window_id,
         tauri::WebviewUrl::App("index.html".into()),
@@ -100,8 +100,9 @@ pub async fn create_editor_window(
     .resizable(true)
     .decorations(!use_custom_titlebar)
     .visible(false) // Start hidden to avoid flash; frontend calls show_main_window when ready
-    .initialization_script(&js)
-    .build()
+    .initialization_script(&js);
+
+    let window = win_builder.build()
     .map_err(|e| format!("Failed to create window: {}", e))?;
 
     if use_custom_titlebar {
@@ -184,7 +185,7 @@ pub async fn create_settings_window(
     );
 
     // Use initialization_script (runs BEFORE page JS) instead of eval (race condition)
-    let window = tauri::WebviewWindowBuilder::new(
+    let win_builder = tauri::WebviewWindowBuilder::new(
         &app,
         window_id,
         tauri::WebviewUrl::App(url.into()),
@@ -195,8 +196,9 @@ pub async fn create_settings_window(
     .resizable(true)
     .decorations(!use_custom_titlebar)
     .visible(false) // Start hidden to avoid flash; frontend calls show_settings_window when ready
-    .initialization_script(&js)
-    .build()
+    .initialization_script(&js);
+
+    let window = win_builder.build()
     .map_err(|e| format!("Failed to create settings window: {}", e))?;
 
     // Open devtools in debug builds for easier debugging

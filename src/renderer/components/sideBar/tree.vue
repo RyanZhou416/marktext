@@ -18,18 +18,18 @@
         <span class="default-cursor text-overflow" @click.stop="toggleOpenedFiles()"
           >Opened files</span
         >
-        <a href="javascript:;" @click.stop="saveAll(false)" title="Save All">
+        <a href="javascript:;" title="Save All" @click.stop="saveAll(false)">
           <svg class="icon" aria-hidden="true">
             <use xlink:href="#icon-save-all"></use>
           </svg>
         </a>
-        <a href="javascript:;" @click.stop="saveAll(true)" title="Close All">
+        <a href="javascript:;" title="Close All" @click.stop="saveAll(true)">
           <svg class="icon" aria-hidden="true">
             <use xlink:href="#icon-close-all"></use>
           </svg>
         </a>
       </div>
-      <div class="opened-files-list" v-show="showOpenedFiles">
+      <div v-show="showOpenedFiles" class="opened-files-list">
         <transition-group name="list">
           <opened-file v-for="tab of tabs" :key="tab.id" :file="tab"></opened-file>
         </transition-group>
@@ -37,7 +37,7 @@
     </div>
 
     <!-- Project tree view -->
-    <div class="project-tree" v-if="projectTree">
+    <div v-if="projectTree" class="project-tree">
       <div class="title">
         <svg
           class="icon icon-arrow"
@@ -51,7 +51,7 @@
           projectTree.name
         }}</span>
       </div>
-      <div class="tree-wrapper" ref="treeScrollRef" v-show="showDirectories">
+      <div v-show="showDirectories" ref="treeScrollRef" class="tree-wrapper">
         <div v-if="flatTree.length === 0" class="empty-project">
           <span>Empty project</span>
           <a href="javascript:;" @click.stop="createFile">Create File</a>
@@ -85,10 +85,10 @@
               >
                 <div
                   class="folder-name"
-                  @click="toggleFolder(flatTree[virtualRow.index].item)"
                   :style="{ 'padding-left': `${flatTree[virtualRow.index].depth * 20 + 20}px` }"
                   :class="[{ active: flatTree[virtualRow.index].item.id === activeItem.id }]"
                   :title="flatTree[virtualRow.index].item.pathname"
+                  @click="toggleFolder(flatTree[virtualRow.index].item)"
                 >
                   <svg class="icon" aria-hidden="true">
                     <use
@@ -96,11 +96,11 @@
                     ></use>
                   </svg>
                   <input
-                    type="text"
-                    @click.stop
-                    class="rename"
                     v-if="renameCache === flatTree[virtualRow.index].item.pathname"
+                    type="text"
+                    class="rename"
                     :value="flatTree[virtualRow.index].item.name"
+                    @click.stop
                     @keydown.enter="handleRename($event)"
                   />
                   <span v-else class="text-overflow">{{
@@ -112,11 +112,11 @@
             <!-- Create input row -->
             <template v-else-if="flatTree[virtualRow.index].type === 'input'">
               <input
+                ref="input"
+                v-model="createName"
                 type="text"
                 class="new-input"
                 :style="{ 'margin-left': `${flatTree[virtualRow.index].depth * 5 + 15}px` }"
-                ref="input"
-                v-model="createName"
                 @keydown.enter="handleInputEnter"
               />
             </template>
@@ -133,21 +133,21 @@
                     'padding-left': `${flatTree[virtualRow.index].depth * 20 + 20}px`,
                     opacity: flatTree[virtualRow.index].item.isMarkdown ? 1 : 0.75
                   }"
-                  @click="handleFileClick(flatTree[virtualRow.index].item)"
                   :class="[
                     {
                       current: currentFile.pathname === flatTree[virtualRow.index].item.pathname,
                       active: flatTree[virtualRow.index].item.id === activeItem.id
                     }
                   ]"
+                  @click="handleFileClick(flatTree[virtualRow.index].item)"
                 >
                   <file-icon :name="flatTree[virtualRow.index].item.name"></file-icon>
                   <input
-                    type="text"
-                    @click.stop
-                    class="rename"
                     v-if="renameCache === flatTree[virtualRow.index].item.pathname"
+                    type="text"
+                    class="rename"
                     :value="flatTree[virtualRow.index].item.name"
+                    @click.stop
                     @keydown.enter="handleRename($event)"
                   />
                   <span v-else>{{ flatTree[virtualRow.index].item.name }}</span>
@@ -212,6 +212,21 @@ function flattenNode(node: any, depth: number, createCacheDirname: string): Flat
 }
 
 export default {
+  components: {
+    OpenedFile,
+    FileIcon,
+    FileContextMenu
+  },
+  props: {
+    projectTree: {
+      validator: function (value) {
+        return typeof value === 'object'
+      },
+      required: true
+    },
+    openedFiles: Array,
+    tabs: Array
+  },
   setup() {
     const inputRef = ref(null)
     const { createName, handleInputFocus, handleInputEnter } = useCreateFileOrDirectory(
@@ -277,21 +292,6 @@ export default {
       showNewInput: false,
       showOpenedFiles: true
     }
-  },
-  props: {
-    projectTree: {
-      validator: function (value) {
-        return typeof value === 'object'
-      },
-      required: true
-    },
-    openedFiles: Array,
-    tabs: Array
-  },
-  components: {
-    OpenedFile,
-    FileIcon,
-    FileContextMenu
   },
   computed: {
     ...mapState(useProjectStore, ['createCache', 'renameCache', 'activeItem', 'clipboard']),

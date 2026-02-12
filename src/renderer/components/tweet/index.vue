@@ -19,7 +19,7 @@
         </div>
         <div class="feedback">
           <div>Tell us your feedback?</div>
-          <textarea cols="30" rows="10" v-model="value" ref="textarea"></textarea>
+          <textarea ref="textarea" v-model="value" cols="30" rows="10"></textarea>
         </div>
         <div class="buttons">
           <a href="javascript:;" class="github" @click="reportViaGithub">

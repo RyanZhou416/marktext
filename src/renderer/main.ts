@@ -4,7 +4,6 @@ import { createRouter, createWebHashHistory, RouterView } from 'vue-router'
 import { createPinia } from 'pinia'
 import i18n from './i18n'
 import { loadLocale } from './i18n/loader'
-import axios from './axios'
 import './assets/symbolIcon'
 import services from './services'
 import routes from './router'
@@ -43,9 +42,6 @@ const router = createRouter({
 })
 
 app.use(router)
-
-// Add axios to global properties
-app.config.globalProperties.$http = axios
 
 // Add services to global properties
 services.forEach((s: any) => {

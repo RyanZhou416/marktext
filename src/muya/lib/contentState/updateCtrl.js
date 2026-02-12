@@ -50,9 +50,7 @@ const updateCtrl = ContentState => {
       if (NO_NEED_TOKEN_REG.test(token.type)) continue
       const { start, end } = token.range
       const textLen = endBlock.text.length
-      if (
-        conflict([Math.max(0, start - 1), Math.min(textLen, end + 1)], [endOffset, endOffset])
-      ) {
+      if (conflict([Math.max(0, start - 1), Math.min(textLen, end + 1)], [endOffset, endOffset])) {
         return true
       }
     }
@@ -80,13 +78,21 @@ const updateCtrl = ContentState => {
     }
     const listItem = this.getParent(block)
     const [
-      match, bullet, tasklist, order, atxHeader,
-      setextHeader, blockquote, indentCode, footnote, hr
+      match,
+      bullet,
+      tasklist,
+      order,
+      atxHeader,
+      setextHeader,
+      blockquote,
+      indentCode,
+      footnote,
+      hr
     ] = text.match(INLINE_UPDATE_REG) || []
     const { footnote: isSupportFootnote } = this.muya.options
 
     switch (true) {
-      case (!!hr && new Set(hr.split('').filter(i => /\S/.test(i))).size === 1):
+      case !!hr && new Set(hr.split('').filter(i => /\S/.test(i))).size === 1:
         return this.updateThematicBreak(block, hr, line)
 
       case !!bullet:
@@ -223,7 +229,7 @@ const updateCtrl = ContentState => {
 
     let bulletMarkerOrDelimiter
     if (type === 'order') {
-      bulletMarkerOrDelimiter = (cleanMarker && cleanMarker.length >= 2) ? cleanMarker.slice(-1) : '.'
+      bulletMarkerOrDelimiter = cleanMarker && cleanMarker.length >= 2 ? cleanMarker.slice(-1) : '.'
     } else {
       const { bulletListMarker } = this.muya.options
       bulletMarkerOrDelimiter = marker ? marker.charAt(0) : bulletListMarker
@@ -245,10 +251,7 @@ const updateCtrl = ContentState => {
       this.removeBlock(block)
       const isLooseListItem = preSibling.children.some(c => c.isLooseListItem)
       preSibling.children.forEach(c => (c.isLooseListItem = isLooseListItem))
-    } else if (
-      preSibling &&
-      this.checkSameMarkerOrDelimiter(preSibling, bulletMarkerOrDelimiter)
-    ) {
+    } else if (preSibling && this.checkSameMarkerOrDelimiter(preSibling, bulletMarkerOrDelimiter)) {
       this.appendChild(preSibling, newListItemBlock)
       this.removeBlock(block)
       const isLooseListItem = preSibling.children.some(c => c.isLooseListItem)
@@ -294,7 +297,7 @@ const updateCtrl = ContentState => {
       }
     }
     if (TASK_LIST_REG.test(listItemText)) {
-      const [, , tasklist, , , ,] = listItemText.match(INLINE_UPDATE_REG) || [] // eslint-disable-line comma-spacing
+      const [, , tasklist, , , ,] = listItemText.match(INLINE_UPDATE_REG) || []
       return this.updateTaskListItem(block, 'tasklist', tasklist)
     } else {
       return block
@@ -324,7 +327,9 @@ const updateCtrl = ContentState => {
         listType: 'task'
       })
 
-      this.isFirstChild(parent) ? this.insertBefore(taskListWrapper, grandpa) : this.insertAfter(taskListWrapper, grandpa)
+      this.isFirstChild(parent)
+        ? this.insertBefore(taskListWrapper, grandpa)
+        : this.insertAfter(taskListWrapper, grandpa)
       this.removeBlock(parent)
       this.appendChild(taskListWrapper, parent)
     } else {

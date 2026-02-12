@@ -27,11 +27,11 @@
 import { shell } from '../../../../util/tauri'
 
 export default {
-  data() {
-    return {}
-  },
   props: {
     uploaderService: Object
+  },
+  data() {
+    return {}
   },
   methods: {
     onCheckChange(e: Event) {

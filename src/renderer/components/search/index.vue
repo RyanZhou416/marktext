@@ -1,5 +1,5 @@
 <template>
-  <div class="search-bar" ref="searchBar" v-show="showSearch">
+  <div v-show="showSearch" ref="searchBar" class="search-bar">
     <div class="left-arrow" @click="toggleSearchType">
       <svg class="icon" aria-hidden="true" :class="{ 'arrow-right': type === 'search' }">
         <use xlink:href="#icon-arrowdown"></use>
@@ -9,11 +9,11 @@
       <section class="search">
         <div class="input-wrapper" :class="{ error: !!searchErrorMsg }">
           <input
-            type="text"
-            v-model="searchValue"
-            @keyup="search($event)"
             ref="search"
+            v-model="searchValue"
+            type="text"
             placeholder="Search"
+            @keyup="search($event)"
           />
           <div class="controls">
             <span class="search-result">{{ `${highlightIndex + 1} / ${highlightCount}` }}</span>
@@ -48,7 +48,7 @@
               </svg>
             </span>
           </div>
-          <div class="error-msg" v-if="searchErrorMsg">
+          <div v-if="searchErrorMsg" class="error-msg">
             {{ searchErrorMsg }}
           </div>
         </div>
@@ -65,9 +65,9 @@
           </button>
         </div>
       </section>
-      <section class="replace" v-if="type === 'replace'">
+      <section v-if="type === 'replace'" class="replace">
         <div class="input-wrapper replace-input">
-          <input type="text" v-model="replaceValue" placeholder="Replacement" />
+          <input v-model="replaceValue" type="text" placeholder="Replacement" />
         </div>
         <div class="button-group">
           <AppTooltip class="item" content="Replace All" side="top" :delay="1000">

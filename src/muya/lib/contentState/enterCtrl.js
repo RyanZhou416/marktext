@@ -100,7 +100,7 @@ const enterCtrl = ContentState => {
     if (block.type === 'span') block = this.getParent(block)
     const parent = this.getParent(block)
     let newBlock = null
-    if (parent && (/ul|ol|blockquote/.test(parent.type))) {
+    if (parent && /ul|ol|blockquote/.test(parent.type)) {
       newBlock = this.createBlockP()
       if (this.isOnlyChild(block)) {
         this.insertAfter(newBlock, parent)
@@ -131,9 +131,7 @@ const enterCtrl = ContentState => {
       blocksInListItem.forEach(b => this.appendChild(newBlock, b))
       this.removeBlock(block)
 
-      newBlock = newBlock.listItemType === 'task'
-        ? newBlock.children[1]
-        : newBlock.children[0]
+      newBlock = newBlock.listItemType === 'task' ? newBlock.children[1] : newBlock.children[0]
     } else {
       newBlock = this.createBlockP()
       if (block.type === 'li') {
@@ -164,7 +162,7 @@ const enterCtrl = ContentState => {
       const imageWrapper = document.querySelector(`#${imageId}`)
       const rect = imageWrapper.getBoundingClientRect()
       const reference = {
-        getBoundingClientRect () {
+        getBoundingClientRect() {
           rect.height = 0 // Put image selector below the top border of image.
           return rect
         }
@@ -265,14 +263,12 @@ const enterCtrl = ContentState => {
         end: { key, offset }
       }
       return this.partialRender()
-    } else if (
-      block.type === 'span' &&
-      block.functionType === 'codeContent'
-    ) {
+    } else if (block.type === 'span' && block.functionType === 'codeContent') {
       const { text, key } = block
       const autoIndent = checkAutoIndent(text, start.offset)
       const indent = getIndentSpace(text)
-      block.text = text.substring(0, start.offset) +
+      block.text =
+        text.substring(0, start.offset) +
         '\n' +
         (autoIndent ? indent + ' '.repeat(this.tabSize) + '\n' : '') +
         indent +
@@ -332,10 +328,7 @@ const enterCtrl = ContentState => {
       const rowContainer = this.getBlock(row.parent)
       const table = this.closest(rowContainer, 'table')
 
-      if (
-        (isOsx && event.metaKey) ||
-        (!isOsx && event.ctrlKey)
-      ) {
+      if ((isOsx && event.metaKey) || (!isOsx && event.ctrlKey)) {
         const nextRow = this.createRow(row, false)
         if (rowContainer.type === 'thead') {
           let tBody = this.getBlock(rowContainer.nextSibling)
@@ -371,7 +364,10 @@ const enterCtrl = ContentState => {
     const paragraph = document.querySelector(`#${block.key}`)
     if (
       (parent && parent.type === 'li' && this.isOnlyChild(block)) ||
-      (parent && parent.type === 'li' && parent.listItemType === 'task' && parent.children.length === 2) // one `input` and one `p`
+      (parent &&
+        parent.type === 'li' &&
+        parent.listItemType === 'task' &&
+        parent.children.length === 2) // one `input` and one `p`
     ) {
       block = parent
       parent = this.getParent(block)
@@ -523,7 +519,10 @@ const enterCtrl = ContentState => {
     }
 
     cursorBlock = getParagraphBlock(cursorBlock)
-    const key = cursorBlock.type === 'p' || cursorBlock.type === 'pre' ? cursorBlock.children[0].key : cursorBlock.key
+    const key =
+      cursorBlock.type === 'p' || cursorBlock.type === 'pre'
+        ? cursorBlock.children[0].key
+        : cursorBlock.key
     let offset = 0
     if (htmlNeedFocus) {
       const { text } = cursorBlock

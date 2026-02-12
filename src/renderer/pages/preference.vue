@@ -1,13 +1,13 @@
 <template>
-  <div class="pref-container" v-if="init">
+  <div v-if="init" class="pref-container">
     <title-bar v-if="showCustomTitleBar"></title-bar>
     <side-bar></side-bar>
     <div class="pref-content" :class="{ frameless: titleBarStyle === 'custom' || isOsx }">
-      <div class="title-bar" v-if="!showCustomTitleBar"></div>
+      <div v-if="!showCustomTitleBar" class="title-bar"></div>
       <router-view class="pref-setting"></router-view>
     </div>
   </div>
-  <div class="pref-placeholder" v-else></div>
+  <div v-else class="pref-placeholder"></div>
 </template>
 
 <script lang="ts">
@@ -21,19 +21,19 @@ import { DEFAULT_STYLE } from '@/config'
 import { isOsx } from '@/util'
 
 export default {
-  data() {
-    this.isOsx = isOsx
-    return {
-      init: false
-    }
+  components: {
+    TitleBar,
+    SideBar
   },
   setup() {
     const { hideLoadingPage } = useLoadingPage()
     return { hideLoadingPage }
   },
-  components: {
-    TitleBar,
-    SideBar
+  data() {
+    this.isOsx = isOsx
+    return {
+      init: false
+    }
   },
   computed: {
     ...mapState(usePreferencesStore, ['theme', 'titleBarStyle']),

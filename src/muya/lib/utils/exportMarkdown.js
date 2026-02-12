@@ -10,7 +10,7 @@
  */
 
 class ExportMarkdown {
-  constructor (blocks, listIndentation = 1, isGitlabCompatibilityEnabled = false) {
+  constructor(blocks, listIndentation = 1, isGitlabCompatibilityEnabled = false) {
     this.blocks = blocks
     this.listType = [] // 'ul' or 'ol'
     // helper to translate the first tight item in a nested list
@@ -29,11 +29,11 @@ class ExportMarkdown {
     }
   }
 
-  generate () {
+  generate() {
     return this.translateBlocks2Markdown(this.blocks)
   }
 
-  translateBlocks2Markdown (blocks, indent = '', listIndent = '') {
+  translateBlocks2Markdown(blocks, indent = '', listIndent = '') {
     const result = []
     // helper for CommonMark 264
     let lastListBullet = ''
@@ -168,18 +168,18 @@ class ExportMarkdown {
     return result.join('')
   }
 
-  insertLineBreak (result, indent) {
+  insertLineBreak(result, indent) {
     if (!result.length) return
     result.push(`${indent}\n`)
   }
 
-  normalizeParagraphText (block, indent) {
+  normalizeParagraphText(block, indent) {
     const { text } = block
     const lines = text.split('\n')
     return lines.map(line => `${indent}${line}`).join('\n') + '\n'
   }
 
-  normalizeHeaderText (block, indent) {
+  normalizeHeaderText(block, indent) {
     const { headingStyle, marker } = block
     const { text } = block.children[0]
     if (headingStyle === 'atx') {
@@ -192,13 +192,14 @@ class ExportMarkdown {
     }
   }
 
-  normalizeBlockquote (block, indent) {
+  normalizeBlockquote(block, indent) {
     const { children } = block
     const newIndent = `${indent}> `
     return this.translateBlocks2Markdown(children, newIndent)
   }
 
-  normalizeFrontMatter (block, indent) { // preBlock
+  normalizeFrontMatter(block, indent) {
+    // preBlock
     let startToken
     let endToken
     switch (block.lang) {
@@ -230,7 +231,7 @@ class ExportMarkdown {
     return result.join('')
   }
 
-  normalizeMultipleMath (block, /* figure */ indent) {
+  normalizeMultipleMath(block, /* figure */ indent) {
     const { isGitlabCompatibilityEnabled } = this
     let startToken = '$$'
     let endToken = '$$'
@@ -249,7 +250,7 @@ class ExportMarkdown {
   }
 
   // `mermaid` `flowchart` `sequence` `plantuml` `vega-lite`
-  normalizeContainer (block, indent) {
+  normalizeContainer(block, indent) {
     const result = []
     const diagramType = block.children[0].functionType
     result.push('```' + diagramType + '\n')
@@ -260,7 +261,7 @@ class ExportMarkdown {
     return result.join('')
   }
 
-  normalizeCodeBlock (block, indent) {
+  normalizeCodeBlock(block, indent) {
     const result = []
     const codeContent = block.children[1].children[0]
     const textList = codeContent.text.split('\n')
@@ -280,7 +281,8 @@ class ExportMarkdown {
     return result.join('')
   }
 
-  normalizeHTML (block, indent) { // figure
+  normalizeHTML(block, indent) {
+    // figure
     const result = []
     const codeContentText = block.children[0].children[0].children[0].text
     const lines = codeContentText.split('\n')
@@ -290,7 +292,7 @@ class ExportMarkdown {
     return result.join('')
   }
 
-  normalizeTable (table, indent) {
+  normalizeTable(table, indent) {
     const result = []
     const { row, column } = table
     const tableData = []
@@ -318,42 +320,54 @@ class ExportMarkdown {
       }
     }
     tableData.forEach((r, i) => {
-      const rs = indent + '|' + r.map((cell, j) => {
-        const raw = ` ${cell + ' '.repeat(columnWidth[j].width)}`
-        return raw.substring(0, columnWidth[j].width)
-      }).join('|') + '|'
+      const rs =
+        indent +
+        '|' +
+        r
+          .map((cell, j) => {
+            const raw = ` ${cell + ' '.repeat(columnWidth[j].width)}`
+            return raw.substring(0, columnWidth[j].width)
+          })
+          .join('|') +
+        '|'
       result.push(rs)
       if (i === 0) {
-        const cutOff = indent + '|' + columnWidth.map(({ width, align }) => {
-          let raw = '-'.repeat(width - 2)
-          switch (align) {
-            case 'left':
-              raw = `:${raw} `
-              break
-            case 'center':
-              raw = `:${raw}:`
-              break
-            case 'right':
-              raw = ` ${raw}:`
-              break
-            default:
-              raw = ` ${raw} `
-              break
-          }
-          return raw
-        }).join('|') + '|'
+        const cutOff =
+          indent +
+          '|' +
+          columnWidth
+            .map(({ width, align }) => {
+              let raw = '-'.repeat(width - 2)
+              switch (align) {
+                case 'left':
+                  raw = `:${raw} `
+                  break
+                case 'center':
+                  raw = `:${raw}:`
+                  break
+                case 'right':
+                  raw = ` ${raw}:`
+                  break
+                default:
+                  raw = ` ${raw} `
+                  break
+              }
+              return raw
+            })
+            .join('|') +
+          '|'
         result.push(cutOff)
       }
     })
     return result.join('\n') + '\n'
   }
 
-  normalizeList (block, indent, listIndent) {
+  normalizeList(block, indent, listIndent) {
     const { children } = block
     return this.translateBlocks2Markdown(children, indent, listIndent)
   }
 
-  normalizeListItem (block, indent) {
+  normalizeListItem(block, indent) {
     const result = []
     const listInfo = this.listType[this.listType.length - 1]
     const isUnorderedList = listInfo.type === 'ul'
@@ -399,11 +413,13 @@ class ExportMarkdown {
     }
 
     result.push(`${indent}${itemMarker}`)
-    result.push(this.translateBlocks2Markdown(children, newIndent, listIndent).substring(newIndent.length))
+    result.push(
+      this.translateBlocks2Markdown(children, newIndent, listIndent).substring(newIndent.length)
+    )
     return result.join('')
   }
 
-  normalizeFootnote (block, indent) {
+  normalizeFootnote(block, indent) {
     const result = []
     const identifier = block.children[0].text
     result.push(`${indent}[^${identifier}]:`)

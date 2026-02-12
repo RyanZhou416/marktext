@@ -8,7 +8,7 @@ const getters = {}
 const mutations = {}
 
 const actions = {
-  LISTEN_FOR_EDIT ({ commit }) {
+  LISTEN_FOR_EDIT({ commit }) {
     ipcRenderer.on('mt::editor-edit-action', (e, type) => {
       if (type === 'findInFolder') {
         commit('SET_LAYOUT', {
@@ -20,8 +20,8 @@ const actions = {
     })
   },
 
-  LISTEN_FOR_SHOW_DIALOG ({ commit }) {
-    ipcRenderer.on('mt::about-dialog', (e) => {
+  LISTEN_FOR_SHOW_DIALOG({ commit }) {
+    ipcRenderer.on('mt::about-dialog', e => {
       bus.$emit('aboutDialog')
     })
     ipcRenderer.on('mt::show-export-dialog', (e, type) => {
@@ -29,7 +29,7 @@ const actions = {
     })
   },
 
-  LISTEN_FOR_PARAGRAPH_INLINE_STYLE () {
+  LISTEN_FOR_PARAGRAPH_INLINE_STYLE() {
     ipcRenderer.on('mt::editor-paragraph-action', (e, { type }) => {
       bus.$emit('paragraph', type)
     })

@@ -2,7 +2,7 @@
   <section class="pref-font-input-item" :class="{ 'ag-underdevelop': disable }">
     <div class="description">
       <span>{{ description }}:</span>
-      <i class="el-icon-info" v-if="more" @click="handleMoreClick"></i>
+      <i v-if="more" class="el-icon-info" @click="handleMoreClick"></i>
     </div>
     <ComboboxRoot
       v-model="selectValue"
@@ -89,13 +89,6 @@ export default {
     ComboboxTrigger,
     ComboboxViewport
   },
-  data() {
-    this.defaultValue = this.value
-    return {
-      fontFamilies: [],
-      selectValue: this.value
-    }
-  },
   props: {
     description: String,
     value: String,
@@ -110,6 +103,13 @@ export default {
       default: false
     }
   },
+  data() {
+    this.defaultValue = this.value
+    return {
+      fontFamilies: [],
+      selectValue: this.value
+    }
+  },
 
   watch: {
     value: function (value, oldValue) {
@@ -117,6 +117,16 @@ export default {
         this.defaultValue = value
         this.selectValue = value
       }
+    }
+  },
+  async mounted() {
+    // Get fonts from main process via IPC (native module must run in main process with contextIsolation)
+    const { onlyMonospace } = this
+    try {
+      this.fontFamilies = await ipcRenderer.invoke('mt::get-available-fonts', onlyMonospace)
+    } catch (err) {
+      console.error('Failed to get available fonts:', err)
+      this.fontFamilies = []
     }
   },
 
@@ -142,16 +152,6 @@ export default {
       if (typeof this.more === 'string') {
         shell.openExternal(this.more)
       }
-    }
-  },
-  async mounted() {
-    // Get fonts from main process via IPC (native module must run in main process with contextIsolation)
-    const { onlyMonospace } = this
-    try {
-      this.fontFamilies = await ipcRenderer.invoke('mt::get-available-fonts', onlyMonospace)
-    } catch (err) {
-      console.error('Failed to get available fonts:', err)
-      this.fontFamilies = []
     }
   }
 }

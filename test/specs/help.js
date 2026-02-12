@@ -1,4 +1,4 @@
-export const removeCustomClass = html => {
+const removeCustomClass = html => {
   const customClass = ['indented-code-block', 'fenced-code-block', 'task-list-item']
   customClass.forEach(className => {
     if (html.indexOf(className) > -1) {
@@ -6,14 +6,13 @@ export const removeCustomClass = html => {
       /* eslint-disable no-useless-escape */
       const REG_EXP_SIMPLE = new RegExp(className + ' \*', 'g')
       /* eslint-enable no-useless-escape */
-      html = html.replace(REG_EXP, '')
-        .replace(REG_EXP_SIMPLE, '')
+      html = html.replace(REG_EXP, '').replace(REG_EXP_SIMPLE, '')
     }
   })
   return html
 }
 
-export const padding = (str, len, marker = ' ') => {
+const padding = (str, len, marker = ' ') => {
   const spaceLen = len - str.length
   let preLen = 0
   let postLen = 0
@@ -25,3 +24,5 @@ export const padding = (str, len, marker = ' ') => {
   }
   return marker.repeat(preLen) + str + marker.repeat(postLen)
 }
+
+module.exports = { removeCustomClass, padding }

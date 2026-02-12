@@ -8,8 +8,7 @@ type MessageSchema = typeof en
 // This is set by Tauri (lib.rs / window.rs) before the page loads,
 // so it's available at module initialization time.
 const initialLocale: 'en' | 'zh-CN' =
-  (typeof window !== 'undefined' &&
-    (window as any).__TAURI_ENV__?.language === 'zh-CN')
+  typeof window !== 'undefined' && (window as any).__TAURI_ENV__?.language === 'zh-CN'
     ? 'zh-CN'
     : 'en'
 

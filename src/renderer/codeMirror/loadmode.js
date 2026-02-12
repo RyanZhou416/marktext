@@ -7,11 +7,13 @@ const loadMore = CodeMirror => {
   }
 
   const loading = {}
-  function splitCallback (cont, n) {
+  function splitCallback(cont, n) {
     let countDown = n
-    return function () { if (--countDown === 0) cont() }
+    return function () {
+      if (--countDown === 0) cont()
+    }
   }
-  function ensureDeps (mode, cont) {
+  function ensureDeps(mode, cont) {
     const deps = CodeMirror.modes[mode].dependencies
     if (!deps) return cont()
     const missing = []
@@ -38,7 +40,7 @@ const loadMore = CodeMirror => {
     const script = document.createElement('script')
     script.src = file
     const others = document.getElementsByTagName('script')[0]
-    const list = loading[mode] = [cont]
+    const list = (loading[mode] = [cont])
     CodeMirror.on(script, 'load', function () {
       ensureDeps(mode, function () {
         for (let i = 0; i < list.length; ++i) {

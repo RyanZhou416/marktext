@@ -11,15 +11,15 @@
       <cur-select
         :value="currentUploader"
         :options="uploaderOptions"
-        :onChange="value => setCurrentUploader(value)"
+        :on-change="value => setCurrentUploader(value)"
       ></cur-select>
-      <div class="picgo" v-if="currentUploader === 'picgo'">
+      <div v-if="currentUploader === 'picgo'" class="picgo">
         <div v-if="!picgoExists" class="warning">
           {{ $t('settings.image.noPicgo') }}
           <span class="link" @click="open('https://github.com/PicGo/PicGo-Core')">picgo</span>
         </div>
       </div>
-      <div class="github" v-if="currentUploader === 'github'">
+      <div v-if="currentUploader === 'github'" class="github">
         <div class="warning">
           {{ $t('settings.image.githubDeprecation') }}
         </div>
@@ -67,7 +67,7 @@
         <legal-notices-checkbox
           class="github"
           :class="[{ error: legalNoticesErrorStates.github }]"
-          :uploaderService="uploadServices.github"
+          :uploader-service="uploadServices.github"
         ></legal-notices-checkbox>
         <div class="form-group">
           <button
@@ -80,7 +80,7 @@
           </button>
         </div>
       </div>
-      <div class="script" v-else-if="currentUploader === 'cliScript'">
+      <div v-else-if="currentUploader === 'cliScript'" class="script">
         <div class="description">
           {{ $t('settings.image.scriptNote') }}
         </div>

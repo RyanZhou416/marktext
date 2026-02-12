@@ -9,28 +9,28 @@
         <bool
           :description="$t('settings.markdown.preferLooseList')"
           :bool="preferLooseListItem"
-          :onChange="value => onSelectChange('preferLooseListItem', value)"
+          :on-change="value => onSelectChange('preferLooseListItem', value)"
           more="https://spec.commonmark.org/0.29/#loose"
         ></bool>
         <cur-select
           :description="$t('settings.markdown.bulletListMarker')"
           :value="bulletListMarker"
           :options="bulletListMarkerOptions"
-          :onChange="value => onSelectChange('bulletListMarker', value)"
+          :on-change="value => onSelectChange('bulletListMarker', value)"
           more="https://spec.commonmark.org/0.29/#bullet-list-marker"
         ></cur-select>
         <cur-select
           :description="$t('settings.markdown.orderedListMarker')"
           :value="orderListDelimiter"
           :options="orderListDelimiterOptions"
-          :onChange="value => onSelectChange('orderListDelimiter', value)"
+          :on-change="value => onSelectChange('orderListDelimiter', value)"
           more="https://spec.commonmark.org/0.29/#ordered-list"
         ></cur-select>
         <cur-select
           :description="$t('settings.markdown.listIndentation')"
           :value="listIndentation"
           :options="listIndentationOpts"
-          :onChange="value => onSelectChange('listIndentation', value)"
+          :on-change="value => onSelectChange('listIndentation', value)"
         ></cur-select>
       </template>
     </compound>
@@ -44,19 +44,19 @@
           :description="$t('settings.markdown.frontMatterFormat')"
           :value="frontmatterType"
           :options="frontmatterTypeOptions"
-          :onChange="value => onSelectChange('frontmatterType', value)"
+          :on-change="value => onSelectChange('frontmatterType', value)"
         ></cur-select>
         <bool
           :description="$t('settings.markdown.superSubScript')"
           :bool="superSubScript"
-          :onChange="value => onSelectChange('superSubScript', value)"
+          :on-change="value => onSelectChange('superSubScript', value)"
           more="https://pandoc.org/MANUAL.html#superscripts-and-subscripts"
         ></bool>
         <bool
           :description="$t('settings.markdown.footnote')"
           :notes="$t('common.requiresRestart')"
           :bool="footnote"
-          :onChange="value => onSelectChange('footnote', value)"
+          :on-change="value => onSelectChange('footnote', value)"
           more="https://pandoc.org/MANUAL.html#footnotes"
         ></bool>
       </template>
@@ -70,12 +70,12 @@
         <bool
           :description="$t('settings.markdown.htmlRendering')"
           :bool="isHtmlEnabled"
-          :onChange="value => onSelectChange('isHtmlEnabled', value)"
+          :on-change="value => onSelectChange('isHtmlEnabled', value)"
         ></bool>
         <bool
           :description="$t('settings.markdown.gitlabMode')"
           :bool="isGitlabCompatibilityEnabled"
-          :onChange="value => onSelectChange('isGitlabCompatibilityEnabled', value)"
+          :on-change="value => onSelectChange('isGitlabCompatibilityEnabled', value)"
         ></bool>
       </template>
     </compound>
@@ -89,7 +89,7 @@
           :description="$t('settings.markdown.sequenceTheme')"
           :value="sequenceTheme"
           :options="sequenceThemeOpts"
-          :onChange="value => onSelectChange('sequenceTheme', value)"
+          :on-change="value => onSelectChange('sequenceTheme', value)"
           more="https://bramp.github.io/js-sequence-diagrams/"
         ></cur-select>
       </template>
@@ -104,7 +104,7 @@
           :description="$t('settings.markdown.headingStyle')"
           :value="preferHeadingStyle"
           :options="preferHeadingStyleOpts"
-          :onChange="value => onSelectChange('preferHeadingStyle', value)"
+          :on-change="value => onSelectChange('preferHeadingStyle', value)"
           :disable="true"
         ></cur-select>
       </template>
@@ -135,20 +135,20 @@ export default {
     Bool,
     CurSelect
   },
-  data () {
+  data() {
     this.bulletListMarkerOptions = bulletListMarkerOptions
     this.orderListDelimiterOptions = orderListDelimiterOptions
     this.frontmatterTypeOptions = frontmatterTypeOptions
     return {}
   },
   computed: {
-    listIndentationOpts () {
+    listIndentationOpts() {
       return listIndentationOptions(this.$t)
     },
-    preferHeadingStyleOpts () {
+    preferHeadingStyleOpts() {
       return preferHeadingStyleOptions(this.$t)
     },
-    sequenceThemeOpts () {
+    sequenceThemeOpts() {
       return sequenceThemeOptions(this.$t)
     },
     ...mapState(usePreferencesStore, [
@@ -166,7 +166,7 @@ export default {
     ])
   },
   methods: {
-    onSelectChange (type, value) {
+    onSelectChange(type, value) {
       const preferencesStore = usePreferencesStore()
       preferencesStore.SET_SINGLE_PREFERENCE({ type, value })
     }
@@ -175,6 +175,6 @@ export default {
 </script>
 
 <style scoped>
-  .pref-markdown {
-  }
+.pref-markdown {
+}
 </style>

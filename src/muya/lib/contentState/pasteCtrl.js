@@ -1,5 +1,10 @@
-
-import { PARAGRAPH_TYPES, PREVIEW_DOMPURIFY_CONFIG, HAS_TEXT_BLOCK_REG, IMAGE_EXT_REG, URL_REG } from '../config'
+import {
+  PARAGRAPH_TYPES,
+  PREVIEW_DOMPURIFY_CONFIG,
+  HAS_TEXT_BLOCK_REG,
+  IMAGE_EXT_REG,
+  URL_REG
+} from '../config'
 import { sanitize, getUniqueId, getImageInfo as getImageSrc, getPageTitle } from '../utils'
 import { getImageInfo } from '../utils/getImageInfo'
 
@@ -83,7 +88,7 @@ const pasteCtrl = ContentState => {
     for (const table of tables) {
       const row = table.querySelector('tr')
       if (row.firstElementChild.tagName !== 'TH') {
-        [...row.children].forEach(cell => {
+        ;[...row.children].forEach(cell => {
           const th = document.createElement('th')
           th.innerHTML = cell.innerHTML
           cell.replaceWith(th)
@@ -196,7 +201,9 @@ const pasteCtrl = ContentState => {
       reader.onload = event => {
         const base64 = event.target.result
         const imageWrapper = this.muya.container.querySelector(`span[data-id=${id}]`)
-        const imageContainer = this.muya.container.querySelector(`span[data-id=${id}] .ag-image-container`)
+        const imageContainer = this.muya.container.querySelector(
+          `span[data-id=${id}] .ag-image-container`
+        )
         this.stateRender.urlMap.set(id, base64)
         if (imageContainer) {
           imageWrapper.classList.remove('ag-empty-image')
@@ -251,7 +258,12 @@ const pasteCtrl = ContentState => {
       const { selectedTableCells: stc } = this
 
       // Exactly one table cell is selected. Replace the cells text via default handler.
-      if (startBlock && startBlock.functionType === 'cellContent' && stc.row === 1 && stc.column === 1) {
+      if (
+        startBlock &&
+        startBlock.functionType === 'cellContent' &&
+        stc.row === 1 &&
+        stc.column === 1
+      ) {
         this.pasteHandler(event)
         return event.preventDefault()
       }
@@ -299,8 +311,9 @@ const pasteCtrl = ContentState => {
       }
     }
 
-    const appendHtml = (text) => {
-      startBlock.text = startBlock.text.substring(0, start.offset) + text + startBlock.text.substring(start.offset)
+    const appendHtml = text => {
+      startBlock.text =
+        startBlock.text.substring(0, start.offset) + text + startBlock.text.substring(start.offset)
       const { key } = start
       const offset = start.offset + text.length
       this.cursor = {
@@ -380,7 +393,10 @@ const pasteCtrl = ContentState => {
         this.selectedTableCells = null
       } else {
         offset += start.offset
-        startBlock.text = startBlock.text.substring(0, start.offset) + pendingText + startBlock.text.substring(end.offset)
+        startBlock.text =
+          startBlock.text.substring(0, start.offset) +
+          pendingText +
+          startBlock.text.substring(end.offset)
       }
 
       this.cursor = {
@@ -423,9 +439,10 @@ const pasteCtrl = ContentState => {
       return this.partialRender()
     }
 
-    const stateFragments = type === 'pasteAsPlainText' || copyType === 'copyAsMarkdown'
-      ? this.markdownToState(text)
-      : this.html2State(html)
+    const stateFragments =
+      type === 'pasteAsPlainText' || copyType === 'copyAsMarkdown'
+        ? this.markdownToState(text)
+        : this.html2State(html)
 
     if (stateFragments.length <= 0) {
       return
@@ -552,10 +569,12 @@ const pasteCtrl = ContentState => {
 
     this.cursor = {
       start: {
-        key, offset
+        key,
+        offset
       },
       end: {
-        key, offset
+        key,
+        offset
       }
     }
     this.checkInlineUpdate(cursorBlock)

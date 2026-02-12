@@ -41,22 +41,44 @@ if (typeof window !== 'undefined' && (window as any).electronAPI) {
   const api = (window as any).electronAPI
   fs = {
     readlinkSync: api.fs.readlinkSync || ((): string => ''),
-    statSync: api.fs.statSync || ((): StatResult => ({ ino: 0, isFile: () => false, isDirectory: () => false, isSymbolicLink: () => false }))
+    statSync:
+      api.fs.statSync ||
+      ((): StatResult => ({
+        ino: 0,
+        isFile: () => false,
+        isDirectory: () => false,
+        isSymbolicLink: () => false
+      }))
   }
   path = api.path
   isOsx = api.isOsx || false
   processInfo = api.process || { platform: 'unknown', resourcesPath: '', env: {} }
 } else {
   // 降级 stub
-  const sep: string = typeof navigator !== 'undefined' && navigator.platform.startsWith('Win') ? '\\' : '/'
+  const sep: string =
+    typeof navigator !== 'undefined' && navigator.platform.startsWith('Win') ? '\\' : '/'
   fs = {
     readlinkSync: (): string => '',
-    statSync: (): StatResult => ({ ino: 0, isFile: () => false, isDirectory: () => false, isSymbolicLink: () => false })
+    statSync: (): StatResult => ({
+      ino: 0,
+      isFile: () => false,
+      isDirectory: () => false,
+      isSymbolicLink: () => false
+    })
   }
   path = {
-    join: (...args: string[]): string => args.filter(Boolean).join(sep).replace(/[/\\]+/g, sep),
-    resolve: (...args: string[]): string => args.filter(Boolean).join(sep).replace(/[/\\]+/g, sep),
-    dirname: (p: string): string => p ? p.substring(0, Math.max(p.lastIndexOf('/'), p.lastIndexOf('\\'))) || sep : '.',
+    join: (...args: string[]): string =>
+      args
+        .filter(Boolean)
+        .join(sep)
+        .replace(/[/\\]+/g, sep),
+    resolve: (...args: string[]): string =>
+      args
+        .filter(Boolean)
+        .join(sep)
+        .replace(/[/\\]+/g, sep),
+    dirname: (p: string): string =>
+      p ? p.substring(0, Math.max(p.lastIndexOf('/'), p.lastIndexOf('\\'))) || sep : '.',
     basename: (p: string, ext?: string): string => {
       if (!p) return ''
       let base = p.substring(Math.max(p.lastIndexOf('/'), p.lastIndexOf('\\')) + 1)
@@ -69,7 +91,7 @@ if (typeof window !== 'undefined' && (window as any).electronAPI) {
       const dotIdx = base.lastIndexOf('.')
       return dotIdx > 0 ? base.slice(dotIdx) : ''
     },
-    normalize: (p: string): string => p ? p.replace(/[/\\]+/g, sep) : '.',
+    normalize: (p: string): string => (p ? p.replace(/[/\\]+/g, sep) : '.'),
     isAbsolute: (p: string): boolean => {
       if (!p) return false
       if (sep === '\\') return /^[A-Za-z]:[/\\]/.test(p)
@@ -83,9 +105,14 @@ if (typeof window !== 'undefined' && (window as any).electronAPI) {
   }
   isOsx = typeof navigator !== 'undefined' && navigator.platform.startsWith('Mac')
   processInfo = {
-    platform: typeof navigator !== 'undefined'
-      ? (navigator.platform.startsWith('Win') ? 'win32' : navigator.platform.startsWith('Mac') ? 'darwin' : 'linux')
-      : 'linux',
+    platform:
+      typeof navigator !== 'undefined'
+        ? navigator.platform.startsWith('Win')
+          ? 'win32'
+          : navigator.platform.startsWith('Mac')
+            ? 'darwin'
+            : 'linux'
+        : 'linux',
     resourcesPath: '',
     env: {}
   }
@@ -105,7 +132,9 @@ export const MARKDOWN_EXTENSIONS: readonly string[] = Object.freeze([
   'txt'
 ])
 
-export const MARKDOWN_INCLUSIONS: readonly string[] = Object.freeze(MARKDOWN_EXTENSIONS.map(x => '*.' + x))
+export const MARKDOWN_INCLUSIONS: readonly string[] = Object.freeze(
+  MARKDOWN_EXTENSIONS.map(x => '*.' + x)
+)
 
 export const IMAGE_EXTENSIONS: readonly string[] = Object.freeze([
   'jpeg',
@@ -133,10 +162,13 @@ export const hasMarkdownExtension = (filename: string): boolean => {
  */
 export const isImageFile = (filepath: string): boolean => {
   const extname = path.extname(filepath)
-  return isFile(filepath) && IMAGE_EXTENSIONS.some(ext => {
-    const EXT_REG = new RegExp(ext, 'i')
-    return EXT_REG.test(extname)
-  })
+  return (
+    isFile(filepath) &&
+    IMAGE_EXTENSIONS.some(ext => {
+      const EXT_REG = new RegExp(ext, 'i')
+      return EXT_REG.test(extname)
+    })
+  )
 }
 
 /**
@@ -162,7 +194,11 @@ export const isMarkdownFile = (filepath: string): boolean => {
  * @param pathB The second path.
  * @param isNormalized Are both paths already normalized.
  */
-export const isSamePathSync = (pathA: string, pathB: string, isNormalized: boolean = false): boolean => {
+export const isSamePathSync = (
+  pathA: string,
+  pathB: string,
+  isNormalized: boolean = false
+): boolean => {
   if (!pathA || !pathB) return false
   const a = isNormalized ? pathA : path.normalize(pathA)
   const b = isNormalized ? pathB : path.normalize(pathB)
@@ -196,7 +232,7 @@ export const isChildOfDirectory = (dir: string, child: string): boolean => {
 
 export const getResourcesPath = (): string => {
   let resPath: string = processInfo.resourcesPath
-  const nodeEnv: string = processInfo.env ? (processInfo.env.NODE_ENV || 'production') : 'production'
+  const nodeEnv: string = processInfo.env ? processInfo.env.NODE_ENV || 'production' : 'production'
   if (nodeEnv === 'development') {
     // Default locations:
     //   Linux/Windows: node_modules/electron/dist/resources/

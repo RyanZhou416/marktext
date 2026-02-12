@@ -13,7 +13,7 @@
         @click="handleClick"
       />
     </div>
-    <div class="no-data" v-else>
+    <div v-else class="no-data">
       <svg aria-hidden="true" :viewBox="EmptyIcon.viewBox">
         <use :xlink:href="EmptyIcon.url"></use>
       </svg>

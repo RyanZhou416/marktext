@@ -5,7 +5,7 @@ import { useLayoutStore } from './layout'
 
 export const useListenForMainStore = defineStore('listenForMain', {
   actions: {
-    LISTEN_FOR_EDIT () {
+    LISTEN_FOR_EDIT() {
       ipcRenderer.on('mt::editor-edit-action', (e: any, type: string) => {
         if (type === 'findInFolder') {
           const layout = useLayoutStore()
@@ -18,7 +18,7 @@ export const useListenForMainStore = defineStore('listenForMain', {
       })
     },
 
-    LISTEN_FOR_SHOW_DIALOG () {
+    LISTEN_FOR_SHOW_DIALOG() {
       ipcRenderer.on('mt::about-dialog', () => {
         bus.$emit('aboutDialog')
       })
@@ -27,7 +27,7 @@ export const useListenForMainStore = defineStore('listenForMain', {
       })
     },
 
-    LISTEN_FOR_PARAGRAPH_INLINE_STYLE () {
+    LISTEN_FOR_PARAGRAPH_INLINE_STYLE() {
       ipcRenderer.on('mt::editor-paragraph-action', (e: any, { type }: { type: string }) => {
         bus.$emit('paragraph', type)
       })

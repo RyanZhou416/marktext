@@ -9,7 +9,7 @@ const mutations = {}
 
 // mt::UPDATE_DOWNLOADED
 const actions = {
-  LISTEN_FOR_UPDATE ({ commit }) {
+  LISTEN_FOR_UPDATE({ commit }) {
     ipcRenderer.on('mt::UPDATE_ERROR', (e, message) => {
       notice.notify({
         title: 'Update',

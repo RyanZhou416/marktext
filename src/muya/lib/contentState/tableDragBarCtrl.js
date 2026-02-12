@@ -87,7 +87,11 @@ const tableDragBarCtrl = ContentState => {
       }
     }
 
-    const mouseMoveId = eventCenter.attachDOMEvent(document, 'mousemove', this.handleMouseMove.bind(this))
+    const mouseMoveId = eventCenter.attachDOMEvent(
+      document,
+      'mousemove',
+      this.handleMouseMove.bind(this)
+    )
     const mouseUpId = eventCenter.attachDOMEvent(document, 'mouseup', this.handleMouseUp.bind(this))
     this.dragEventIds.push(mouseMoveId, mouseUpId)
   }
@@ -98,7 +102,7 @@ const tableDragBarCtrl = ContentState => {
     }
     const { barType } = this.dragInfo
     const attrName = barType === 'bottom' ? 'clientX' : 'clientY'
-    const offset = this.dragInfo.offset = event[attrName] - this.dragInfo[attrName]
+    const offset = (this.dragInfo.offset = event[attrName] - this.dragInfo[attrName])
     if (Math.abs(offset) < 5) {
       return
     }

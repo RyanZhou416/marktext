@@ -10,7 +10,7 @@ const bus = {
   $off: emitter.off,
   $emit: emitter.emit,
   // mitt 不支持 $once，手动实现
-  $once (event, handler) {
+  $once(event, handler) {
     const wrappedHandler = (...args) => {
       handler(...args)
       emitter.off(event, wrappedHandler)

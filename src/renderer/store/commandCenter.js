@@ -10,18 +10,16 @@ const state = {
 const getters = {}
 
 const mutations = {
-  REGISTER_COMMAND (state, command) {
+  REGISTER_COMMAND(state, command) {
     state.rootCommand.subcommands.push(command)
   },
-  SORT_COMMANDS (state) {
-    state.rootCommand.subcommands.sort((a, b) =>
-      a.description.localeCompare(b.description)
-    )
+  SORT_COMMANDS(state) {
+    state.rootCommand.subcommands.sort((a, b) => a.description.localeCompare(b.description))
   }
 }
 
 const actions = {
-  LISTEN_COMMAND_CENTER_BUS ({ commit, state }) {
+  LISTEN_COMMAND_CENTER_BUS({ commit, state }) {
     // Init stuff
     bus.$on('cmd::sort-commands', () => {
       commit('SORT_COMMANDS')
@@ -37,12 +35,12 @@ const actions = {
     })
 
     // Register commands that are created at runtime.
-    bus.$on('cmd::register-command', (command) => {
+    bus.$on('cmd::register-command', command => {
       commit('REGISTER_COMMAND', command)
     })
 
     // Allow other compontents to execute commands with predefined values.
-    bus.$on('cmd::execute', (commandId) => {
+    bus.$on('cmd::execute', commandId => {
       executeCommand(state, commandId)
     })
     ipcRenderer.on('mt::execute-command-by-id', (e, commandId) => {
@@ -53,7 +51,7 @@ const actions = {
 
 const executeCommand = (state, commandId) => {
   const { subcommands } = state.rootCommand
-  const command = subcommands.find((c) => c.id === commandId)
+  const command = subcommands.find(c => c.id === commandId)
   if (!command) {
     const errorMsg = `Cannot execute command "${commandId}" because it's missing.`
     log.error(errorMsg)
@@ -62,7 +60,7 @@ const executeCommand = (state, commandId) => {
   command.execute()
 }
 
-const normalizeAccelerator = (acc) => {
+const normalizeAccelerator = acc => {
   try {
     return acc
       .replace(/cmdorctrl|cmd/i, 'Cmd')

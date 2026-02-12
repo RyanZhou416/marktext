@@ -17,7 +17,7 @@
       :description="$t('settings.theme.autoAdjustTheme')"
       :value="autoSwitchTheme"
       :options="autoSwitchThemeOptions"
-      :onChange="value => onSelectChange('autoSwitchTheme', value)"
+      :on-change="value => onSelectChange('autoSwitchTheme', value)"
     ></cur-select>
     <separator v-show="false"></separator>
     <section v-show="false" class="import-themes ag-underdevelop">

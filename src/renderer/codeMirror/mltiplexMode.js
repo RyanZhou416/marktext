@@ -6,7 +6,7 @@ const multiplexMode = CodeMirror => {
     // Others should be {open, close, mode [, delimStyle] [, innerStyle]} objects
     const others = Array.prototype.slice.call(arguments, 1)
 
-    function indexOf (string, pattern, from, returnEnd) {
+    function indexOf(string, pattern, from, returnEnd) {
       if (typeof pattern === 'string') {
         const found = string.indexOf(pattern, from)
         return returnEnd && found > -1 ? found + pattern.length : found
@@ -16,7 +16,7 @@ const multiplexMode = CodeMirror => {
     }
 
     return {
-      startState () {
+      startState() {
         return {
           outer: CodeMirror.startState(outer),
           innerActive: null,
@@ -24,7 +24,7 @@ const multiplexMode = CodeMirror => {
         }
       },
 
-      copyState (state) {
+      copyState(state) {
         return {
           outer: CodeMirror.copyState(outer, state.outer),
           innerActive: state.innerActive,
@@ -32,7 +32,7 @@ const multiplexMode = CodeMirror => {
         }
       },
 
-      token (stream, state) {
+      token(stream, state) {
         if (!state.innerActive) {
           let cutOff = Infinity
           const oldContent = stream.string
@@ -51,7 +51,7 @@ const multiplexMode = CodeMirror => {
               }
 
               state.inner = CodeMirror.startState(other.mode, outerIndent)
-              return other.delimStyle && (other.delimStyle + ' ' + other.delimStyle + '-open')
+              return other.delimStyle && other.delimStyle + ' ' + other.delimStyle + '-open'
             } else if (found !== -1 && found < cutOff) {
               cutOff = found
             }
@@ -67,11 +67,13 @@ const multiplexMode = CodeMirror => {
             state.innerActive = state.inner = null
             return this.token(stream, state)
           }
-          const found = curInner.close ? indexOf(oldContent, curInner.close, stream.pos, curInner.parseDelimiters) : -1
+          const found = curInner.close
+            ? indexOf(oldContent, curInner.close, stream.pos, curInner.parseDelimiters)
+            : -1
           if (found === stream.pos && !curInner.parseDelimiters) {
             stream.match(curInner.close)
             state.innerActive = state.inner = null
-            return curInner.delimStyle && (curInner.delimStyle + ' ' + curInner.delimStyle + '-close')
+            return curInner.delimStyle && curInner.delimStyle + ' ' + curInner.delimStyle + '-close'
           }
           if (found > -1) stream.string = oldContent.slice(0, found)
           let innerToken = curInner.mode.token(stream, state.inner)
@@ -90,13 +92,13 @@ const multiplexMode = CodeMirror => {
         }
       },
 
-      indent (state, textAfter) {
+      indent(state, textAfter) {
         const mode = state.innerActive ? state.innerActive.mode : outer
         if (!mode.indent) return CodeMirror.Pass
         return mode.indent(state.innerActive ? state.inner : state.outer, textAfter)
       },
 
-      blankLine (state) {
+      blankLine(state) {
         const mode = state.innerActive ? state.innerActive.mode : outer
         if (mode.blankLine) {
           mode.blankLine(state.innerActive ? state.inner : state.outer)
@@ -106,7 +108,10 @@ const multiplexMode = CodeMirror => {
             const other = others[i]
             if (other.open === '\n') {
               state.innerActive = other
-              state.inner = CodeMirror.startState(other.mode, mode.indent ? mode.indent(state.outer, '') : 0)
+              state.inner = CodeMirror.startState(
+                other.mode,
+                mode.indent ? mode.indent(state.outer, '') : 0
+              )
             }
           }
         } else if (state.innerActive.close === '\n') {
@@ -116,8 +121,10 @@ const multiplexMode = CodeMirror => {
 
       electricChars: outer.electricChars,
 
-      innerMode (state) {
-        return state.inner ? { state: state.inner, mode: state.innerActive.mode } : { state: state.outer, mode: outer }
+      innerMode(state) {
+        return state.inner
+          ? { state: state.inner, mode: state.innerActive.mode }
+          : { state: state.outer, mode: outer }
       }
     }
   }

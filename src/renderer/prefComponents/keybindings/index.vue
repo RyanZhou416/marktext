@@ -25,24 +25,24 @@
               <button
                 type="button"
                 class="btn-icon"
-                @click="handleEditClick(index, entry)"
                 :title="$t('common.edit')"
+                @click="handleEditClick(index, entry)"
               >
                 <i class="el-icon-edit"></i>
               </button>
               <button
                 type="button"
                 class="btn-icon"
-                @click="handleResetClick(index, entry)"
                 :title="$t('common.reset')"
+                @click="handleResetClick(index, entry)"
               >
                 <i class="el-icon-refresh-right"></i>
               </button>
               <button
                 type="button"
                 class="btn-icon"
-                @click="handleUnbindClick(index, entry)"
                 :title="$t('common.unbind')"
+                @click="handleUnbindClick(index, entry)"
               >
                 <i class="el-icon-delete"></i>
               </button>
@@ -69,7 +69,10 @@
         {{ $t('settings.keybindings.dumpKeyboard') }}
       </button>
     </section>
-    <key-input-dialog :showWithId="selectedShortcutId" :onCommit="onKeybinding"></key-input-dialog>
+    <key-input-dialog
+      :show-with-id="selectedShortcutId"
+      :on-commit="onKeybinding"
+    ></key-input-dialog>
   </div>
 </template>
 

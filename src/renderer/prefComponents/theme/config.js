@@ -19,13 +19,16 @@ export const themes = [
   }
 ]
 
-export const autoSwitchThemeOptions = (t) => [{
-  label: t('settings.theme.adjustAtStartup'), // Always
-  value: 0
-}, /* {
+export const autoSwitchThemeOptions = t => [
+  {
+    label: t('settings.theme.adjustAtStartup'), // Always
+    value: 0
+  },
+  /* {
   label: 'Only at runtime',
   value: 1
 }, */ {
-  label: t('settings.theme.never'),
-  value: 2
-}]
+    label: t('settings.theme.never'),
+    value: 2
+  }
+]

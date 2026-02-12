@@ -11,8 +11,8 @@
     <div class="controls">
       <div>
         <span
-          class="inline-button"
           v-if="currentNotification.showConfirm"
+          class="inline-button"
           @click.stop="handleClick(true)"
         >
           Ok

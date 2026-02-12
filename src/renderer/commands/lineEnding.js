@@ -6,7 +6,7 @@ const crlfDescription = 'Carriage return and line feed (CRLF)'
 const lfDescription = 'Line feed (LF)'
 
 class LineEndingCommand {
-  constructor (editorState) {
+  constructor(editorState) {
     this.id = 'file.line-ending'
     this.description = 'File: Change Line Ending'
     this.placeholder = 'Select an option'

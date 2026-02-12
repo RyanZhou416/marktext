@@ -5,11 +5,11 @@ import { useProjectStore } from '../stores/project'
  * Composable for creating files and directories
  * Replaces createFileOrDirectoryMixins
  */
-export function useCreateFileOrDirectory (inputRef, folder) {
+export function useCreateFileOrDirectory(inputRef, folder) {
   const projectStore = useProjectStore()
   const createName = ref('')
 
-  function handleInputFocus () {
+  function handleInputFocus() {
     nextTick(() => {
       if (inputRef.value) {
         inputRef.value.focus()
@@ -21,7 +21,7 @@ export function useCreateFileOrDirectory (inputRef, folder) {
     })
   }
 
-  function handleInputEnter () {
+  function handleInputEnter() {
     projectStore.CREATE_FILE_DIRECTORY(createName.value)
   }
 

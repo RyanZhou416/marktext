@@ -170,7 +170,10 @@ const paragraphCtrl = ContentState => {
         })
       }
     } else {
-      if (start.key === end.key || (start.block.parent && start.block.parent === end.block.parent)) {
+      if (
+        start.key === end.key ||
+        (start.block.parent && start.block.parent === end.block.parent)
+      ) {
         const block = this.getBlock(start.key)
         const paragraph = this.getBlock(block.parent)
         if (listType === 'task') {
@@ -243,10 +246,16 @@ const paragraphCtrl = ContentState => {
     const startParents = this.getParents(startBlock)
     const endParents = this.getParents(endBlock)
     const hasFencedCodeBlockParent = () => {
-      return [...startParents, ...endParents].some(b => b.type === 'pre' && /code/.test(b.functionType))
+      return [...startParents, ...endParents].some(
+        b => b.type === 'pre' && /code/.test(b.functionType)
+      )
     }
     // change fenced code block to p paragraph
-    if (affiliation.length && affiliation[0].type === 'pre' && /code/.test(affiliation[0].functionType)) {
+    if (
+      affiliation.length &&
+      affiliation[0].type === 'pre' &&
+      /code/.test(affiliation[0].functionType)
+    ) {
       const codeBlock = affiliation[0]
       const codeContent = codeBlock.children[1].children[0].text
       const states = this.markdownToState(codeContent)
@@ -368,7 +377,7 @@ const paragraphCtrl = ContentState => {
         this.insertBefore(child, quoteBlock)
       }
       this.removeBlock(quoteBlock)
-    // change paragraph to blockquote
+      // change paragraph to blockquote
     } else {
       if (start.key === end.key) {
         if (startBlock.type === 'span') {
@@ -404,9 +413,13 @@ const paragraphCtrl = ContentState => {
       return
     }
 
-    const value = anchor.type === 'p'
-      ? anchor.children.map(child => child.text).join('\n').trim()
-      : ''
+    const value =
+      anchor.type === 'p'
+        ? anchor.children
+            .map(child => child.text)
+            .join('\n')
+            .trim()
+        : ''
 
     const containerBlock = this.createContainerBlock(functionType, value)
     this.insertAfter(containerBlock, anchor)
@@ -430,7 +443,12 @@ const paragraphCtrl = ContentState => {
     const handler = (rows, columns) => {
       this.createTable({ rows: rows + 1, columns: columns + 1 })
     }
-    eventCenter.dispatch('muya-table-picker', { row: -1, column: -1 }, reference, handler.bind(this))
+    eventCenter.dispatch(
+      'muya-table-picker',
+      { row: -1, column: -1 },
+      reference,
+      handler.bind(this)
+    )
   }
 
   ContentState.prototype.insertHtmlBlock = function (block) {
@@ -555,15 +573,14 @@ const paragraphCtrl = ContentState => {
           newType = newLevel === 0 ? 'p' : `h${newLevel}`
         }
 
-        const startOffset = newLevel > 0
-          ? start.offset + newLevel - hash.length + 1
-          : start.offset - hash.length // no need to add `1`, because we didn't add `String.fromCharCode(160)` to text paragraph
-        const endOffset = newLevel > 0
-          ? end.offset + newLevel - hash.length + 1
-          : end.offset - hash.length
-        let newText = newLevel > 0
-          ? '#'.repeat(newLevel) + `${String.fromCharCode(160)}${partText}` // &nbsp; code: 160
-          : partText
+        const startOffset =
+          newLevel > 0 ? start.offset + newLevel - hash.length + 1 : start.offset - hash.length // no need to add `1`, because we didn't add `String.fromCharCode(160)` to text paragraph
+        const endOffset =
+          newLevel > 0 ? end.offset + newLevel - hash.length + 1 : end.offset - hash.length
+        let newText =
+          newLevel > 0
+            ? '#'.repeat(newLevel) + `${String.fromCharCode(160)}${partText}` // &nbsp; code: 160
+            : partText
 
         // Remove <hr> content when converting to paragraph.
         if (type === 'span' && block.functionType === 'thematicBreakLine') {
@@ -658,7 +675,7 @@ const paragraphCtrl = ContentState => {
     }
 
     // You can not insert paragraph before frontmatter
-    if (!anchor || anchor && anchor.functionType === 'frontmatter' && location === 'before') {
+    if (!anchor || (anchor && anchor.functionType === 'frontmatter' && location === 'before')) {
       return
     }
 
@@ -748,11 +765,13 @@ const paragraphCtrl = ContentState => {
     const lastTextBlock = this.getLastBlock()
     const { start, end } = this.cursor
 
-    return firstTextBlock.key === start.key &&
+    return (
+      firstTextBlock.key === start.key &&
       start.offset === 0 &&
       lastTextBlock.key === end.key &&
       end.offset === lastTextBlock.text.length &&
       !this.muya.keyboard.isComposed
+    )
   }
 
   ContentState.prototype.selectAllContent = function () {
@@ -802,14 +821,16 @@ const paragraphCtrl = ContentState => {
           tableId: table.key,
           row: 1,
           column: 1,
-          cells: [{
-            key: cellBlock.key,
-            text: cellBlock.children[0].text,
-            top: true,
-            right: true,
-            bottom: true,
-            left: true
-          }]
+          cells: [
+            {
+              key: cellBlock.key,
+              text: cellBlock.children[0].text,
+              top: true,
+              right: true,
+              bottom: true,
+              left: true
+            }
+          ]
         }
 
         this.singleRender(table, false)
@@ -954,7 +975,8 @@ const paragraphCtrl = ContentState => {
             internalType = 'ul-bullet'
           } else if (listType === 'task') {
             internalType = 'ul-task'
-          } if (listType === 'order') {
+          }
+          if (listType === 'order') {
             internalType = 'ol-order'
           }
         } else if (affiliation.length === 2 && affiliation[1].type === 'blockquote') {

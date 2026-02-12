@@ -1,7 +1,7 @@
 <template>
   <div class="side-bar-search">
     <div class="search-wrapper">
-      <input type="text" v-model="keyword" placeholder="Search in folder..." @keyup="search" />
+      <input v-model="keyword" type="text" placeholder="Search in folder..." @keyup="search" />
       <div class="controls">
         <span
           title="Case Sensitive"
@@ -36,21 +36,21 @@
       </div>
     </div>
 
-    <div class="search-message-section" v-if="showNoFolderOpenedMessage">
+    <div v-if="showNoFolderOpenedMessage" class="search-message-section">
       <span>No folder open</span>
     </div>
-    <div class="search-message-section" v-if="showNoResultFoundMessage">No results found.</div>
-    <div class="search-message-section" v-if="searchErrorString">
+    <div v-if="showNoResultFoundMessage" class="search-message-section">No results found.</div>
+    <div v-if="searchErrorString" class="search-message-section">
       {{ searchErrorString }}
     </div>
 
-    <div class="cancel-area" v-show="showSearchCancelArea">
+    <div v-show="showSearchCancelArea" class="cancel-area">
       <button class="button-primary" @click="cancelSearcher">Cancel</button>
     </div>
     <div v-if="searchResult.length" class="search-result-info">
       {{ searchResultInfo }}
     </div>
-    <div class="search-result" ref="scrollRef" v-if="searchResult.length">
+    <div v-if="searchResult.length" ref="scrollRef" class="search-result">
       <div
         :style="{ height: `${virtualizer.getTotalSize()}px`, width: '100%', position: 'relative' }"
       >
@@ -67,16 +67,16 @@
             transform: `translateY(${virtualRow.start}px)`
           }"
         >
-          <search-result-item :searchResult="searchResult[virtualRow.index]"></search-result-item>
+          <search-result-item :search-result="searchResult[virtualRow.index]"></search-result-item>
         </div>
       </div>
     </div>
-    <div class="empty" v-else>
+    <div v-else class="empty">
       <div class="no-data">
         <svg :viewBox="EmptyIcon.viewBox" aria-hidden="true">
           <use :xlink:href="EmptyIcon.url" />
         </svg>
-        <button class="button-primary" v-if="showNoFolderOpenedMessage" @click="openFolder">
+        <button v-if="showNoFolderOpenedMessage" class="button-primary" @click="openFolder">
           Open Folder
         </button>
       </div>
@@ -103,6 +103,9 @@ import FindRegexIcon from '@/assets/icons/searchIcons/iconRegex.svg'
 import { MARKDOWN_INCLUSIONS } from '../../../common/filesystem/paths'
 
 export default {
+  components: {
+    SearchResultItem
+  },
   setup() {
     const scrollRef = ref<HTMLElement | null>(null)
     const resultCount = ref(0)
@@ -139,9 +142,6 @@ export default {
       isWholeWord: false,
       isRegexp: false
     }
-  },
-  components: {
-    SearchResultItem
   },
   watch: {
     showSideBar: function (value, oldValue) {
@@ -194,6 +194,9 @@ export default {
         this.searchResult.length === 0 && this.searcherRunning === false && this.keyword.length > 0
       )
     }
+  },
+  unmounted() {
+    bus.$off('findInFolder', this.handleFindInFolder)
   },
   methods: {
     search() {
@@ -349,9 +352,6 @@ export default {
     handleFindInFolder() {
       this.keyword = this.searchMatches.value
     }
-  },
-  unmounted() {
-    bus.$off('findInFolder', this.handleFindInFolder)
   }
 }
 </script>

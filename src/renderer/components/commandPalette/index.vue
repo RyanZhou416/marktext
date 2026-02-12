@@ -13,27 +13,27 @@
         <div class="input-wrapper">
           <input
             ref="search"
-            type="text"
             v-model="query"
+            type="text"
             class="search"
+            :placeholder="placeholderText"
             @keydown="handleBeforeInput"
             @keyup="handleInput"
-            :placeholder="placeholderText"
           />
         </div>
         <loading v-if="searcherBusy"></loading>
-        <transition name="fade" v-else-if="availableCommands.length">
+        <transition v-else-if="availableCommands.length" name="fade">
           <ul class="commands">
             <li
               v-for="(item, index) of availableCommands"
               :key="index"
               ref="command-items"
-              @click="search(item.id)"
               :class="{ active: index === selectedCommandIndex }"
+              @click="search(item.id)"
             >
               <span class="title" :title="item.title">{{ item.description }}</span>
               <span class="shortcut">
-                <span class="shortcut" v-for="(accelerator, index) of item.shortcut" :key="index">
+                <span v-for="(accelerator, index) of item.shortcut" :key="index" class="shortcut">
                   <kbd>{{ accelerator }}</kbd>
                 </span>
               </span>

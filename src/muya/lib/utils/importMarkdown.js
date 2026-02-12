@@ -19,23 +19,22 @@ const languageLoaded = new Set()
 // Just because turndown change `\n`(soft line break) to space, So we add `span.ag-soft-line-break` to workaround.
 const turnSoftBreakToSpan = html => {
   const parser = new DOMParser()
-  const doc = parser.parseFromString(
-    `<x-mt id="turn-root">${html}</x-mt>`,
-    'text/html'
-  )
+  const doc = parser.parseFromString(`<x-mt id="turn-root">${html}</x-mt>`, 'text/html')
   const root = doc.querySelector('#turn-root')
   const travel = childNodes => {
     for (const node of childNodes) {
       if (node.nodeType === 3 && node.parentNode.tagName !== 'CODE') {
         let startLen = 0
         let endLen = 0
-        const text = node.nodeValue.replace(/^(\n+)/, (_, p) => {
-          startLen = p.length
-          return ''
-        }).replace(/(\n+)$/, (_, p) => {
-          endLen = p.length
-          return ''
-        })
+        const text = node.nodeValue
+          .replace(/^(\n+)/, (_, p) => {
+            startLen = p.length
+            return ''
+          })
+          .replace(/(\n+)$/, (_, p) => {
+            endLen = p.length
+            return ''
+          })
         if (/\n/.test(text)) {
           const tokens = text.split('\n')
           const params = []
@@ -102,9 +101,7 @@ const importRegister = ContentState => {
       switch (token.type) {
         case 'frontmatter': {
           const { lang, style } = token
-          value = token.text
-            .replace(/^\s+/, '')
-            .replace(/\s$/, '')
+          value = token.text.replace(/^\s+/, '').replace(/\s$/, '')
           block = this.createBlock('pre', {
             functionType: token.type,
             lang,
@@ -176,9 +173,11 @@ const importRegister = ContentState => {
 
           value = text
           // Fix: #1265.
-          if (trimUnnecessaryCodeBlockEmptyLines && (value.endsWith('\n') || value.startsWith('\n'))) {
-            value = value.replace(/\n+$/, '')
-              .replace(/^\n+/, '')
+          if (
+            trimUnnecessaryCodeBlockEmptyLines &&
+            (value.endsWith('\n') || value.startsWith('\n'))
+          ) {
+            value = value.replace(/\n+$/, '').replace(/^\n+/, '')
           }
           if (/mermaid|flowchart|vega-lite|sequence|plantuml/.test(lang)) {
             block = this.createContainerBlock(lang, value)
@@ -459,45 +458,57 @@ const importRegister = ContentState => {
       const firstTextPart = anchorText.substring(0, minOffset)
       const secondTextPart = anchorText.substring(minOffset, maxOffset)
       const thirdTextPart = anchorText.substring(maxOffset)
-      anchorBlock.text = firstTextPart +
+      anchorBlock.text =
+        firstTextPart +
         (anchor.offset <= focus.offset ? CURSOR_ANCHOR_DNA : CURSOR_FOCUS_DNA) +
         secondTextPart +
         (anchor.offset <= focus.offset ? CURSOR_FOCUS_DNA : CURSOR_ANCHOR_DNA) +
         thirdTextPart
     } else {
-      anchorBlock.text = anchorText.substring(0, anchor.offset) + CURSOR_ANCHOR_DNA + anchorText.substring(anchor.offset)
-      focusBlock.text = focusText.substring(0, focus.offset) + CURSOR_FOCUS_DNA + focusText.substring(focus.offset)
+      anchorBlock.text =
+        anchorText.substring(0, anchor.offset) +
+        CURSOR_ANCHOR_DNA +
+        anchorText.substring(anchor.offset)
+      focusBlock.text =
+        focusText.substring(0, focus.offset) + CURSOR_FOCUS_DNA + focusText.substring(focus.offset)
     }
 
     const { isGitlabCompatibilityEnabled, listIndentation } = this
-    const markdown = new ExportMarkdown(blocks, listIndentation, isGitlabCompatibilityEnabled).generate()
-    const cursor = markdown.split('\n').reduce((acc, line, index) => {
-      const ach = line.indexOf(CURSOR_ANCHOR_DNA)
-      const fch = line.indexOf(CURSOR_FOCUS_DNA)
-      if (ach > -1 && fch > -1) {
-        if (ach <= fch) {
+    const markdown = new ExportMarkdown(
+      blocks,
+      listIndentation,
+      isGitlabCompatibilityEnabled
+    ).generate()
+    const cursor = markdown.split('\n').reduce(
+      (acc, line, index) => {
+        const ach = line.indexOf(CURSOR_ANCHOR_DNA)
+        const fch = line.indexOf(CURSOR_FOCUS_DNA)
+        if (ach > -1 && fch > -1) {
+          if (ach <= fch) {
+            Object.assign(acc.anchor, { line: index, ch: ach })
+            Object.assign(acc.focus, { line: index, ch: fch - CURSOR_ANCHOR_DNA.length })
+          } else {
+            Object.assign(acc.focus, { line: index, ch: fch })
+            Object.assign(acc.anchor, { line: index, ch: ach - CURSOR_FOCUS_DNA.length })
+          }
+        } else if (ach > -1) {
           Object.assign(acc.anchor, { line: index, ch: ach })
-          Object.assign(acc.focus, { line: index, ch: fch - CURSOR_ANCHOR_DNA.length })
-        } else {
+        } else if (fch > -1) {
           Object.assign(acc.focus, { line: index, ch: fch })
-          Object.assign(acc.anchor, { line: index, ch: ach - CURSOR_FOCUS_DNA.length })
         }
-      } else if (ach > -1) {
-        Object.assign(acc.anchor, { line: index, ch: ach })
-      } else if (fch > -1) {
-        Object.assign(acc.focus, { line: index, ch: fch })
-      }
-      return acc
-    }, {
-      anchor: {
-        line: 0,
-        ch: 0
+        return acc
       },
-      focus: {
-        line: 0,
-        ch: 0
+      {
+        anchor: {
+          line: 0,
+          ch: 0
+        },
+        focus: {
+          line: 0,
+          ch: 0
+        }
       }
-    })
+    )
     // remove CURSOR_FOCUS_DNA and CURSOR_ANCHOR_DNA
     anchorBlock.text = anchorText
     focusBlock.text = focusText
@@ -524,14 +535,17 @@ const importRegister = ContentState => {
       const firstTextPart = anchorText.substring(0, minOffset)
       const secondTextPart = anchorText.substring(minOffset, maxOffset)
       const thirdTextPart = anchorText.substring(maxOffset)
-      lines[anchor.line] = firstTextPart +
+      lines[anchor.line] =
+        firstTextPart +
         (anchor.ch <= focus.ch ? CURSOR_ANCHOR_DNA : CURSOR_FOCUS_DNA) +
         secondTextPart +
         (anchor.ch <= focus.ch ? CURSOR_FOCUS_DNA : CURSOR_ANCHOR_DNA) +
         thirdTextPart
     } else {
-      lines[anchor.line] = anchorText.substring(0, anchor.ch) + CURSOR_ANCHOR_DNA + anchorText.substring(anchor.ch)
-      lines[focus.line] = focusText.substring(0, focus.ch) + CURSOR_FOCUS_DNA + focusText.substring(focus.ch)
+      lines[anchor.line] =
+        anchorText.substring(0, anchor.ch) + CURSOR_ANCHOR_DNA + anchorText.substring(anchor.ch)
+      lines[focus.line] =
+        focusText.substring(0, focus.ch) + CURSOR_FOCUS_DNA + focusText.substring(focus.ch)
     }
 
     return {
@@ -555,7 +569,8 @@ const importRegister = ContentState => {
         if (text) {
           const offset = text.indexOf(CURSOR_ANCHOR_DNA)
           if (offset > -1) {
-            block.text = text.substring(0, offset) + text.substring(offset + CURSOR_ANCHOR_DNA.length)
+            block.text =
+              text.substring(0, offset) + text.substring(offset + CURSOR_ANCHOR_DNA.length)
             text = block.text
             count++
             if (editable) {
@@ -564,7 +579,8 @@ const importRegister = ContentState => {
           }
           const focusOffset = text.indexOf(CURSOR_FOCUS_DNA)
           if (focusOffset > -1) {
-            block.text = text.substring(0, focusOffset) + text.substring(focusOffset + CURSOR_FOCUS_DNA.length)
+            block.text =
+              text.substring(0, focusOffset) + text.substring(focusOffset + CURSOR_FOCUS_DNA.length)
             count++
             if (editable) {
               cursor.focus = { key, offset: focusOffset }
@@ -604,12 +620,12 @@ const importRegister = ContentState => {
 
     const travelToken = token => {
       const { type, attrs, children, tag, label, backlash } = token
-      if (/reference_image|image/.test(type) || type === 'html_tag' && tag === 'img') {
+      if (/reference_image|image/.test(type) || (type === 'html_tag' && tag === 'img')) {
         if ((type === 'image' || type === 'html_tag') && attrs.src) {
           results.add(attrs.src)
         } else {
           const rawSrc = label + backlash.second
-          if (render.labels.has((rawSrc).toLowerCase())) {
+          if (render.labels.has(rawSrc.toLowerCase())) {
             const { href } = render.labels.get(rawSrc.toLowerCase())
             const { src } = getImageInfo(href)
             if (src) {
@@ -630,7 +646,11 @@ const importRegister = ContentState => {
         for (const b of children) {
           travel(b)
         }
-      } else if (text && type === 'span' && /paragraphContent|atxLine|cellContent/.test(functionType)) {
+      } else if (
+        text &&
+        type === 'span' &&
+        /paragraphContent|atxLine|cellContent/.test(functionType)
+      ) {
         const tokens = tokenizer(text, [], false, render.labels)
         for (const token of tokens) {
           travelToken(token)

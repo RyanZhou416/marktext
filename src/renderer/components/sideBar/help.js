@@ -7,10 +7,12 @@ export const sideBarIcons = [
   {
     name: 'files',
     icon: FilesIcon
-  }, {
+  },
+  {
     name: 'search',
     icon: SearchIcon
-  }, {
+  },
+  {
     name: 'toc',
     icon: TocIcon
   }

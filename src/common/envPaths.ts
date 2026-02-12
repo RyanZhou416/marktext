@@ -17,9 +17,18 @@ if (typeof window !== 'undefined' && (window as any).electronAPI) {
   // Tauri environment: use a simple path polyfill
   const sep: string = navigator.platform.startsWith('Win') ? '\\' : '/'
   path = {
-    join: (...args: string[]): string => args.filter(Boolean).join(sep).replace(/[/\\]+/g, sep),
-    resolve: (...args: string[]): string => args.filter(Boolean).join(sep).replace(/[/\\]+/g, sep),
-    dirname: (p: string): string => p ? p.substring(0, Math.max(p.lastIndexOf('/'), p.lastIndexOf('\\'))) || sep : '.',
+    join: (...args: string[]): string =>
+      args
+        .filter(Boolean)
+        .join(sep)
+        .replace(/[/\\]+/g, sep),
+    resolve: (...args: string[]): string =>
+      args
+        .filter(Boolean)
+        .join(sep)
+        .replace(/[/\\]+/g, sep),
+    dirname: (p: string): string =>
+      p ? p.substring(0, Math.max(p.lastIndexOf('/'), p.lastIndexOf('\\'))) || sep : '.',
     basename: (p: string, ext?: string): string => {
       if (!p) return ''
       let base = p.substring(Math.max(p.lastIndexOf('/'), p.lastIndexOf('\\')) + 1)
@@ -36,11 +45,21 @@ if (typeof window !== 'undefined' && (window as any).electronAPI) {
   }
 } else {
   // Fallback: inline path polyfill (no Node.js require)
-  const sep: string = typeof navigator !== 'undefined' && navigator.platform.startsWith('Win') ? '\\' : '/'
+  const sep: string =
+    typeof navigator !== 'undefined' && navigator.platform.startsWith('Win') ? '\\' : '/'
   path = {
-    join: (...args: string[]): string => args.filter(Boolean).join(sep).replace(/[/\\]+/g, sep),
-    resolve: (...args: string[]): string => args.filter(Boolean).join(sep).replace(/[/\\]+/g, sep),
-    dirname: (p: string): string => p ? p.substring(0, Math.max(p.lastIndexOf('/'), p.lastIndexOf('\\'))) || sep : '.',
+    join: (...args: string[]): string =>
+      args
+        .filter(Boolean)
+        .join(sep)
+        .replace(/[/\\]+/g, sep),
+    resolve: (...args: string[]): string =>
+      args
+        .filter(Boolean)
+        .join(sep)
+        .replace(/[/\\]+/g, sep),
+    dirname: (p: string): string =>
+      p ? p.substring(0, Math.max(p.lastIndexOf('/'), p.lastIndexOf('\\'))) || sep : '.',
     basename: (p: string, ext?: string): string => {
       if (!p) return ''
       let base = p.substring(Math.max(p.lastIndexOf('/'), p.lastIndexOf('\\')) + 1)
@@ -68,7 +87,7 @@ class EnvPaths {
   /**
    * @param userDataPath The user data path.
    */
-  constructor (userDataPath: string) {
+  constructor(userDataPath: string) {
     const currentDate = new Date()
     if (!userDataPath) {
       throw new Error('"userDataPath" is not set.')
@@ -85,10 +104,7 @@ class EnvPaths {
 
     this._dataCenterPath = userDataPath
 
-    this._preferencesFilePath = path.join(
-      this._preferencesPath,
-      'preference.json'
-    )
+    this._preferencesFilePath = path.join(this._preferencesPath, 'preference.json')
 
     // TODO(sessions): enable this...
     // this._globalStorage = path.join(this._userDataPath, 'globalStorage')
@@ -96,28 +112,28 @@ class EnvPaths {
     // this._sessionsPath = path.join(this._userDataPath, 'sessions')
   }
 
-  get electronUserDataPath (): string {
+  get electronUserDataPath(): string {
     // This path is identical to app.getPath('userData') but userDataPath must not necessarily be the same path.
     return this._electronUserDataPath
   }
 
-  get userDataPath (): string {
+  get userDataPath(): string {
     return this._userDataPath
   }
 
-  get logPath (): string {
+  get logPath(): string {
     return this._logPath
   }
 
-  get preferencesPath (): string {
+  get preferencesPath(): string {
     return this._preferencesPath
   }
 
-  get dataCenterPath (): string {
+  get dataCenterPath(): string {
     return this._dataCenterPath
   }
 
-  get preferencesFilePath (): string {
+  get preferencesFilePath(): string {
     return this._preferencesFilePath
   }
 }

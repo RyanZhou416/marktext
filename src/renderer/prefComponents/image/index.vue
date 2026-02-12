@@ -11,7 +11,7 @@
       <CurSelect
         :value="imageInsertAction"
         :options="imageActionOpts"
-        :onChange="value => onSelectChange('imageInsertAction', value)"
+        :on-change="value => onSelectChange('imageInsertAction', value)"
       ></CurSelect>
     </section>
     <Separator />

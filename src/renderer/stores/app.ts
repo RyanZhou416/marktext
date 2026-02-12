@@ -10,21 +10,21 @@ export const useAppStore = defineStore('app', {
   }),
 
   actions: {
-    SET_WIN_STATUS (status: boolean) {
+    SET_WIN_STATUS(status: boolean) {
       this.windowActive = status
     },
 
-    SET_INITIALIZED () {
+    SET_INITIALIZED() {
       this.init = true
     },
 
-    LINTEN_WIN_STATUS () {
+    LINTEN_WIN_STATUS() {
       ipcRenderer.on('mt::window-active-status', (e: any, { status }: { status: boolean }) => {
         this.SET_WIN_STATUS(status)
       })
     },
 
-    SEND_INITIALIZED () {
+    SEND_INITIALIZED() {
       this.SET_INITIALIZED()
     }
   }

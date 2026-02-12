@@ -7,7 +7,7 @@ import renderInlines from './renderInlines'
 import renderBlock from './renderBlock'
 
 class StateRender {
-  constructor (muya) {
+  constructor(muya) {
     this.muya = muya
     this.eventCenter = muya.eventCenter
     this.codeCache = new Map()
@@ -23,12 +23,12 @@ class StateRender {
     this.container = null
   }
 
-  setContainer (container) {
+  setContainer(container) {
     this.container = container
   }
 
   // collect link reference definition
-  collectLabels (blocks) {
+  collectLabels(blocks) {
     this.labels.clear()
 
     const travel = block => {
@@ -52,7 +52,7 @@ class StateRender {
     blocks.forEach(b => travel(b))
   }
 
-  checkConflicted (block, token, cursor) {
+  checkConflicted(block, token, cursor) {
     const { start, end } = cursor
     const key = block.key
     const { start: tokenStart, end: tokenEnd } = token.range
@@ -64,20 +64,25 @@ class StateRender {
     } else if (key !== start.key && key === end.key) {
       return conflict([tokenStart, tokenEnd], [end.offset, end.offset])
     } else {
-      return conflict([tokenStart, tokenEnd], [start.offset, start.offset]) ||
+      return (
+        conflict([tokenStart, tokenEnd], [start.offset, start.offset]) ||
         conflict([tokenStart, tokenEnd], [end.offset, end.offset])
+      )
     }
   }
 
-  getClassName (outerClass, block, token, cursor) {
-    return outerClass || (this.checkConflicted(block, token, cursor) ? CLASS_OR_ID.AG_GRAY : CLASS_OR_ID.AG_HIDE)
+  getClassName(outerClass, block, token, cursor) {
+    return (
+      outerClass ||
+      (this.checkConflicted(block, token, cursor) ? CLASS_OR_ID.AG_GRAY : CLASS_OR_ID.AG_HIDE)
+    )
   }
 
-  getHighlightClassName (active) {
+  getHighlightClassName(active) {
     return active ? CLASS_OR_ID.AG_HIGHLIGHT : CLASS_OR_ID.AG_SELECTION
   }
 
-  getSelector (block, activeBlocks) {
+  getSelector(block, activeBlocks) {
     const { cursor, selectedBlock } = this.muya.contentState
     const type = block.type === 'hr' ? 'p' : block.type
     const isActive = activeBlocks.some(b => b.key === block.key) || block.key === cursor.start.key
@@ -95,7 +100,7 @@ class StateRender {
     return selector
   }
 
-  async renderMermaid () {
+  async renderMermaid() {
     if (this.mermaidCache.size) {
       const mermaid = await loadRenderer('mermaid')
       mermaid.initialize({
@@ -122,7 +127,7 @@ class StateRender {
     }
   }
 
-  async renderDiagram () {
+  async renderDiagram() {
     const cache = this.diagramCache
     if (cache.size) {
       const RENDER_MAP = {
@@ -171,7 +176,7 @@ class StateRender {
     }
   }
 
-  render (blocks, activeBlocks, matches) {
+  render(blocks, activeBlocks, matches) {
     const selector = `div#${CLASS_OR_ID.AG_EDITOR_ID}`
     const children = blocks.map(block => {
       return this.renderBlock(null, block, activeBlocks, matches, true)
@@ -187,11 +192,14 @@ class StateRender {
   }
 
   // Only render the blocks which you updated
-  partialRender (blocks, activeBlocks, matches, startKey, endKey) {
+  partialRender(blocks, activeBlocks, matches, startKey, endKey) {
     const cursorOutMostBlock = activeBlocks[activeBlocks.length - 1]
     // If cursor is not in render blocks, need to render cursor block independently
     const needRenderCursorBlock = blocks.indexOf(cursorOutMostBlock) === -1
-    const newVnode = h('section', blocks.map(block => this.renderBlock(null, block, activeBlocks, matches)))
+    const newVnode = h(
+      'section',
+      blocks.map(block => this.renderBlock(null, block, activeBlocks, matches))
+    )
     const html = toHTML(newVnode).replace(/^<section>([\s\S]+?)<\/section>$/, '$1')
 
     const needToRemoved = []
@@ -237,7 +245,7 @@ class StateRender {
    * @param {array} activeBlocks
    * @param {array} matches
    */
-  singleRender (block, activeBlocks, matches) {
+  singleRender(block, activeBlocks, matches) {
     const selector = `#${block.key}`
     const newVdom = this.renderBlock(null, block, activeBlocks, matches, true)
     const rootDom = document.querySelector(selector)
@@ -248,7 +256,7 @@ class StateRender {
     this.codeCache.clear()
   }
 
-  invalidateImageCache () {
+  invalidateImageCache() {
     this.loadImageMap.forEach((imageInfo, key) => {
       imageInfo.touchMsec = Date.now()
       this.loadImageMap.set(key, imageInfo)

@@ -12,7 +12,7 @@ const getOffset = (offset, { range: { start, end }, type, tag, anchor, alt }) =>
     case 'em':
     case 'inline_code':
     case 'inline_math': {
-      const MARKER_LEN = (type === 'strong' || type === 'del') ? 2 : 1
+      const MARKER_LEN = type === 'strong' || type === 'del' ? 2 : 1
       if (dis < 0) return 0
       if (dis >= 0 && dis < MARKER_LEN) return -dis
       if (dis >= MARKER_LEN && dis <= len - MARKER_LEN) return -MARKER_LEN
@@ -20,13 +20,15 @@ const getOffset = (offset, { range: { start, end }, type, tag, anchor, alt }) =>
       if (dis > len) return -2 * MARKER_LEN
       break
     }
-    case 'html_tag': { // handle underline, sup, sub
+    case 'html_tag': {
+      // handle underline, sup, sub
       const OPEN_MARKER_LEN = FORMAT_MARKER_MAP[tag].open.length
       const CLOSE_MARKER_LEN = FORMAT_MARKER_MAP[tag].close.length
       if (dis < 0) return 0
       if (dis >= 0 && dis < OPEN_MARKER_LEN) return -dis
       if (dis >= OPEN_MARKER_LEN && dis <= len - CLOSE_MARKER_LEN) return -OPEN_MARKER_LEN
-      if (dis > len - CLOSE_MARKER_LEN && dis <= len) return len - dis - OPEN_MARKER_LEN - CLOSE_MARKER_LEN
+      if (dis > len - CLOSE_MARKER_LEN && dis <= len)
+        return len - dis - OPEN_MARKER_LEN - CLOSE_MARKER_LEN
       if (dis > len) return -OPEN_MARKER_LEN - CLOSE_MARKER_LEN
       break
     }
@@ -62,7 +64,8 @@ const clearFormat = (token, { start, end }) => {
     case 'del':
     case 'em':
     case 'link':
-    case 'html_tag': { // underline, sub, sup
+    case 'html_tag': {
+      // underline, sub, sup
       const { parent } = token
       const index = parent.indexOf(token)
       parent.splice(index, 1, ...token.children)
@@ -100,9 +103,12 @@ const addFormat = (type, block, { start, end }) => {
     case 'inline_math': {
       const MARKER = FORMAT_MARKER_MAP[type]
       const oldText = block.text
-      block.text = oldText.substring(0, start.offset) +
-        MARKER + oldText.substring(start.offset, end.offset) +
-        MARKER + oldText.substring(end.offset)
+      block.text =
+        oldText.substring(0, start.offset) +
+        MARKER +
+        oldText.substring(start.offset, end.offset) +
+        MARKER +
+        oldText.substring(end.offset)
       start.offset += MARKER.length
       end.offset += MARKER.length
       break
@@ -113,9 +119,12 @@ const addFormat = (type, block, { start, end }) => {
     case 'u': {
       const MARKER = FORMAT_MARKER_MAP[type]
       const oldText = block.text
-      block.text = oldText.substring(0, start.offset) +
-        MARKER.open + oldText.substring(start.offset, end.offset) +
-        MARKER.close + oldText.substring(end.offset)
+      block.text =
+        oldText.substring(0, start.offset) +
+        MARKER.open +
+        oldText.substring(start.offset, end.offset) +
+        MARKER.close +
+        oldText.substring(end.offset)
       start.offset += MARKER.open.length
       end.offset += MARKER.open.length
       break
@@ -124,9 +133,11 @@ const addFormat = (type, block, { start, end }) => {
     case 'image': {
       const oldText = block.text
       const anchorTextLen = end.offset - start.offset
-      block.text = oldText.substring(0, start.offset) +
+      block.text =
+        oldText.substring(0, start.offset) +
         (type === 'link' ? '[' : '![') +
-        oldText.substring(start.offset, end.offset) + ']()' +
+        oldText.substring(start.offset, end.offset) +
+        ']()' +
         oldText.substring(end.offset)
       // put cursor between `()`
       start.offset += type === 'link' ? 3 + anchorTextLen : 4 + anchorTextLen
@@ -158,7 +169,7 @@ const formatCtrl = ContentState => {
       tokens = tokenizer(text, {
         options: this.muya.options
       })
-      ;(function iterator (tks) {
+      ;(function iterator(tks) {
         for (const token of tks) {
           if (
             checkTokenIsInlineFormat(token) &&
@@ -170,8 +181,8 @@ const formatCtrl = ContentState => {
           if (
             checkTokenIsInlineFormat(token) &&
             ((start.offset >= token.range.start && start.offset <= token.range.end) ||
-            (end.offset >= token.range.start && end.offset <= token.range.end) ||
-            (start.offset <= token.range.start && token.range.end <= end.offset))
+              (end.offset >= token.range.start && end.offset <= token.range.end) ||
+              (start.offset <= token.range.start && token.range.end <= end.offset))
           ) {
             neighbors.push(token)
           }
@@ -185,7 +196,11 @@ const formatCtrl = ContentState => {
     return { formats, tokens, neighbors }
   }
 
-  ContentState.prototype.clearBlockFormat = function (block, { start, end } = selection.getCursorRange(), type) {
+  ContentState.prototype.clearBlockFormat = function (
+    block,
+    { start, end } = selection.getCursorRange(),
+    type
+  ) {
     if (!start || !end) {
       return
     }
@@ -194,11 +209,14 @@ const formatCtrl = ContentState => {
     let tokens
     let neighbors
     if (start.key === end.key && start.key === key) {
-      ({ tokens, neighbors } = this.selectionFormats({ start, end }))
+      ;({ tokens, neighbors } = this.selectionFormats({ start, end }))
     } else if (start.key !== end.key && start.key === key) {
-      ({ tokens, neighbors } = this.selectionFormats({ start, end: { key: start.key, offset: block.text.length } }))
+      ;({ tokens, neighbors } = this.selectionFormats({
+        start,
+        end: { key: start.key, offset: block.text.length }
+      }))
     } else if (start.key !== end.key && end.key === key) {
-      ({ tokens, neighbors } = this.selectionFormats({
+      ;({ tokens, neighbors } = this.selectionFormats({
         start: {
           key: end.key,
           offset: 0
@@ -206,7 +224,7 @@ const formatCtrl = ContentState => {
         end
       }))
     } else {
-      ({ tokens, neighbors } = this.selectionFormats({
+      ;({ tokens, neighbors } = this.selectionFormats({
         start: {
           key,
           offset: 0
@@ -220,9 +238,8 @@ const formatCtrl = ContentState => {
 
     neighbors = type
       ? neighbors.filter(n => {
-        return n.type === type ||
-        n.type === 'html_tag' && n.tag === type
-      })
+          return n.type === type || (n.type === 'html_tag' && n.tag === type)
+        })
       : neighbors
 
     for (const neighbor of neighbors) {
@@ -244,14 +261,16 @@ const formatCtrl = ContentState => {
     start.delata = end.delata = 0
     if (start.key === end.key) {
       const { formats, tokens, neighbors } = this.selectionFormats()
-      const currentFormats = formats.filter(format => {
-        return format.type === type ||
-          format.type === 'html_tag' && format.tag === type
-      }).reverse()
-      const currentNeightbors = neighbors.filter(format => {
-        return format.type === type ||
-        format.type === 'html_tag' && format.tag === type
-      }).reverse()
+      const currentFormats = formats
+        .filter(format => {
+          return format.type === type || (format.type === 'html_tag' && format.tag === type)
+        })
+        .reverse()
+      const currentNeightbors = neighbors
+        .filter(format => {
+          return format.type === type || (format.type === 'html_tag' && format.tag === type)
+        })
+        .reverse()
       // cache delata
       if (type === 'clear') {
         for (const neighbor of neighbors) {

@@ -1,23 +1,23 @@
 <template>
   <FileContextMenu :has-paste-content="!!clipboard" @action="handleContextAction">
     <div
+      ref="file"
       :title="file.pathname"
       class="side-bar-file"
       :style="{ 'padding-left': `${depth * 20 + 20}px`, opacity: file.isMarkdown ? 1 : 0.75 }"
-      @click="handleFileClick(file)"
       :class="[
         { current: currentFile.pathname === file.pathname, active: file.id === activeItem.id }
       ]"
-      ref="file"
+      @click="handleFileClick(file)"
     >
       <file-icon :name="file.name"></file-icon>
       <input
-        type="text"
-        @click.stop="noop"
-        class="rename"
         v-if="renameCache === file.pathname"
-        v-model="newName"
         ref="renameInput"
+        v-model="newName"
+        type="text"
+        class="rename"
+        @click.stop="noop"
         @keydown.enter="rename"
       />
       <span v-else>{{ file.name }}</span>
@@ -35,15 +35,10 @@ import { useFile } from '../../composables/useFile'
 import bus from '../../bus'
 
 export default {
-  setup() {
-    const { handleSearchResultClick, handleFileClick } = useFile()
-    return { handleSearchResultClick, handleFileClick }
-  },
-  name: 'file',
-  data() {
-    return {
-      newName: ''
-    }
+  name: 'File',
+  components: {
+    FileIcon,
+    FileContextMenu
   },
   props: {
     file: {
@@ -55,9 +50,14 @@ export default {
       required: true
     }
   },
-  components: {
-    FileIcon,
-    FileContextMenu
+  setup() {
+    const { handleSearchResultClick, handleFileClick } = useFile()
+    return { handleSearchResultClick, handleFileClick }
+  },
+  data() {
+    return {
+      newName: ''
+    }
   },
   computed: {
     ...mapState(useProjectStore, ['renameCache', 'activeItem', 'clipboard']),

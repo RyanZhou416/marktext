@@ -1,5 +1,8 @@
 import {
-  LOWERCASE_TAGS, CLASS_OR_ID, blockContainerElementNames, emptyElementNames
+  LOWERCASE_TAGS,
+  CLASS_OR_ID,
+  blockContainerElementNames,
+  emptyElementNames
 } from '../config'
 const CHOP_TEXT_REG = /(\*{1,3})([^*]+)(\1)/g
 
@@ -50,10 +53,13 @@ export const getOffsetOfParagraph = (node, paragraph) => {
   do {
     preSibling = preSibling.previousSibling
     if (preSibling) {
-      offset += getTextContent(preSibling, [CLASS_OR_ID.AG_MATH_RENDER, CLASS_OR_ID.AG_RUBY_RENDER]).length
+      offset += getTextContent(preSibling, [
+        CLASS_OR_ID.AG_MATH_RENDER,
+        CLASS_OR_ID.AG_RUBY_RENDER
+      ]).length
     }
   } while (preSibling)
-  return (node === paragraph || node.parentNode === paragraph)
+  return node === paragraph || node.parentNode === paragraph
     ? offset
     : offset + getOffsetOfParagraph(node.parentNode, paragraph)
 }
@@ -82,8 +88,11 @@ export const isAganippeParagraph = element => {
 }
 
 export const isBlockContainer = element => {
-  return element && element.nodeType !== 3 &&
-  blockContainerElementNames.indexOf(element.nodeName.toLowerCase()) !== -1
+  return (
+    element &&
+    element.nodeType !== 3 &&
+    blockContainerElementNames.indexOf(element.nodeName.toLowerCase()) !== -1
+  )
 }
 
 export const isMuyaEditorElement = element => {

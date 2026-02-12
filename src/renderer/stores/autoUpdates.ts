@@ -4,7 +4,7 @@ import notice from '../services/notification'
 
 export const useAutoUpdatesStore = defineStore('autoUpdates', {
   actions: {
-    LISTEN_FOR_UPDATE () {
+    LISTEN_FOR_UPDATE() {
       ipcRenderer.on('mt::UPDATE_ERROR', (e: any, message: string) => {
         notice.notify({
           title: 'Update',

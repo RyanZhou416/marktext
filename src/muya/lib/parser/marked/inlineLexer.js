@@ -8,7 +8,7 @@ import { validateEmphasize, lowerPriority } from '../utils'
  * Inline Lexer & Compiler
  */
 
-function InlineLexer (links, footnotes, options) {
+function InlineLexer(links, footnotes, options) {
   this.options = options || defaultOptions
   this.links = links
   this.footnotes = footnotes
@@ -107,11 +107,13 @@ InlineLexer.prototype.output = function (src) {
 
       src = src.substring(cap[0].length)
       lastChar = cap[0].charAt(cap[0].length - 1)
-      out += this.renderer.html(this.options.sanitize
-        ? (this.options.sanitizer
-          ? this.options.sanitizer(cap[0])
-          : escape(cap[0]))
-        : cap[0])
+      out += this.renderer.html(
+        this.options.sanitize
+          ? this.options.sanitizer
+            ? this.options.sanitizer(cap[0])
+            : escape(cap[0])
+          : cap[0]
+      )
       continue
     }
 
@@ -230,7 +232,13 @@ InlineLexer.prototype.output = function (src) {
     cap = this.rules.strong.exec(src)
     if (cap) {
       const marker = cap[0].match(/^(?:_{1,2}|\*{1,2})/)[0]
-      const isValid = validateEmphasize(src, cap[0].length, marker, lastChar, this.highPriorityEmpRules)
+      const isValid = validateEmphasize(
+        src,
+        cap[0].length,
+        marker,
+        lastChar,
+        this.highPriorityEmpRules
+      )
       if (isValid) {
         src = src.substring(cap[0].length)
         lastChar = cap[0].charAt(cap[0].length - 1)
@@ -243,11 +251,19 @@ InlineLexer.prototype.output = function (src) {
     cap = this.rules.em.exec(src)
     if (cap) {
       const marker = cap[0].match(/^(?:_{1,2}|\*{1,2})/)[0]
-      const isValid = validateEmphasize(src, cap[0].length, marker, lastChar, this.highPriorityEmpRules)
+      const isValid = validateEmphasize(
+        src,
+        cap[0].length,
+        marker,
+        lastChar,
+        this.highPriorityEmpRules
+      )
       if (isValid) {
         src = src.substring(cap[0].length)
         lastChar = cap[0].charAt(cap[0].length - 1)
-        out += this.renderer.em(this.output(cap[6] || cap[5] || cap[4] || cap[3] || cap[2] || cap[1]))
+        out += this.renderer.em(
+          this.output(cap[6] || cap[5] || cap[4] || cap[3] || cap[2] || cap[1])
+        )
         continue
       }
     }
@@ -334,7 +350,13 @@ InlineLexer.prototype.output = function (src) {
       src = src.substring(cap[0].length)
       lastChar = cap[0].charAt(cap[0].length - 1)
       if (this.inRawBlock) {
-        out += this.renderer.text(this.options.sanitize ? (this.options.sanitizer ? this.options.sanitizer(cap[0]) : escape(cap[0])) : cap[0])
+        out += this.renderer.text(
+          this.options.sanitize
+            ? this.options.sanitizer
+              ? this.options.sanitizer(cap[0])
+              : escape(cap[0])
+            : cap[0]
+        )
       } else {
         out += this.renderer.text(escape(this.smartypants(cap[0])))
       }
@@ -374,21 +396,23 @@ InlineLexer.prototype.outputLink = function (cap, link) {
 InlineLexer.prototype.smartypants = function (text) {
   /* eslint-disable no-useless-escape */
   if (!this.options.smartypants) return text
-  return text
-    // em-dashes
-    .replace(/---/g, '\u2014')
-    // en-dashes
-    .replace(/--/g, '\u2013')
-    // opening singles
-    .replace(/(^|[-\u2014/(\[{"\s])'/g, '$1\u2018')
-    // closing singles & apostrophes
-    .replace(/'/g, '\u2019')
-    // opening doubles
-    .replace(/(^|[-\u2014/(\[{\u2018\s])"/g, '$1\u201c')
-    // closing doubles
-    .replace(/"/g, '\u201d')
-    // ellipses
-    .replace(/\.{3}/g, '\u2026')
+  return (
+    text
+      // em-dashes
+      .replace(/---/g, '\u2014')
+      // en-dashes
+      .replace(/--/g, '\u2013')
+      // opening singles
+      .replace(/(^|[-\u2014/(\[{"\s])'/g, '$1\u2018')
+      // closing singles & apostrophes
+      .replace(/'/g, '\u2019')
+      // opening doubles
+      .replace(/(^|[-\u2014/(\[{\u2018\s])"/g, '$1\u201c')
+      // closing doubles
+      .replace(/"/g, '\u201d')
+      // ellipses
+      .replace(/\.{3}/g, '\u2026')
+  )
   /* eslint-ensable no-useless-escape */
 }
 
