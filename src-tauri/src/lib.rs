@@ -43,6 +43,12 @@ fn parse_cli_args() -> CliArgs {
                     cli.user_data_dir = Some(args[i].clone());
                 }
             }
+            arg if arg.starts_with("--editor-engine=") => {
+                let value = arg.trim_start_matches("--editor-engine=");
+                if value == "muya" || value == "milkdown" {
+                    cli.editor_engine = Some(value.to_string());
+                }
+            }
             arg if !arg.starts_with('-') => {
                 // Assume it's a file path
                 cli.files.push(arg.to_string());
@@ -61,6 +67,7 @@ struct CliArgs {
     debug: bool,
     safe_mode: bool,
     user_data_dir: Option<String>,
+    editor_engine: Option<String>,
     files: Vec<String>,
 }
 
@@ -202,6 +209,16 @@ pub fn run() {
                 };
                 let use_custom_titlebar = title_bar_style == "custom";
 
+                // Editor engine: CLI overrides preference
+                let editor_engine = cli_args.editor_engine.clone()
+                    .or_else(|| {
+                        let prefs = prefs_state.preferences.lock().unwrap();
+                        prefs.get("editorEngine")
+                            .and_then(|v| v.as_str())
+                            .map(String::from)
+                    })
+                    .unwrap_or_else(|| "muya".to_string());
+
                 // Build file path list from CLI
                 let files_json = if cli_args.files.is_empty() {
                     String::new()
@@ -215,7 +232,7 @@ pub fn run() {
                 // Inject Tauri environment info into the webview
                 let is_debug = cli_args.debug || cfg!(debug_assertions);
                 let js = format!(
-                    "window.__TAURI_ENV__ = {{ userDataPath: '{}', debug: {}, windowId: 1, type: 'editor', language: '{}', theme: '{}', codeFontFamily: '{}', codeFontSize: '{}', hideScrollbar: false, titleBarStyle: '{}', portable: {}, safeMode: {}{} }};",
+                    "window.__TAURI_ENV__ = {{ userDataPath: '{}', debug: {}, windowId: 1, type: 'editor', language: '{}', theme: '{}', codeFontFamily: '{}', codeFontSize: '{}', hideScrollbar: false, titleBarStyle: '{}', portable: {}, safeMode: {}, editorEngine: '{}'{} }};",
                     user_data_path.replace('\\', "\\\\").replace('\'', "\\'"),
                     if is_debug { "true" } else { "false" },
                     locale,
@@ -225,13 +242,24 @@ pub fn run() {
                     title_bar_style,
                     if portable_dir.is_some() { "true" } else { "false" },
                     if cli_args.safe_mode { "true" } else { "false" },
+                    editor_engine,
                     files_json,
                 );
+
+                // Dev mode (tauri dev): load from dev server; Release: load from built assets
+                let webview_url = if tauri::is_dev() {
+                    match &app.config().build.dev_url {
+                        Some(u) => tauri::WebviewUrl::External(u.clone()),
+                        None => tauri::WebviewUrl::App("index.html".into()),
+                    }
+                } else {
+                    tauri::WebviewUrl::App("index.html".into())
+                };
 
                 let win_builder = tauri::WebviewWindowBuilder::new(
                     app,
                     "main",
-                    tauri::WebviewUrl::default(),
+                    webview_url,
                 )
                 .title("MarkText")
                 .inner_size(1280.0, 800.0)
@@ -266,13 +294,20 @@ pub fn run() {
                     });
                 }
 
-                #[cfg(debug_assertions)]
-                {
-                    window.open_devtools();
-                }
+                #[cfg(feature = "devtools")]
+                window.open_devtools();
 
-                #[cfg(not(debug_assertions))]
-                let _ = &window;
+                // Fallback: if frontend doesn't call show_main_window within 8s (e.g. JS error),
+                // show the window anyway so user sees something instead of a hidden process.
+                {
+                    let handle = app.handle().clone();
+                    std::thread::spawn(move || {
+                        std::thread::sleep(std::time::Duration::from_secs(8));
+                        if let Some(win) = handle.get_webview_window("main") {
+                            let _ = win.show();
+                        }
+                    });
+                }
             }
 
             Ok(())

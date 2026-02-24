@@ -1,59 +1,49 @@
 'use strict'
 
-const path = require('path')
+const { execSync } = require('child_process')
 const fs = require('fs')
-const thirdPartyChecker = require('../.electron-vue/thirdPartyChecker.js')
+const path = require('path')
+
 const rootDir = path.resolve(__dirname, '..')
+const outputPath = path.resolve(rootDir, 'resources', 'THIRD-PARTY-LICENSES.txt')
 
-const additionalPackages = {
-  hunspell: {
-    packageName: 'Hunspell',
-    licenses: 'LGPL 2.1',
-    licenseText: fs.readFileSync(path.join(rootDir, 'resources/hunspell_dictionaries/LICENSE-hunspell.txt'))
-  }
-}
+try {
+  const raw = execSync('npx --yes license-checker --json --production', {
+    cwd: rootDir,
+    encoding: 'utf-8',
+    stdio: ['pipe', 'pipe', 'pipe']
+  })
 
-thirdPartyChecker.getLicenses(rootDir, (err, packages, checker) => {
-  if (err) {
-    console.log(`[ERROR] ${err}`)
-    return
-  }
-
-  Object.assign(packages, additionalPackages)
-
+  const packages = JSON.parse(raw)
+  const addedNames = new Set()
   let summary = ''
   let licenseList = ''
   let index = 1
-  const addedKeys = {}
-  Object.keys(packages).forEach(key => {
-    if (/^babel-helper-vue-jsx-merge-props/.test(key) ||
-      /^marktext/.test(key)) {
-      // babel-helper-vue-jsx-merge-props: MIT licensed used by element-ui
-      return
-    }
 
-    let packageName = key
-    const nameRegex = /(^.+)(?:@)/.exec(key)
-    if (nameRegex && nameRegex[1]) {
-      packageName = nameRegex[1]
-    }
+  for (const [key, info] of Object.entries(packages)) {
+    let packageName = key.replace(/@[\d.^~]+$/, '')
+    if (packageName.startsWith('marktext')) continue
+    if (addedNames.has(packageName)) continue
+    addedNames.add(packageName)
 
-    // Check if we already added this package
-    if (addedKeys.hasOwnProperty(packageName)) {
-      return
-    }
-    addedKeys[packageName] = 1
-
-    const { licenses, licenseText } = packages[key]
+    const licenses = info.licenses || 'Unknown'
     summary += `${index++}. ${packageName} (${licenses})\n`
+
+    let licenseText = ''
+    if (info.licenseFile) {
+      try {
+        licenseText = fs.readFileSync(info.licenseFile, 'utf-8')
+      } catch {
+        licenseText = '(license file not found)'
+      }
+    }
+
     licenseList += `# ${packageName} (${licenses})
--------------------------------------------------\
-
+-------------------------------------------------
 ${licenseText}
-\n\n
-`
-  })
 
+`
+  }
 
   const output = `# Third Party Notices
 -------------------------------------------------
@@ -70,7 +60,12 @@ ${summary}
 # Licenses
 -------------------------------------------------
 
-${licenseList}
-`
-  fs.writeFileSync(path.resolve(rootDir, 'resources', 'THIRD-PARTY-LICENSES.txt'), output)
-})
+${licenseList}`
+
+  fs.mkdirSync(path.dirname(outputPath), { recursive: true })
+  fs.writeFileSync(outputPath, output)
+  console.log(`Generated ${outputPath} with ${addedNames.size} packages.`)
+} catch (err) {
+  console.error('Failed to generate third-party licenses:', err.message)
+  process.exit(1)
+}

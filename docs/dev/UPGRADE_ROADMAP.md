@@ -52,7 +52,7 @@ webpack            ────────────────────�
 JavaScript         ──────────────────────────────►   TypeScript              ✅ 已完成
 原生模块 x3        ──────────────────────────────►   原生模块 x0             ✅ 已完成
 单语言             ──────────────────────────────►   i18n 多语言             ✅ 已完成
-Muya (自研)        ──────────────────────────────►   Milkdown (ProseMirror)  ⬜ 阶段 11-16
+Muya (自研)        ──────────────────────────────►   Milkdown (ProseMirror)  ✅ 阶段 11 已完成
 仅 WYSIWYG         ──────────────────────────────►   Split View 对照编辑     ⬜ 阶段 14
 ```
 
@@ -976,17 +976,17 @@ src-tauri/src/
 
 | 任务                           | 状态 | 说明                                                          |
 | ------------------------------ | ---- | ------------------------------------------------------------- |
-| 11.1 定义 `IEditorEngine` 接口 | ⬜   | `src/renderer/editor/interface.ts`                            |
-| 11.2 定义共享类型              | ⬜   | `src/renderer/editor/types.ts` (FormatType, SearchOptions 等) |
-| 11.3 实现 MuyaAdapter          | ⬜   | `src/renderer/editor/muya/adapter.ts`，包装现有 Muya API      |
-| 11.4 重构 `editor.vue`         | ⬜   | 面向 IEditorEngine 编程，不再直接调用 Muya                    |
-| 11.5 实现编辑器工厂            | ⬜   | `src/renderer/editor/factory.ts`，动态 import 适配器          |
-| 11.6 启动参数解析              | ⬜   | `--editor-engine=milkdown` 命令行参数                         |
-| 11.7 设置项                    | ⬜   | `Preferences > General > Editor Engine` 下拉选择              |
-| 11.8 Pinia store 集成          | ⬜   | `appStore.editorEngine` 存储当前引擎类型                      |
-| 11.9 Milkdown 基础集成         | ⬜   | 安装依赖，创建最小可用的 MilkdownAdapter                      |
-| 11.10 Vue 3 集成               | ⬜   | `@milkdown/vue` + `useEditor` composable                      |
-| 11.11 双引擎启动验证           | ⬜   | Muya 和 Milkdown 都能启动，冷切换工作                         |
+| 11.1 定义 `IEditorEngine` 接口 | ✅   | `src/renderer/editor/interface.ts`                            |
+| 11.2 定义共享类型              | ✅   | `src/renderer/editor/types.ts` (FormatType, SearchOptions 等) |
+| 11.3 实现 MuyaAdapter          | ✅   | `src/renderer/editor/muya/adapter.ts`，包装现有 Muya API      |
+| 11.4 重构 `editor.vue`         | ✅   | 面向 IEditorEngine 编程，不再直接调用 Muya                    |
+| 11.5 实现编辑器工厂            | ✅   | `src/renderer/editor/factory.ts`，动态 import 适配器          |
+| 11.6 启动参数解析              | ✅   | `--editor-engine=milkdown` 命令行参数                         |
+| 11.7 设置项                    | ✅   | `Preferences > General > Editor Engine` 下拉选择              |
+| 11.8 Pinia store 集成          | ✅   | `appStore.editorEngine` 存储当前引擎类型                      |
+| 11.9 Milkdown 基础集成         | ✅   | 安装依赖，创建最小可用的 MilkdownAdapter                      |
+| 11.10 Vue 3 集成               | ✅   | `@milkdown/vue` + `useEditor` composable                      |
+| 11.11 双引擎启动验证           | ✅   | Muya 和 Milkdown 都能启动，冷切换工作                         |
 
 ### IEditorEngine 接口（核心）
 

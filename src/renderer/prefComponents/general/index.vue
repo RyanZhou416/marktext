@@ -115,6 +115,12 @@
           :options="languageOptions"
           :on-change="value => onLanguageChange(value)"
         ></cur-select>
+        <cur-select
+          :description="$t('settings.general.editorEngine')"
+          :value="editorEngine"
+          :options="editorEngineOpts"
+          :on-change="value => onSelectChange('editorEngine', value)"
+        ></cur-select>
       </template>
     </compound>
   </div>
@@ -130,7 +136,7 @@ import Bool from '../common/bool'
 import Separator from '../common/separator'
 import { isOsx } from '@/util'
 
-import { titleBarStyleOptions, zoomOptions, fileSortByOptions } from './config'
+import { titleBarStyleOptions, zoomOptions, fileSortByOptions, editorEngineOptions } from './config'
 import meta from '../../../locales/_meta.json'
 import i18n from '@/i18n'
 import { loadLocale } from '@/i18n/loader'
@@ -161,13 +167,17 @@ export default {
       'hideScrollbar',
       'wordWrapInToc',
       'fileSortBy',
-      'language'
+      'language',
+      'editorEngine'
     ]),
     titleBarStyleOpts() {
       return titleBarStyleOptions(this.$t)
     },
     fileSortByOpts() {
       return fileSortByOptions(this.$t)
+    },
+    editorEngineOpts() {
+      return editorEngineOptions(this.$t)
     },
     languageOptions() {
       return meta.languages.map(lang => ({

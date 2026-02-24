@@ -30,8 +30,8 @@ const launchElectron = async userArgs => {
   })
   const page = await app.firstWindow()
   await page.waitForLoadState('domcontentloaded')
-  await new Promise((resolve) => setTimeout(resolve, 500))
+  await new Promise(resolve => setTimeout(resolve, 500))
   return { app, page }
 }
 
-module.exports = { getElectronPath, launchElectron}
+module.exports = { getElectronPath, launchElectron }

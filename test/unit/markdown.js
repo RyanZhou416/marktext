@@ -3,14 +3,16 @@ import path from 'path'
 
 const loadMarkdownContent = pathname => {
   // Load file and ensure LF line endings.
-  return fs.readFileSync(path.resolve('test/unit/data', pathname), 'utf-8').replace(/(?:\r\n|\n)/g, '\n')
+  return fs
+    .readFileSync(path.resolve('test/unit/data', pathname), 'utf-8')
+    .replace(/(?:\r\n|\n)/g, '\n')
 }
 
 export const BasicTextFormattingTemplate = () => {
   return loadMarkdownContent('common/BasicTextFormatting.md')
 }
 
-export const BlockquotesTemplate= () => {
+export const BlockquotesTemplate = () => {
   return loadMarkdownContent('common/Blockquotes.md')
 }
 

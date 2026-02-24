@@ -8,7 +8,7 @@ MarkText is a cross-platform desktop markdown editor built with **Tauri 2.0** (R
 
 1. **Tauri Backend** (`src-tauri/`): Rust process handling system-level operations (file I/O, dialogs, window management, OS integration)
 2. **Vue Frontend** (`src/renderer/`): The editor UI built with Vue 3, Pinia, and Vue Router
-3. **Muya** (`src/muya/`): The custom markdown editor engine (pure JavaScript, DOM APIs only)
+3. **Editor Engines**: Muya (`src/muya/`) and Milkdown (ProseMirror) — switchable via `IEditorEngine` abstraction
 
 ## Project Structure
 
@@ -49,7 +49,9 @@ marktext/
 │   ├── common/               # Shared code (TS)
 │   │   ├── commands/         # Command constants
 │   │   ├── filesystem/       # File system utilities
-│   │   └── keybinding/       # Keybinding utilities
+│   │   ├── keybinding/       # Keybinding utilities
+│   │   ├── markdown/         # Shared markdown utils (escapeHTML, wordCount, getImageInfo)
+│   │   └── icons/            # File icons (from @marktext/file-icons)
 │   │
 │   └── locales/              # Translation files
 │
@@ -105,22 +107,18 @@ The Tauri backend and frontend communicate via **Tauri IPC**:
 - **Backend → Frontend**: Event emission via Tauri's event system
 - **Tauri plugins** provide high-level APIs for common operations (file dialog, clipboard, shell, etc.)
 
-## Muya Editor Engine
+## Editor Engines
 
-Muya is the core markdown editing engine. It uses **pure JavaScript and DOM APIs** (no framework dependencies) and provides:
+The app supports two editor engines via `IEditorEngine` abstraction:
 
-- Real-time preview (WYSIWYG) editing
-- Markdown parsing (CommonMark, GFM, partial Pandoc support)
-- Virtual DOM rendering via Snabbdom
-- Content state management
-- Selection and cursor handling
-- UI float components (format picker, quick insert, emoji picker, etc.)
+- **Muya** (`src/muya/`): Custom WYSIWYG engine (pure JavaScript, Snabbdom). Default.
+- **Milkdown** (ProseMirror): Alternative engine with plugin ecosystem.
 
-Muya is bundled separately via Webpack and consumed by the Vue frontend.
+Shared utilities (wordCount, escapeHTML, getImageInfo, fileIcons) live in `src/common/` for engine independence.
 
 ## Build System
 
-- **Frontend**: Vite (`vite.config.mjs`) → `out/renderer/`
+- **Frontend**: Vite (`vite.config.mjs`) → `out/renderer/` — includes Muya via `resolve.alias` to `src/muya`
 - **Backend**: Cargo (via Tauri CLI) → `src-tauri/target/`
-- **Muya**: Webpack (`src/muya/webpack.config.js`) → `src/muya/dist/`
-- **Production**: `npm run tauri:build` orchestrates both frontend and backend builds
+- **build:muya**: Optional; Vite bundles Muya directly. Use only for standalone `src/muya/dist/`.
+- **Production**: `npm run tauri:build` orchestrates frontend and backend builds

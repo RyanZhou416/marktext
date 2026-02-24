@@ -25,10 +25,7 @@ module.exports = {
       },
       {
         test: /(theme\-chalk(?:\/|\\)index|exportStyle|katex|github\-markdown|prism[\-a-z]*|\.theme|headerFooterStyle)\.css$/,
-        use: [
-          'to-string-loader',
-          'css-loader'
-        ]
+        use: ['to-string-loader', 'css-loader']
       },
       {
         test: /\.css$/,
@@ -42,9 +39,7 @@ module.exports = {
             loader: 'postcss-loader',
             options: {
               postcssOptions: {
-                plugins: [
-                  postcssPresetEnv({ stage: 0 })
-                ]
+                plugins: [postcssPresetEnv({ stage: 0 })]
               }
             }
           }

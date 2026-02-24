@@ -173,6 +173,9 @@
   "settings.general.openBlankPage": "打开空白页面",
   "settings.general.misc": "其他：",
   "settings.general.language": "界面语言",
+  "settings.general.editorEngine": "编辑器引擎（需重启生效）",
+  "settings.general.editorEngineMuya": "Muya（默认）",
+  "settings.general.editorEngineMilkdown": "Milkdown（实验性）",
 
   "settings.general.titleBarCustom": "自定义",
   "settings.general.titleBarNative": "原生",

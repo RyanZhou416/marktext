@@ -4,7 +4,7 @@
 
 <script lang="ts">
 import codeMirror, { setMode, setCursorAtLastLine, setTextDirection } from '../../codeMirror'
-import { wordCount as getWordCount } from 'muya/lib/utils'
+import { wordCount as getWordCount } from 'common/markdown/utils'
 import { mapState } from 'pinia'
 import { usePreferencesStore } from '@/stores/preferences'
 import { useEditorStore } from '@/stores/editor'

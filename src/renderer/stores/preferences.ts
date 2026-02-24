@@ -16,6 +16,7 @@ export const usePreferencesStore = defineStore('preferences', {
     startUpAction: 'lastState',
     defaultDirectoryToOpen: '',
     language: 'en',
+    editorEngine: 'muya',
 
     editorFontFamily: 'Open Sans',
     fontSize: 16,

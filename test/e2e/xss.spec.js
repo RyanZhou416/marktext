@@ -11,7 +11,7 @@ test.describe('Test XSS Vulnerabilities', async () => {
     page = firstPage
 
     // Wait to parse and render the document.
-    await new Promise((resolve) => setTimeout(resolve, 3000))
+    await new Promise(resolve => setTimeout(resolve, 3000))
   })
 
   test.afterAll(async () => {

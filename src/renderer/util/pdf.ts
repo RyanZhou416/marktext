@@ -1,7 +1,7 @@
 import { fs, path } from './tauri'
 import Slugger from 'muya/lib/parser/marked/slugger'
 import { isFile } from 'common/filesystem'
-import { escapeHTML, unescapeHTML } from 'muya/lib/utils'
+import { escapeHTML, unescapeHTML } from 'common/markdown/utils'
 import academicTheme from '@/assets/themes/export/academic.theme.css?inline'
 import liberTheme from '@/assets/themes/export/liber.theme.css?inline'
 import { cloneObj } from '../util'

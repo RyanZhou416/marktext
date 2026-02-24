@@ -1,0 +1,31 @@
+# Build artifacts
+dist/
+out/
+build/
+*.tsbuildinfo
+
+# Dependencies
+node_modules/
+
+# Development
+.vscode/
+.idea/
+coverage/
+*.log
+.env
+.env.*
+
+# Rust / Tauri
+src-tauri/target/
+src-tauri/gen/
+
+# Test
+test/e2e/artifacts/
+test/e2e/blob-storage/
+playwright-report/
+test-results/
+
+# Misc
+.DS_Store
+*.md
+!README.md

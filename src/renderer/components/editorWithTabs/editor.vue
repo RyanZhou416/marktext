@@ -60,20 +60,7 @@ import { usePreferencesStore } from '@/stores/preferences'
 import { useEditorStore } from '@/stores/editor'
 import { useProjectStore } from '@/stores/project'
 import { isChildOfDirectory } from 'common/filesystem/paths'
-import Muya from 'muya/lib'
-import TablePicker from 'muya/lib/ui/tablePicker'
-import QuickInsert from 'muya/lib/ui/quickInsert'
-import CodePicker from 'muya/lib/ui/codePicker'
-import EmojiPicker from 'muya/lib/ui/emojiPicker'
-import ImagePathPicker from 'muya/lib/ui/imagePicker'
-import ImageSelector from 'muya/lib/ui/imageSelector'
-import ImageToolbar from 'muya/lib/ui/imageToolbar'
-import Transformer from 'muya/lib/ui/transformer'
-import FormatPicker from 'muya/lib/ui/formatPicker'
-import LinkTools from 'muya/lib/ui/linkTools'
-import FootnoteTool from 'muya/lib/ui/footnoteTool'
-import TableBarTools from 'muya/lib/ui/tableTools'
-import FrontMenu from 'muya/lib/ui/frontMenu'
+import { createEditorEngine } from '@/editor'
 import AppDialog from '@/components/common/AppDialog.vue'
 import ImageViewer from '@/components/common/ImageViewer.vue'
 import Search from '../search'
@@ -444,7 +431,7 @@ export default {
   },
 
   created() {
-    this.$nextTick(() => {
+    this.$nextTick(async () => {
       this.printer = new Printer()
       const editorStore = useEditorStore()
       const ele = this.$refs.editor
@@ -479,26 +466,6 @@ export default {
         autoCheck
       } = this
 
-      // use muya UI plugins
-      Muya.use(TablePicker)
-      Muya.use(QuickInsert)
-      Muya.use(CodePicker)
-      Muya.use(EmojiPicker)
-      Muya.use(ImagePathPicker)
-      Muya.use(ImageSelector, {
-        unsplashAccessKey: processInfo.env.UNSPLASH_ACCESS_KEY,
-        photoCreatorClick: this.photoCreatorClick
-      })
-      Muya.use(Transformer)
-      Muya.use(ImageToolbar)
-      Muya.use(FormatPicker)
-      Muya.use(FrontMenu)
-      Muya.use(LinkTools, {
-        jumpClick: this.jumpClick
-      })
-      Muya.use(FootnoteTool)
-      Muya.use(TableBarTools)
-
       const options = {
         focusMode,
         markdown,
@@ -527,7 +494,10 @@ export default {
         imageAction: this.imageAction.bind(this),
         imagePathPicker: this.imagePathPicker.bind(this),
         clipboardFilePath: guessClipboardFilePath,
-        imagePathAutoComplete: this.imagePathAutoComplete.bind(this)
+        imagePathAutoComplete: this.imagePathAutoComplete.bind(this),
+        unsplashAccessKey: processInfo.env.UNSPLASH_ACCESS_KEY,
+        photoCreatorClick: this.photoCreatorClick,
+        jumpClick: this.jumpClick.bind(this)
       }
 
       if (/dark/i.test(theme)) {
@@ -542,7 +512,21 @@ export default {
         })
       }
 
-      const { container } = (this.editor = new Muya(ele, options))
+      const engineType =
+        (window as { __TAURI_ENV__?: { editorEngine?: string } }).__TAURI_ENV__?.editorEngine ||
+        'muya'
+      this.editor = createEditorEngine(engineType as 'muya' | 'milkdown')
+      const mountResult = this.editor.mount(ele, options)
+      if (mountResult && typeof mountResult.then === 'function') {
+        await mountResult
+      }
+      const { container } = this.editor
+
+      // Sync current file content (handles race when file-loaded fired before listener)
+      const currentFile = editorStore.currentFile
+      if (currentFile?.markdown != null) {
+        this.editor.setMarkdown(currentFile.markdown, currentFile.cursor, true)
+      }
 
       // Create spell check wrapper and enable spell checking if preferred.
       this.spellchecker = new SpellChecker(spellcheckerEnabled, spellcheckerLanguage)
@@ -673,7 +657,7 @@ export default {
     bus.$off('open-command-spellchecker-switch-language', this.openSpellcheckerLanguageCommand)
     bus.$off('replace-misspelling', this.replaceMisspelling)
 
-    this.editor.destroy()
+    this.editor?.destroy()
     this.editor = null
   },
   methods: {
@@ -855,8 +839,8 @@ export default {
     },
 
     replaceMisspelling({ word, replacement }) {
-      if (this.editor) {
-        this.editor._replaceCurrentWordInlineUnsafe(word, replacement)
+      if (this.editor?.replaceMisspelling) {
+        this.editor.replaceMisspelling(word, replacement)
       }
     },
 
@@ -877,7 +861,7 @@ export default {
         return
       }
 
-      if (this.editor && (this.editor.hasFocus() || this.editor.contentState.selectedTableCells)) {
+      if (this.editor && (this.editor.hasFocus() || this.editor.hasSelectionInTable())) {
         this.editor.selectAll()
       } else {
         const activeElement = document.activeElement
@@ -1211,6 +1195,21 @@ export default {
   overflow: auto;
   box-sizing: border-box;
   cursor: default;
+}
+
+/* Milkdown / ProseMirror: ensure editor is visible and editable */
+.editor-component .milkdown {
+  height: 100%;
+  min-height: 100%;
+}
+.editor-component .ProseMirror {
+  outline: none;
+  min-height: 100%;
+  padding: 1em;
+  box-sizing: border-box;
+}
+.editor-component .ProseMirror:focus {
+  outline: none;
 }
 
 .typewriter .editor-component {

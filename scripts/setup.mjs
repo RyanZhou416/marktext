@@ -294,9 +294,12 @@ async function main() {
     `  lld:      ${accel.hasLld ? GREEN + 'enabled' + RESET : YELLOW + 'not installed' + RESET}`
   )
   console.log()
-  console.log('  Next steps:')
-  console.log('    npm run dev          Dev build + hot reload')
-  console.log('    npm run build        Release portable build')
+  console.log('  Build scripts:')
+  console.log('    npm run dev                    Dev run (hot reload + devtools)')
+  console.log('    npm run build:portable-debug   Portable debug (with devtools)')
+  console.log('    npm run build:portable-release Portable release')
+  console.log('    npm run build:installer-debug  Installer debug (with devtools)')
+  console.log('    npm run build:installer-release Installer release')
   console.log()
 
   if (!accel.hasSccache || !accel.hasLld) {

@@ -201,11 +201,8 @@ pub async fn create_settings_window(
     let window = win_builder.build()
     .map_err(|e| format!("Failed to create settings window: {}", e))?;
 
-    // Open devtools in debug builds for easier debugging
-    #[cfg(debug_assertions)]
-    {
-        window.open_devtools();
-    }
+    #[cfg(feature = "devtools")]
+    window.open_devtools();
 
     if use_custom_titlebar {
         let _ = window.hide_menu();

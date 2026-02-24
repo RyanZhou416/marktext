@@ -1,4 +1,6 @@
-import runSanitize from 'muya/lib/utils/dompurify'
+import DOMPurify from 'dompurify'
+
+const runSanitize = DOMPurify.sanitize.bind(DOMPurify)
 
 interface DOMPurifyConfig {
   readonly FORBID_ATTR: readonly string[]

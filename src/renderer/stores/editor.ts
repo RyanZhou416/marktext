@@ -10,7 +10,7 @@ import {
   getOptionsFromState,
   getSingleFileState,
   getBlankFileState
-} from '../store/help'
+} from './help'
 import notice from '../services/notification'
 import {
   FileEncodingCommand,

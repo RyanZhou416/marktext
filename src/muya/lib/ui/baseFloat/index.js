@@ -1,4 +1,4 @@
-import Popper from 'popper.js/dist/esm/popper'
+import { createPopper } from '@popperjs/core'
 import resizeDetector from 'element-resize-detector'
 import { noop } from '../../utils'
 import { EVENT_KEYS } from '../../config'
@@ -6,11 +6,10 @@ import './index.css'
 
 const defaultOptions = () => ({
   placement: 'bottom-start',
-  modifiers: {
-    offset: {
-      offset: '0, 12'
-    }
-  },
+  modifiers: [
+    { name: 'offset', options: { offset: [0, 12] } },
+    { name: 'arrow', options: { element: '[data-popper-arrow]' } }
+  ],
   showArrow: true
 })
 
@@ -40,7 +39,7 @@ class BaseFloat {
 
     if (showArrow) {
       const arrow = document.createElement('div')
-      arrow.setAttribute('x-arrow', '')
+      arrow.setAttribute('data-popper-arrow', '')
       arrow.classList.add('ag-popper-arrow')
       floatBox.appendChild(arrow)
     }
@@ -118,9 +117,9 @@ class BaseFloat {
       this.popper.destroy()
     }
     this.cb = cb
-    this.popper = new Popper(reference, floatBox, {
+    this.popper = createPopper(reference, floatBox, {
       placement,
-      modifiers
+      modifiers: this.options.modifiers
     })
     this.status = true
     eventCenter.dispatch('muya-float', this, true)

@@ -1,6 +1,18 @@
 {
   "languages": [
-    { "code": "en", "name": "English", "nativeName": "English", "direction": "ltr", "progress": 100 },
-    { "code": "zh-CN", "name": "Chinese Simplified", "nativeName": "简体中文", "direction": "ltr", "progress": 100 }
+    {
+      "code": "en",
+      "name": "English",
+      "nativeName": "English",
+      "direction": "ltr",
+      "progress": 100
+    },
+    {
+      "code": "zh-CN",
+      "name": "Chinese Simplified",
+      "nativeName": "简体中文",
+      "direction": "ltr",
+      "progress": 100
+    }
   ]
 }

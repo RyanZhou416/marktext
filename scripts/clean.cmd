@@ -26,13 +26,13 @@ echo The following will be deleted:
 echo.
 echo   [JS]    node_modules\              JS dependencies
 echo   [JS]    out\                       Vite frontend build output
-echo   [JS]    dist\                      Legacy dist output
+echo   [JS]    dist\                      Legacy build output (if any)
 echo   [JS]    .eslintcache               ESLint cache
 echo   [Rust]  src-tauri\target\          Rust build artifacts (debug + release)
 echo   [Rust]  src-tauri\gen\             Tauri generated code
 echo   [Rust]  src-tauri\Cargo.lock       Rust dependency lock
 echo   [Env]   .tauri-env-ready           Environment setup marker
-echo   [Build] build\                     Electron build output (if any)
+echo   [Build] build\                     Legacy build output (if any)
 echo.
 
 set /p "CONFIRM=Are you sure? [y/N] "
@@ -120,9 +120,9 @@ if exist "src-tauri\.cargo" (
 echo.
 
 :: ==============================================================
-::                    Clean Electron build (legacy)
+::                    Clean legacy build output
 :: ==============================================================
-echo [3/5] Cleaning Electron build output...
+echo [3/5] Cleaning legacy build output...
 
 if exist "build" (
     echo   Removing build\ ...
@@ -170,10 +170,13 @@ echo.
 echo All caches and build artifacts have been removed.
 echo.
 echo Next steps:
-echo   1. scripts\setup-tauri-env.cmd    Re-install dependencies
-echo   2. scripts\dev-tauri.cmd          Debug build + run
+echo   1. scripts\setup-tauri-env.cmd           Re-install dependencies
+echo   2. scripts\dev.cmd                       Dev run (hot reload + devtools)
 echo      or
-echo      scripts\build-tauri-portable.cmd  Release build
+echo      scripts\build-portable-debug.cmd      Portable debug build
+echo      scripts\build-portable-release.cmd    Portable release build
+echo      scripts\build-installer-debug.cmd     Installer debug build
+echo      scripts\build-installer-release.cmd   Installer release build
 echo.
 
 :END

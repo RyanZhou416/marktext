@@ -65,6 +65,7 @@ winapi = { version = "0.3", features = ["winuser"] }
 [features]
 default = []
 custom-protocol = ["tauri/custom-protocol"]
+devtools = ["tauri/devtools"]
 updater = ["dep:tauri-plugin-updater"]
 
 # Dev profile: optimize dependencies for faster runtime without slowing down recompiles

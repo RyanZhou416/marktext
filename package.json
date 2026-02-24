@@ -10,11 +10,12 @@
   },
   "scripts": {
     "setup": "node scripts/setup.mjs",
-    "dev": "tauri dev",
+    "dev": "tauri dev --features devtools",
+    "build:portable-debug": "tauri build --no-bundle --debug --features devtools",
+    "build:portable-release": "tauri build --no-bundle",
+    "build:installer-debug": "tauri build --debug --features devtools",
+    "build:installer-release": "tauri build",
     "build": "tauri build --no-bundle",
-    "build:dist": "tauri build",
-    "tauri:dev": "tauri dev",
-    "tauri:build": "tauri build",
     "tauri:info": "tauri info",
     "vite:dev": "vite --config vite.config.mjs",
     "vite:build": "vite build --config vite.config.mjs",
@@ -34,7 +35,13 @@
   },
   "dependencies": {
     "@marktext/file-icons": "^1.0.6",
+    "@milkdown/core": "^7.18.0",
+    "@milkdown/plugin-history": "^7.18.0",
+    "@milkdown/plugin-listener": "^7.18.0",
+    "@milkdown/preset-commonmark": "^7.18.0",
+    "@milkdown/utils": "^7.18.0",
     "@octokit/rest": "^18.12.0",
+    "@popperjs/core": "^2.11.8",
     "@tauri-apps/api": "^2.0.0",
     "@tauri-apps/plugin-clipboard-manager": "^2.0.0",
     "@tauri-apps/plugin-dialog": "^2.0.0",
@@ -47,7 +54,7 @@
     "codemirror": "^5.65.2",
     "dayjs": "^1.11.0",
     "dom-autoscroller": "^2.3.4",
-    "dompurify": "^2.3.6",
+    "dompurify": "^3.3.1",
     "dragula": "^3.7.3",
     "element-resize-detector": "^1.2.4",
     "eve": "^0.5.4",
@@ -64,7 +71,6 @@
     "mermaid": "^10.0.0",
     "mitt": "^3.0.0",
     "pinia": "^2.1.0",
-    "popper.js": "^1.16.1",
     "prismjs": "^1.27.0",
     "radix-vue": "^1.9.17",
     "snabbdom": "^3.4.0",
@@ -85,7 +91,7 @@
     "@commitlint/cli": "^20.4.1",
     "@commitlint/config-conventional": "^20.4.1",
     "@eslint/js": "^9.39.2",
-    "@intlify/unplugin-vue-i18n": "^11.0.3",
+    "@intlify/unplugin-vue-i18n": "^11.0.7",
     "@markedjs/html-differ": "^3.0.4",
     "@playwright/test": "^1.21.0",
     "@tauri-apps/cli": "^2.0.0",
@@ -143,5 +149,8 @@
       "email": "hfelix@protonmail.ch",
       "url": "https://github.com/fxha"
     }
-  ]
+  ],
+  "overrides": {
+    "vue-i18n": "^11.2.8"
+  }
 }

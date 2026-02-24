@@ -173,6 +173,9 @@
   "settings.general.openBlankPage": "Open a blank page",
   "settings.general.misc": "Misc:",
   "settings.general.language": "User interface language",
+  "settings.general.editorEngine": "Editor engine (restart required)",
+  "settings.general.editorEngineMuya": "Muya (default)",
+  "settings.general.editorEngineMilkdown": "Milkdown (experimental)",
 
   "settings.general.titleBarCustom": "Custom",
   "settings.general.titleBarNative": "Native",

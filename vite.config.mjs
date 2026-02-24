@@ -36,9 +36,40 @@ export default defineConfig({
     outDir: resolve(__dirname, 'out/renderer'),
     emptyOutDir: true,
     target: 'esnext',
+    chunkSizeWarningLimit: 5500,
     rollupOptions: {
       input: {
         index: resolve(__dirname, 'src/renderer/index.html')
+      },
+      output: {
+        manualChunks (id) {
+          if (id.includes('node_modules')) {
+            // PrismJS language components must remain as separate lazy chunks
+            // to preserve load-order dependencies (e.g. clike before javascript)
+            if (id.includes('prismjs/components/')) {
+              return undefined
+            }
+            if (id.includes('vue') || id.includes('pinia') || id.includes('vue-router')) {
+              return 'vue'
+            }
+            if (id.includes('@milkdown') || id.includes('muya') || id.includes('snabbdom')) {
+              return 'editor'
+            }
+            if (id.includes('element-plus') || id.includes('radix-vue') || id.includes('@vueuse') || id.includes('vue-sonner')) {
+              return 'ui'
+            }
+            if (id.includes('codemirror')) {
+              return 'codemirror'
+            }
+            if (id.includes('@tauri-apps')) {
+              return 'tauri'
+            }
+            if (id.includes('mermaid') || id.includes('katex') || id.includes('vega') || id.includes('flowchart')) {
+              return 'charts'
+            }
+            return 'vendor'
+          }
+        }
       }
     },
     assetsDir: 'assets',

@@ -78,3 +78,14 @@ export const fileSortByOptions = t => [
     value: 'title'
   }
 ]
+
+export const editorEngineOptions = t => [
+  {
+    label: t('settings.general.editorEngineMuya'),
+    value: 'muya'
+  },
+  {
+    label: t('settings.general.editorEngineMilkdown'),
+    value: 'milkdown'
+  }
+]

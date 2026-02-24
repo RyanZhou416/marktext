@@ -3,7 +3,7 @@
 </template>
 
 <script lang="ts">
-import fileIcons from 'muya/lib/ui/fileIcons'
+import fileIcons from 'common/icons/fileIcons'
 
 export default {
   props: {
