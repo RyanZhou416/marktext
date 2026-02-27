@@ -27,6 +27,9 @@ terminals/
 vs-*.json
 *.ps1.bak
 *.tmp
+err.txt
+out.txt
+test-results/
 
 # Rust / Tauri
 src-tauri/target/
