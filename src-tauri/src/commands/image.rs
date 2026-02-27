@@ -15,6 +15,12 @@ pub struct ImageInfo {
     pub size: u64,
 }
 
+#[derive(Debug, Serialize, Deserialize)]
+pub struct ImageExistence {
+    pub path: String,
+    pub exists: bool,
+}
+
 /// Pick image file dialog
 #[tauri::command]
 pub async fn pick_image_dialog(app: tauri::AppHandle, i18n: tauri::State<'_, crate::i18n::I18n>) -> Result<Option<String>, String> {
@@ -143,4 +149,95 @@ pub async fn copy_image_to_folder(
         .map_err(|e| format!("Failed to copy image: {}", e))?;
 
     Ok(final_dest.to_string_lossy().to_string())
+}
+
+#[tauri::command]
+pub async fn check_file_exists(path: String) -> Result<bool, String> {
+    Ok(Path::new(&path).exists())
+}
+
+#[tauri::command]
+pub async fn check_images_exist(paths: Vec<String>) -> Result<Vec<ImageExistence>, String> {
+    let result = paths
+        .into_iter()
+        .map(|p| ImageExistence {
+            exists: Path::new(&p).exists(),
+            path: p,
+        })
+        .collect();
+    Ok(result)
+}
+
+fn find_file_by_name_recursive(base: &Path, file_name: &str) -> Option<PathBuf> {
+    let entries = std::fs::read_dir(base).ok()?;
+    for entry in entries.flatten() {
+        let path = entry.path();
+        if path.is_file() {
+            if path
+                .file_name()
+                .and_then(|n| n.to_str())
+                .map(|n| n.eq_ignore_ascii_case(file_name))
+                .unwrap_or(false)
+            {
+                return Some(path);
+            }
+        } else if path.is_dir() {
+            if let Some(found) = find_file_by_name_recursive(&path, file_name) {
+                return Some(found);
+            }
+        }
+    }
+    None
+}
+
+#[tauri::command]
+pub async fn find_images_by_name(base_dir: String, file_names: Vec<String>) -> Result<Vec<Option<String>>, String> {
+    let base = PathBuf::from(base_dir);
+    if !base.is_dir() {
+        return Ok(file_names.into_iter().map(|_| None).collect());
+    }
+
+    let found = file_names
+        .into_iter()
+        .map(|name| {
+            find_file_by_name_recursive(&base, &name)
+                .map(|p| p.to_string_lossy().to_string())
+        })
+        .collect();
+    Ok(found)
+}
+
+#[tauri::command]
+pub async fn migrate_asset_folder(
+    old_base_dir: String,
+    new_base_dir: String,
+    refs: Vec<String>,
+) -> Result<(), String> {
+    let old_base = PathBuf::from(old_base_dir);
+    let new_base = PathBuf::from(new_base_dir);
+    if !new_base.exists() {
+        tokio::fs::create_dir_all(&new_base)
+            .await
+            .map_err(|e| format!("Failed to create target directory: {}", e))?;
+    }
+
+    for rel in refs {
+        let src = old_base.join(&rel);
+        if !src.exists() || !src.is_file() {
+            continue;
+        }
+        let dst = new_base.join(&rel);
+        if let Some(parent) = dst.parent() {
+            if !parent.exists() {
+                tokio::fs::create_dir_all(parent)
+                    .await
+                    .map_err(|e| format!("Failed to create folder {}: {}", parent.display(), e))?;
+            }
+        }
+        tokio::fs::copy(&src, &dst)
+            .await
+            .map_err(|e| format!("Failed to copy {}: {}", src.display(), e))?;
+        let _ = tokio::fs::remove_file(&src).await;
+    }
+    Ok(())
 }

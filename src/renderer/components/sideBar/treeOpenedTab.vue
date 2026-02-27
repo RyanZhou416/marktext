@@ -8,7 +8,7 @@
     <svg class="icon" aria-hidden="true" @click.stop="removeFileInTab(file)">
       <use xlink:href="#icon-close-small"></use>
     </svg>
-    <span class="name">{{ file.filename }}</span>
+    <span class="name">{{ displayFilename(file) }}</span>
   </div>
 </template>
 
@@ -16,6 +16,7 @@
 import { mapState } from 'pinia'
 import { useEditorStore } from '@/stores/editor'
 import { useTabs } from '../../composables/useTabs'
+import { localizeUntitledFilename } from '@/util/displayName'
 
 export default {
   props: {
@@ -30,6 +31,11 @@ export default {
   },
   computed: {
     ...mapState(useEditorStore, ['currentFile'])
+  },
+  methods: {
+    displayFilename(file: { filename?: string; pathname?: string }) {
+      return localizeUntitledFilename(file.filename, file.pathname, this.$t)
+    }
   }
 }
 </script>

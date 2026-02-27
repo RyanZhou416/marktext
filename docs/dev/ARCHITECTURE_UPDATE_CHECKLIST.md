@@ -1,7 +1,7 @@
 # 底层架构更新清单
 
 > Milkdown 已验证可编辑，本文档列出待更新的底层架构项及完整升级路线图。
-> 更新日期：2026-02-23
+> 更新日期：2026-02-25
 
 ---
 
@@ -22,16 +22,16 @@
 
 ## 二、当前架构现状
 
-| 层级       | 技术                                | 状态               |
-| ---------- | ----------------------------------- | ------------------ |
-| 前端框架   | Vue 3.4 + Pinia + Vue Router 4      | ✅ 现代            |
-| 构建工具   | Vite 5                              | ✅ 现代            |
-| 后端       | Tauri 2.0 (Rust)                    | ✅ 现代            |
-| 编辑器引擎 | Muya (自研, 纯 JS) + Milkdown (MVP) | ⚠️ Muya 无类型安全 |
-| 类型系统   | TypeScript ~65%                     | ⚠️ 部分完成        |
-| 单元测试   | Karma 已删除，待迁移 Vitest         | ❌ 缺失            |
-| E2E 测试   | Playwright（2 个测试文件）          | ⚠️ 覆盖不足        |
-| Rust 后端  | 13 个命令模块，依赖版本较新         | ✅ 无明显问题      |
+| 层级       | 技术                                  | 状态               |
+| ---------- | ------------------------------------- | ------------------ |
+| 前端框架   | Vue 3.4 + Pinia + Vue Router 4        | ✅ 现代            |
+| 构建工具   | Vite 5                                | ✅ 现代            |
+| 后端       | Tauri 2.0 (Rust)                      | ✅ 现代            |
+| 编辑器引擎 | Muya (自研, 纯 JS) + Milkdown (MVP)   | ⚠️ Muya 无类型安全 |
+| 类型系统   | TypeScript ~65%                       | ⚠️ 部分完成        |
+| 单元测试   | Vitest（`test/unit/specs`）           | ✅ 已恢复          |
+| E2E 测试   | Playwright（Tauri 冒烟 2 个测试文件） | ⚠️ 覆盖不足        |
+| Rust 后端  | 13 个命令模块，依赖版本较新           | ✅ 无明显问题      |
 
 ---
 
@@ -60,7 +60,7 @@
 
 ---
 
-## 四、阶段 2 — 短期（1-2 周）
+## 四、阶段 2 — 短期（1-2 周）✅ 已完成（2026-02-25）
 
 ### 4.1 依赖升级（安全/功能）
 
@@ -71,6 +71,12 @@
 | **prismjs**      | 1.27.0   | 1.30.x   | 代码高亮更新        |
 | **marked** (dev) | 1.2.9    | 最新     | 测试用，差距过大    |
 
+- ✅ 已完成升级：
+  - `katex` → `0.16.33`
+  - `prismjs` → `1.30.0`
+  - `mermaid` → `11.12.3`
+  - `marked`（dev）→ `17.0.3`
+
 ### 4.2 移除不必要的依赖
 
 | 依赖                      | 原因                                               | 替代方案                 |
@@ -79,6 +85,11 @@
 | `element-resize-detector` | 代码中已有 ResizeObserver 注释准备迁移             | 原生 `ResizeObserver`    |
 | `eve`                     | 仅被 Snap.svg 间接使用                             | 随 Snap.svg 方案一起评估 |
 
+- ✅ 已完成：
+  - `underscore` 移除（`sequence-diagram-snap.js` 改为内置轻量工具实现）
+  - `element-resize-detector` 移除（`baseFloat` 改为 `ResizeObserver`）
+  - `eve` 按计划冻结保留（随 Snap.svg 替换方案统一处理）
+
 ### 4.3 提取剩余 Muya 共享工具
 
 | 文件                              | 依赖                | 操作                          |
@@ -86,18 +97,34 @@
 | `renderer/util/markdownToHtml.ts` | `ExportHtml` (muya) | 提取到 `src/common/markdown/` |
 | `renderer/util/pdf.ts`            | `Slugger` (muya)    | 提取到 `src/common/markdown/` |
 
+- ✅ 已完成：
+  - 新增 `src/common/markdown/slugger.ts`
+  - 新增 `src/common/markdown/urlify.ts`
+  - `renderer/util/pdf.ts` 已切换至 `common/markdown/slugger`
+- ⏸️ 按原计划后置：
+  - `markdownToHtml.ts` 的 `ExportHtml` 提取因依赖面较大，保留在阶段2后半/阶段3前置任务
+
 ### 4.4 Composables 迁移到 TypeScript
 
 | 文件                                      | 状态              |
 | ----------------------------------------- | ----------------- |
-| `composables/useTabs.js`                  | ❌ 待迁移为 `.ts` |
-| `composables/useFile.js`                  | ❌ 待迁移为 `.ts` |
-| `composables/useLoadingPage.js`           | ❌ 待迁移为 `.ts` |
-| `composables/useCreateFileOrDirectory.js` | ❌ 待迁移为 `.ts` |
+| `composables/useTabs.js`                  | ✅ 已迁移为 `.ts` |
+| `composables/useFile.js`                  | ✅ 已迁移为 `.ts` |
+| `composables/useLoadingPage.js`           | ✅ 已迁移为 `.ts` |
+| `composables/useCreateFileOrDirectory.js` | ✅ 已迁移为 `.ts` |
+
+### 4.5 阶段 2 验收结果（2026-02-25）
+
+- ✅ `npm run lint`：通过（无 error，保留项目既有 warning）
+- ✅ `npm run build`：通过（Tauri 可执行文件产出正常）
+- ✅ `npm run test:specs`：通过（补充离线 fallback，避免上游网络波动导致失败）
+- ✅ `npm run e2e`：通过（2/2）
+  - 由 Electron 启动测试迁移为 Tauri 可执行文件冒烟测试
+  - 断言增强为“进程健康 + 主窗口标题就绪 + XSS 文档加载后未崩溃”
 
 ---
 
-## 五、阶段 3 — 中期（1-2 月）
+## 五、阶段 3 — 中期（1-2 月）✅ 已完成（2026-02-25）
 
 ### 5.1 精简 Node.js Polyfills
 
@@ -113,6 +140,9 @@
 
 目标：减少打包体积，仅保留实际需要的 polyfills。
 
+- ✅ 已完成两批精简：移除 `http`、`https`、`vm`、`string_decoder`、`querystring`
+- ✅ 保留 `zlib`、`stream`、`events` 等当前仍有依赖的项
+
 ### 5.2 清理 Electron 遗留命名与注释
 
 | 位置                                   | 问题                                                 | 操作                    |
@@ -125,23 +155,40 @@
 | `src/renderer/bootstrap.ts`            | Electron 相关注释                                    | 更新注释                |
 | `src/renderer/util/logger.ts`          | 注释提到 "electron-log"                              | 更新注释                |
 
+- ✅ 已完成：
+  - `contextMenu/sideBar/*` 与 `contextMenu/tabs/*` 移除未使用 `browserWindow` 参数
+  - `bootstrap.ts`、`logger.ts`、`tauri.ts` 注释统一为 Tauri/兼容桥接语义
+  - `EnvPaths.electronUserDataPath` 改为兼容别名（内部统一到 `userDataPath`）
+
 ### 5.3 引入 Vitest 替代 Karma 单元测试
 
-- 当前 `test/unit/` 基于 Karma + webpack，依赖已删除的 `.electron-vue`，完全无法运行
-- 建议迁移到 **Vitest**（与 Vite 生态无缝衔接）
-- 优先为核心模块补充测试：Markdown 解析、store 逻辑、工具函数
+- ✅ 已完成迁移：
+  - 新增 `vitest.config.mjs`，并复用 Vite 配置别名
+  - `test/unit/index.js` 移除 `require.context` 入口，改为 Vitest setup
+  - 新增脚本 `npm run test:unit`
+  - `test/unit/markdown.js` 调整为 Node ESM `node:fs` / `node:path` 导入
 
 ### 5.4 评估 `build:muya` 的必要性
 
-- 当前 Vite 通过 `resolve.alias` 直接引用 `src/muya` 源码
-- `build:muya`（Webpack 独立构建）在 `build` / `tauri:build` 流程中并未被调用
-- 若不需要独立发布 Muya 为 npm 包，可移除 `build:muya` 脚本和 `src/muya/webpack.config.js`
+- ✅ 已完成下线：
+  - 删除 `package.json` 中 `build:muya` 脚本
+  - 删除 `src/muya/webpack.config.js`
+  - 清理 `eslint.config.mjs` 中对应忽略项
 
 ### 5.5 文档更新
 
-- `docs/dev/ARCHITECTURE.md`：更新 "Muya 单独 Webpack 构建" 为 Vite 直接引用
-- `docs/dev/UPGRADE_ROADMAP.md`：阶段 11 已基本完成，更新状态
-- 清理代码中残留的 Electron 注释
+- ✅ 已完成：
+  - `docs/dev/ARCHITECTURE.md`：同步为 “Vite + Tauri 主构建链路，Muya 直接 alias 引用”
+  - `docs/dev/UPGRADE_ROADMAP.md`：阶段 11 状态更新为“基础设施完成，完整验证待回归”
+  - `docs/dev/BUILD.md`：移除 `build:muya`，补充 `test:unit`
+
+### 5.6 阶段 3 验收结果（2026-02-25）
+
+- ✅ `npm run lint`：通过（无新增 error，保留项目既有 warning）
+- ✅ `npm run build`：通过（Tauri 构建链路正常）
+- ✅ `npm run test:specs`：通过（保留离线 fallback）
+- ✅ `npm run e2e`：通过（2/2）
+- ✅ `npm run test:unit`：通过（5 files，522 tests）
 
 ---
 
@@ -249,4 +296,7 @@ npm run e2e
 
 # 7. 规范测试
 npm run test:specs
+
+# 8. 单元测试（Vitest）
+npm run test:unit
 ```

@@ -239,7 +239,9 @@ export const appMenuConfig: MenuGroup[] = [
       { id: 'theme.graphite-light', label: 'menu.theme.graphiteLight', role: 'radio' },
       { id: 'theme.material-dark', label: 'menu.theme.materialDark', role: 'radio' },
       { id: 'theme.one-dark', label: 'menu.theme.oneDark', role: 'radio' },
-      { id: 'theme.ulysses-light', label: 'menu.theme.ulyssesLight', role: 'radio' }
+      { id: 'theme.ulysses-light', label: 'menu.theme.ulyssesLight', role: 'radio' },
+      { id: 'theme.everforest-light', label: 'menu.theme.everforestLight', role: 'radio' },
+      { id: 'theme.everforest-dark', label: 'menu.theme.everforestDark', role: 'radio' }
     ]
   },
 

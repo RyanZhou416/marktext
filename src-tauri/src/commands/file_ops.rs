@@ -136,12 +136,10 @@ pub async fn read_markdown_file(file_path: String) -> Result<MarkdownDocument, S
 
     let line_ending = if has_crlf { "crlf".to_string() } else { "lf".to_string() };
 
-    // Normalize mixed line endings to the dominant one
-    let normalized_content = if is_mixed {
-        content.replace("\r\n", "\n") // normalize to LF
-    } else {
-        content
-    };
+    // Muya/editor buffer uses LF internally. Keep original line-ending metadata
+    // so save flow can re-emit CRLF when needed.
+    let normalized_content = content.replace("\r\n", "\n").replace('\r', "\n");
+    let adjust_line_ending_on_save = line_ending == "crlf";
 
     Ok(MarkdownDocument {
         id: None,
@@ -150,7 +148,11 @@ pub async fn read_markdown_file(file_path: String) -> Result<MarkdownDocument, S
         markdown: normalized_content,
         encoding: "utf-8".to_string(),
         line_ending: if is_mixed { "lf".to_string() } else { line_ending },
-        adjust_line_ending_on_save: false,
+        adjust_line_ending_on_save: if is_mixed {
+            false
+        } else {
+            adjust_line_ending_on_save
+        },
         trim_trailing_newline: 2,
         is_mixed_line_endings: is_mixed,
     })
@@ -198,7 +200,7 @@ pub fn get_title_from_markdown(markdown: String) -> String {
             return trimmed[3..].trim().to_string();
         }
     }
-    "Untitled".to_string()
+    "__UNTITLED__".to_string()
 }
 
 /// Export dialog for PDF/HTML

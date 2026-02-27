@@ -4,6 +4,30 @@ import { findNearestParagraph } from '../selection/dom'
 import { getParagraphReference, getImageInfo } from '../utils'
 import { checkEditEmoji } from '../ui/emojis'
 
+const normalizeRangeToPreviousLineEnd = (contentState, range) => {
+  const { start, end } = range
+  if (!start || !end) return range
+  if (start.key === end.key || end.offset !== 0) return range
+  const startBlock = contentState.getBlock(start.key)
+  if (!startBlock || typeof startBlock.text !== 'string') return range
+  // Only normalize collapsed caret edge case; keep real range selections intact.
+  if (start.offset !== startBlock.text.length) return range
+
+  const endBlock = contentState.getBlock(end.key)
+  if (!endBlock) return range
+
+  const preBlock = contentState.findPreBlockInLocation(endBlock)
+  if (!preBlock || typeof preBlock.text !== 'string' || preBlock.key !== start.key) return range
+
+  return {
+    ...range,
+    end: {
+      key: preBlock.key,
+      offset: preBlock.text.length
+    }
+  }
+}
+
 class Keyboard {
   constructor(muya) {
     this.muya = muya
@@ -57,7 +81,7 @@ class Keyboard {
   }
 
   dispatchEditorState() {
-    const { container, eventCenter } = this.muya
+    const { container, eventCenter, contentState } = this.muya
 
     let timer = null
     const changeHandler = event => {
@@ -75,7 +99,10 @@ class Keyboard {
 
       // We need check cursor is null, because we may copy the html preview content,
       // and no need to dispatch change.
-      const { start, end } = selection.getCursorRange()
+      const { start, end } = normalizeRangeToPreviousLineEnd(
+        contentState,
+        selection.getCursorRange()
+      )
       if (!start || !end) {
         return
       }
@@ -250,7 +277,10 @@ class Keyboard {
         })
       }
 
-      const { anchor, focus, start, end } = selection.getCursorRange()
+      const { anchor, focus, start, end } = normalizeRangeToPreviousLineEnd(
+        contentState,
+        selection.getCursorRange()
+      )
       if (!anchor || !focus) {
         return
       }

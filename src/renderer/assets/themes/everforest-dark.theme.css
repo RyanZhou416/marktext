@@ -1,0 +1,195 @@
+:root {
+  --themeColor: #a7c080;
+  --themeColor90: rgba(167, 192, 128, 0.9);
+  --themeColor80: rgba(167, 192, 128, 0.8);
+  --themeColor70: rgba(167, 192, 128, 0.7);
+  --themeColor60: rgba(167, 192, 128, 0.6);
+  --themeColor50: rgba(167, 192, 128, 0.5);
+  --themeColor40: rgba(167, 192, 128, 0.4);
+  --themeColor30: rgba(167, 192, 128, 0.3);
+  --themeColor20: rgba(167, 192, 128, 0.2);
+  --themeColor10: rgba(167, 192, 128, 0.1);
+
+  --highlightColor: rgba(167, 192, 128, 0.28);
+  --selectionColor: #445047;
+  --editorColor: rgba(211, 198, 170, 0.86);
+  --editorColor80: rgba(211, 198, 170, 0.8);
+  --editorColor60: rgba(211, 198, 170, 0.66);
+  --editorColor50: rgba(211, 198, 170, 0.54);
+  --editorColor40: rgba(211, 198, 170, 0.42);
+  --editorColor30: rgba(211, 198, 170, 0.3);
+  --editorColor10: rgba(211, 198, 170, 0.12);
+  --editorColor04: rgba(211, 198, 170, 0.05);
+  --editorBgColor: #2e353a;
+  --deleteColor: #e67e80;
+  --iconColor: #9da9a0;
+  --codeBgColor: #363f44;
+  --codeBlockBgColor: #363f44;
+  --footnoteBgColor: rgba(63, 72, 77, 0.55);
+  --inputBgColor: rgba(73, 81, 86, 0.75);
+
+  --buttonFontColor: var(--editorColor);
+  --buttonBgColor: #363f44;
+  --buttonBorder: 1px solid #444c50;
+  --buttonBgColorHover: #3f484d;
+  --buttonBorderHover: 1px solid #52595f;
+  --buttonBgColorActive: #2a3136;
+
+  --buttonPrimaryFontColor: #2e353a;
+  --buttonPrimaryBgColor: var(--themeColor);
+  --buttonPrimaryBgColorHover: #b5cd90;
+  --buttonPrimaryBgColorActive: #90a96b;
+
+  --tableBorderColor: #444c50;
+  --sideBarColor: rgba(211, 198, 170, 0.72);
+  --sideBarIconColor: #9da9a0;
+  --sideBarTitleColor: rgba(211, 198, 170, 0.95);
+  --sideBarTextColor: rgba(157, 169, 160, 0.8);
+  --sideBarBgColor: #363f44;
+  --sideBarItemHoverBgColor: #3f484d;
+  --itemBgColor: rgba(63, 72, 77, 0.82);
+
+  --floatFontColor: rgba(211, 198, 170, 0.9);
+  --floatBgColor: #363f44;
+  --floatHoverColor: rgba(157, 169, 160, 0.1);
+  --floatBorderColor: #444c50;
+  --floatShadow: rgba(0, 0, 0, 0.35);
+  --maskColor: rgba(34, 40, 43, 0.78);
+  --editorAreaWidth: 840px;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  color: var(--editorColor);
+  line-height: 1.25;
+}
+
+h2 {
+  border-bottom: 1px solid #444c50;
+}
+
+h3 {
+  border-bottom: 1px dashed #52595f;
+}
+
+a {
+  color: #a7c080;
+  text-decoration: none;
+}
+
+a:hover {
+  color: #7fbbb3;
+  text-decoration: underline;
+}
+
+a[href^='#']:hover {
+  color: #a7c080;
+}
+
+blockquote.ag-paragraph {
+  background: #3f484d;
+  border-left: 4px solid #83c092;
+  border-radius: 8px;
+  padding: 0.8rem 1rem;
+}
+
+blockquote.ag-paragraph::before {
+  content: none;
+}
+
+pre.ag-fence-code,
+pre.ag-indent-code,
+pre.ag-front-matter,
+pre.ag-html-block,
+pre.ag-multiple-math,
+pre.ag-paragraph {
+  background: #363f44 !important;
+  border: 1px solid #444c50 !important;
+  border-radius: 10px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.25);
+}
+
+span code,
+td code,
+th code,
+code {
+  background: #363f44;
+  border: 1px solid #495156;
+  color: #d8edea;
+  border-radius: 6px;
+  padding: 0.15rem 0.35rem;
+  font-size: 0.92em;
+}
+
+figure[data-role='TABLE'] table {
+  border-collapse: separate;
+  border-spacing: 0;
+  width: 100%;
+  margin: 1.2rem 0;
+  background: #363f44;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.25);
+  border: 1px solid #444c50;
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+figure[data-role='TABLE'] th,
+figure[data-role='TABLE'] td {
+  padding: 0.6rem 0.75rem;
+  border-bottom: 1px solid #495156;
+}
+
+figure[data-role='TABLE'] thead th {
+  background: #3f484d;
+  text-align: left;
+}
+
+figure[data-role='TABLE'] tbody tr:hover {
+  background: #363f44;
+}
+
+li.ag-task-list-item > input[type='checkbox']::before {
+  border: 2px solid #a7c080;
+  background-color: var(--editorBgColor);
+  border-radius: 4px;
+}
+
+li.ag-task-list-item > input[type='checkbox'] {
+  width: 16px;
+  height: 16px;
+  top: 0.1em;
+  left: -24px;
+}
+
+li.ag-task-list-item > input.ag-checkbox-checked::before {
+  background-color: #a7c080;
+  border-color: #a7c080;
+}
+
+p:not(.ag-active)[data-role='hr']::before {
+  border-top: 1px solid #3a4246 !important;
+  background: none !important;
+}
+
+.ag-front-menu .submenu,
+.ag-float-wrapper {
+  box-shadow: 0 4px 8px 0 var(--floatShadow) !important;
+}
+
+.title-bar .frameless-titlebar-button > div > svg {
+  fill: #d3c6aa;
+}
+
+.ag-inline-image.ag-image-success .ag-image-container img {
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.35);
+}
+
+strong,
+b {
+  color: #a7c080;
+  font-weight: 600;
+}

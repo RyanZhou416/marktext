@@ -150,11 +150,6 @@
           :on-change="value => onSelectChange('hideQuickInsertHint', value)"
         ></bool>
         <bool
-          :description="$t('settings.editor.hideLinkPopup')"
-          :bool="hideLinkPopup"
-          :on-change="value => onSelectChange('hideLinkPopup', value)"
-        ></bool>
-        <bool
           :description="$t('settings.editor.autoCheck')"
           :bool="autoCheck"
           :on-change="value => onSelectChange('autoCheck', value)"
@@ -222,7 +217,6 @@ export default {
       'codeBlockLineNumbers',
       'trimUnnecessaryCodeBlockEmptyLines',
       'hideQuickInsertHint',
-      'hideLinkPopup',
       'autoCheck',
       'editorLineWidth',
       'defaultEncoding',

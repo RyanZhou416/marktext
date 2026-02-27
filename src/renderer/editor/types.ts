@@ -198,7 +198,6 @@ export interface EditorOptions {
   mermaidTheme?: string
   vegaTheme?: string
   hideQuickInsertHint?: boolean
-  hideLinkPopup?: boolean
   autoCheck?: boolean
   spellcheckEnabled?: boolean
   trimUnnecessaryCodeBlockEmptyLines?: boolean

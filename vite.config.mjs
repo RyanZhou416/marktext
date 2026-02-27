@@ -86,7 +86,7 @@ export default defineConfig({
       include: [resolve(__dirname, 'src/locales/en.json'), resolve(__dirname, 'src/locales/zh-CN.json')]
     }),
     nodePolyfills({
-      include: ['buffer', 'process', 'util', 'stream', 'events', 'path', 'os', 'crypto', 'assert', 'url', 'zlib', 'http', 'https', 'string_decoder', 'constants', 'timers', 'querystring', 'vm'],
+      include: ['buffer', 'process', 'util', 'stream', 'events', 'path', 'os', 'crypto', 'assert', 'url', 'zlib', 'constants', 'timers'],
       globals: {
         Buffer: true,
         global: true,
@@ -163,6 +163,11 @@ export default defineConfig({
   server: {
     port: 5173,
     strictPort: false,
+    fs: {
+      // Muya loads local images via /@fs/ in Tauri dev mode.
+      // Allow arbitrary local file access for the dev server only.
+      strict: false
+    },
     watch: {
       ignored: ['**/src-tauri/**']
     }

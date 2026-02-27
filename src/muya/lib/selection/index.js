@@ -429,9 +429,17 @@ class Selection {
 
   setCursorRange(cursorRange) {
     const { anchor, focus } = cursorRange
+    if (!anchor || !focus || !anchor.key || !focus.key) return
     const anchorParagraph = document.querySelector(`#${anchor.key}`)
     const focusParagraph = document.querySelector(`#${focus.key}`)
+    if (!anchorParagraph || !focusParagraph) return
     const getNodeAndOffset = (node, offset) => {
+      if (!node) {
+        return {
+          node: null,
+          offset: 0
+        }
+      }
       if (node.nodeType === 3) {
         return {
           node,
@@ -508,6 +516,7 @@ class Selection {
       anchor.offset
     )
     let { node: focusNode, offset: focusOffset } = getNodeAndOffset(focusParagraph, focus.offset)
+    if (!anchorNode || !focusNode) return
 
     if (
       anchorNode.nodeType === 3 ||

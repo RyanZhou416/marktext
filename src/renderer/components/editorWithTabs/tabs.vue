@@ -18,8 +18,13 @@
             @click.stop="selectFile(file)"
             @click.middle="closeTab(file.id)"
           >
-            <span>{{ file.filename }}</span>
-            <svg class="close-icon icon" aria-hidden="true" @click.stop="removeFileInTab(file)">
+            <span>{{ displayFilename(file) }}</span>
+            <svg
+              class="close-icon icon"
+              aria-hidden="true"
+              @mousedown.stop.prevent
+              @click.stop.prevent="removeFileInTab(file)"
+            >
               <circle id="unsaved-circle-icon" cx="6" cy="6" r="3"></circle>
               <use id="default-close-icon" xlink:href="#icon-close-small"></use>
             </svg>
@@ -44,6 +49,7 @@ import dragula from 'dragula'
 import { useTabs } from '../../composables/useTabs'
 import TabContextMenu from './TabContextMenu.vue'
 import bus from '../../bus'
+import { localizeUntitledFilename } from '@/util/displayName'
 
 export default {
   components: {
@@ -138,6 +144,9 @@ export default {
     bus.$off('TABS::show-in-folder', this.showInFolder)
   },
   methods: {
+    displayFilename(file: { filename?: string; pathname?: string }) {
+      return localizeUntitledFilename(file.filename, file.pathname, this.$t)
+    },
     newFile() {
       useEditorStore().NEW_UNTITLED_TAB({})
     },

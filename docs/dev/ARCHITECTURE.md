@@ -58,7 +58,7 @@ marktext/
 ├── test/                     # Tests
 │   ├── e2e/                  # Playwright E2E tests
 │   ├── specs/                # CommonMark/GFM spec tests
-│   └── unit/                 # Unit tests
+│   └── unit/                 # Vitest unit tests
 │
 ├── resources/                # App resources (icons, etc.)
 ├── docs/                     # Documentation
@@ -118,7 +118,7 @@ Shared utilities (wordCount, escapeHTML, getImageInfo, fileIcons) live in `src/c
 
 ## Build System
 
-- **Frontend**: Vite (`vite.config.mjs`) → `out/renderer/` — includes Muya via `resolve.alias` to `src/muya`
+- **Frontend**: Vite (`vite.config.mjs`) → `out/renderer/` — Muya source is bundled directly via `resolve.alias` to `src/muya`
 - **Backend**: Cargo (via Tauri CLI) → `src-tauri/target/`
-- **build:muya**: Optional; Vite bundles Muya directly. Use only for standalone `src/muya/dist/`.
+- **Legacy Muya Webpack build**: removed from the default toolchain; the release path is fully Vite + Tauri
 - **Production**: `npm run tauri:build` orchestrates frontend and backend builds

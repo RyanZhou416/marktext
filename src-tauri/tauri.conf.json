@@ -16,6 +16,7 @@
       "csp": null,
       "dangerousDisableAssetCspModification": true,
       "assetProtocol": {
+        "enable": true,
         "scope": ["**"]
       }
     }
@@ -36,16 +37,12 @@
         "ext": ["md", "markdown", "mdown", "mkdn", "mkd", "mdwn", "mdtxt", "mdtext"],
         "mimeType": "text/markdown",
         "description": "Markdown Document"
-      },
-      {
-        "ext": ["txt"],
-        "mimeType": "text/plain",
-        "description": "Text Document"
       }
     ],
     "windows": {
       "nsis": {
-        "installMode": "currentUser"
+        "installMode": "both",
+        "installerHooks": "./windows/hooks.nsh"
       }
     }
   },

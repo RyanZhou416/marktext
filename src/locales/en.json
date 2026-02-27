@@ -114,6 +114,8 @@
   "menu.theme.materialDark": "Material Dark",
   "menu.theme.oneDark": "One Dark",
   "menu.theme.ulyssesLight": "Ulysses Light",
+  "menu.theme.everforestLight": "Everforest Light",
+  "menu.theme.everforestDark": "Everforest Dark",
 
   "menu.window": "Window",
   "menu.window.minimize": "Minimize",
@@ -205,7 +207,6 @@
   "settings.editor.trailingNewline": "Handling of trailing newline characters",
   "settings.editor.textDirection": "Text direction",
   "settings.editor.hideQuickInsert": "Hide hint for selecting type of new paragraph",
-  "settings.editor.hideLinkPopup": "Hide popup when cursor is over link",
   "settings.editor.autoCheck": "Whether to automatically check any related tasks",
 
   "settings.editor.endOfLineDefault": "Default",
@@ -303,6 +304,10 @@
   "settings.image.preferRelative": "Prefer relative assets folder",
   "settings.image.relativeFolderName": "Relative image folder name",
   "settings.image.filenameNote": "Include ${filename} in the text-box above to automatically insert the document file name.",
+  "settings.image.localAssetFolder": "Local asset folder name",
+  "settings.image.enableLocalAssetForCurrentFile": "Enable local assets for current file",
+  "settings.image.migrateAssetFolder": "Migrate asset folder",
+  "settings.image.borderRadius": "Image border radius",
 
   "settings.image.legalAgree": "By using {name}, you agree to {name}'s",
   "settings.image.privacyStatement": "Privacy Statement",
@@ -380,6 +385,7 @@
   "editor.quickInsert.sequenceDiagram": "Sequence Diagram",
   "editor.quickInsert.plantUml": "PlantUML Diagram",
   "editor.quickInsert.mermaid": "Mermaid",
+  "editor.quickInsert.typeToInsert": "Type {'@'} to insert",
   "editor.quickInsert.noResult": "No result",
 
   "editor.format.bold": "Bold",
@@ -426,6 +432,8 @@
   "notification.saveFailureMsg": "There was an error while saving: {msg}",
   "notification.fileRemoved": "\"{filename}\" has been removed on disk.",
   "notification.fileChanged": "\"{filename}\" has been changed on disk. Do you want to reload it?",
+  "notification.externalSynced": "External updates were synced.",
+  "notification.externalConflict": "External updates conflict with local edits. Resolve now?",
   "notification.imageDeletionUrl": "Image deletion URL",
   "notification.imageDeletionUrlMsg": "Click to copy the deletion URL of the uploaded image to the clipboard ({url}).",
   "notification.exportSuccess": "Exported successfully",
@@ -454,6 +462,13 @@
   "dialog.imageCopyFailed": "Failed to copy image: {msg}",
 
   "dialog.revealInExplorer": "Reveal in File Explorer",
+  "dialog.externalConflictTitle": "Resolve external update conflict",
+  "dialog.externalConflictMessage": "MarkText detected external updates while this file had unsaved local edits.",
+  "dialog.externalConflictOurs": "My local edits",
+  "dialog.externalConflictTheirs": "External updates",
+  "dialog.keepMine": "Keep mine",
+  "dialog.useExternal": "Use external",
+  "dialog.useMergedDraft": "Use merged draft",
 
   "import.title": "Import or Open",
   "import.dropHint": "Drop here to get your stuff into MarkText",

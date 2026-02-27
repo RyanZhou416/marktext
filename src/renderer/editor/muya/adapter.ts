@@ -12,10 +12,12 @@ import ImageSelector from 'muya/lib/ui/imageSelector'
 import ImageToolbar from 'muya/lib/ui/imageToolbar'
 import Transformer from 'muya/lib/ui/transformer'
 import FormatPicker from 'muya/lib/ui/formatPicker'
-import LinkTools from 'muya/lib/ui/linkTools'
 import FootnoteTool from 'muya/lib/ui/footnoteTool'
 import TableBarTools from 'muya/lib/ui/tableTools'
 import FrontMenu from 'muya/lib/ui/frontMenu'
+import { setTranslator as setQuickInsertTranslator } from 'muya/lib/ui/quickInsert/config'
+import { setFrontMenuTranslator } from 'muya/lib/ui/frontMenu/config'
+import i18n from '@/i18n'
 
 import type { IEditorEngine } from '../interface'
 import type {
@@ -63,7 +65,6 @@ function ensurePluginsRegistered(pluginOptions?: {
   Muya.use(ImageToolbar)
   Muya.use(FormatPicker)
   Muya.use(FrontMenu)
-  Muya.use(LinkTools, pluginOptions?.jumpClick ? { jumpClick: pluginOptions.jumpClick } : {})
   Muya.use(FootnoteTool)
   Muya.use(TableBarTools)
   pluginsRegistered = true
@@ -98,6 +99,10 @@ export class MuyaAdapter implements IEditorEngine {
   }
 
   mount(element: HTMLElement, options: EditorOptions): void {
+    const t = (key: string) => i18n.global.t(key)
+    setQuickInsertTranslator(t)
+    setFrontMenuTranslator(t)
+
     ensurePluginsRegistered({
       unsplashAccessKey: (options as Record<string, unknown>).unsplashAccessKey as
         | string
@@ -115,6 +120,7 @@ export class MuyaAdapter implements IEditorEngine {
     }
 
     const instance = new Muya(element, muyaOptions) as MuyaInstance
+    ;(instance as MuyaInstance & { _t?: (key: string) => string })._t = t
     this.muya = instance
     this._container = instance.container
   }

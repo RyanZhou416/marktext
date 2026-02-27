@@ -68,7 +68,12 @@ const containerCtrl = ContentState => {
     return { preBlock, preview }
   }
 
-  ContentState.prototype.initContainerBlock = function (functionType, block, style = undefined) {
+  ContentState.prototype.initContainerBlock = function (
+    functionType,
+    block,
+    style = undefined,
+    value = ''
+  ) {
     // p block
     block.type = 'figure'
     block.functionType = functionType
@@ -81,7 +86,7 @@ const containerCtrl = ContentState => {
       block.mathStyle = style
     }
 
-    const { preBlock, preview } = this.createPreAndPreview(functionType)
+    const { preBlock, preview } = this.createPreAndPreview(functionType, value)
 
     this.appendChild(block, preBlock)
     this.appendChild(block, preview)
@@ -133,7 +138,16 @@ const containerCtrl = ContentState => {
     }
 
     const { text } = block.children[0]
-    return text.trim() === '$$' ? this.initContainerBlock(functionType, block, '') : false
+    const trimmed = text.trim()
+    if (trimmed === '$$') {
+      return this.initContainerBlock(functionType, block, '')
+    }
+    const singleLineMath = /^\$\$([\s\S]+)\$\$$/.exec(trimmed)
+    if (singleLineMath) {
+      const value = singleLineMath[1].trim()
+      return this.initContainerBlock(functionType, block, '', value)
+    }
+    return false
   }
 }
 

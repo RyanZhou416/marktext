@@ -114,6 +114,8 @@
   "menu.theme.materialDark": "Material Dark",
   "menu.theme.oneDark": "One Dark",
   "menu.theme.ulyssesLight": "Ulysses Light",
+  "menu.theme.everforestLight": "Everforest Light",
+  "menu.theme.everforestDark": "Everforest Dark",
 
   "menu.window": "窗口",
   "menu.window.minimize": "最小化",
@@ -205,7 +207,6 @@
   "settings.editor.trailingNewline": "尾随换行符的处理方式",
   "settings.editor.textDirection": "文本方向",
   "settings.editor.hideQuickInsert": "隐藏新段落类型选择提示",
-  "settings.editor.hideLinkPopup": "光标悬停在链接上时隐藏弹窗",
   "settings.editor.autoCheck": "是否自动勾选相关任务",
 
   "settings.editor.endOfLineDefault": "默认",
@@ -303,6 +304,10 @@
   "settings.image.preferRelative": "偏好使用相对资源文件夹",
   "settings.image.relativeFolderName": "相对图片文件夹名称",
   "settings.image.filenameNote": "在上方文本框中包含 ${filename} 以自动插入文档文件名。",
+  "settings.image.localAssetFolder": "本地资产文件夹名称",
+  "settings.image.enableLocalAssetForCurrentFile": "为当前文件启用本地资产",
+  "settings.image.migrateAssetFolder": "迁移资源文件夹",
+  "settings.image.borderRadius": "图片圆角大小",
 
   "settings.image.legalAgree": "使用 {name} 即表示您同意 {name} 的",
   "settings.image.privacyStatement": "隐私声明",
@@ -380,6 +385,7 @@
   "editor.quickInsert.sequenceDiagram": "时序图",
   "editor.quickInsert.plantUml": "PlantUML 图表",
   "editor.quickInsert.mermaid": "Mermaid",
+  "editor.quickInsert.typeToInsert": "输入 {'@'} 进行插入",
   "editor.quickInsert.noResult": "无结果",
 
   "editor.format.bold": "加粗",
@@ -426,6 +432,8 @@
   "notification.saveFailureMsg": "保存时出错：{msg}",
   "notification.fileRemoved": "「{filename}」已从磁盘上删除。",
   "notification.fileChanged": "「{filename}」已在磁盘上更改。是否要重新加载？",
+  "notification.externalSynced": "已同步外部更新。",
+  "notification.externalConflict": "外部更新与本地未保存修改冲突，是否现在处理？",
   "notification.imageDeletionUrl": "图片删除链接",
   "notification.imageDeletionUrlMsg": "点击将已上传图片的删除链接复制到剪贴板 ({url})。",
   "notification.exportSuccess": "导出成功",
@@ -454,6 +462,13 @@
   "dialog.imageCopyFailed": "复制图片失败：{msg}",
 
   "dialog.revealInExplorer": "在文件管理器中显示",
+  "dialog.externalConflictTitle": "解决外部更新冲突",
+  "dialog.externalConflictMessage": "该文件在本地未保存时收到外部更新，请选择保留策略。",
+  "dialog.externalConflictOurs": "我的本地修改",
+  "dialog.externalConflictTheirs": "外部更新内容",
+  "dialog.keepMine": "保留我的修改",
+  "dialog.useExternal": "采用外部更新",
+  "dialog.useMergedDraft": "采用合并草稿",
 
   "import.title": "导入或打开",
   "import.dropHint": "将文件拖放到此处以导入到 MarkText",

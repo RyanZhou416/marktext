@@ -9,13 +9,26 @@ const URL_REG =
 const DATA_URL_REG = /^data:image\/[\w+-]+(;[\w-]+=[\w-]+|;base64)*,[a-zA-Z0-9+/]+={0,2}$/
 
 export const toLocalFileUrl = (filePath: string): string => {
+  const normalizedPath = typeof filePath === 'string' ? filePath.replace(/\\/g, '/') : filePath
   if (typeof window !== 'undefined' && (window as any).__TAURI_INTERNALS__) {
-    const encoded = encodeURIComponent(filePath)
-    return navigator.userAgent.includes('Windows')
-      ? `https://asset.localhost/${encoded}`
-      : `asset://localhost/${encoded}`
+    const isTauriDevWithVite = /^https?:\/\/localhost:\d+$/i.test(window.location.origin)
+    if (isTauriDevWithVite) {
+      return `/@fs/${encodeURI(normalizedPath)}`
+    }
+
+    const convertFileSrc =
+      (window as any).__MT_CONVERT_FILE_SRC__ || (window as any).__TAURI_INTERNALS__?.convertFileSrc
+    if (typeof convertFileSrc === 'function') {
+      try {
+        return convertFileSrc(normalizedPath)
+      } catch {
+        // fallback to manual strategy below
+      }
+    }
+    const encoded = encodeURIComponent(normalizedPath)
+    return `http://asset.localhost/${encoded}`
   }
-  return 'file://' + filePath
+  return 'file://' + normalizedPath
 }
 
 export interface ImageInfo {
@@ -24,8 +37,25 @@ export interface ImageInfo {
 }
 
 export const getImageInfo = (src: string, baseUrl: string = (window as any).DIRNAME): ImageInfo => {
+  if (/^marktext-asset:\/\//.test(src)) {
+    const relativePart = src.replace(/^marktext-asset:\/\//, '')
+    const assetBaseDir =
+      (typeof window !== 'undefined' && (window as any).__MT_ASSET_BASE_DIR) || baseUrl || ''
+    if (relativePart && assetBaseDir) {
+      const pathModule =
+        typeof window !== 'undefined' &&
+        (window as any).electronAPI &&
+        (window as any).electronAPI.path
+          ? (window as any).electronAPI.path
+          : { resolve: (...args: string[]) => args.filter(Boolean).join('/') }
+      const resolvedPath = pathModule.resolve(assetBaseDir, relativePart)
+      return { isUnknownType: false, src: toLocalFileUrl(resolvedPath) }
+    }
+    return { isUnknownType: false, src: '' }
+  }
+
   const imageExtension = IMAGE_EXT_REG.test(src)
-  const isAssetUrl = /^https:\/\/asset\.localhost\//.test(src) || /^asset:\/\/localhost\//.test(src)
+  const isAssetUrl = /^asset:\/\/localhost\//.test(src) || /^https:\/\/asset\.localhost\//.test(src)
   const isUrl = URL_REG.test(src) || (imageExtension && (/^file:\/\/.+/.test(src) || isAssetUrl))
 
   if (imageExtension) {

@@ -1,9 +1,8 @@
 /**
- * Simple logger for renderer process with contextIsolation
+ * Simple logger for renderer process in Tauri/WebView
  *
- * In contextIsolation mode, we cannot use electron-log directly because it
- * tries to require('electron') which is not available. This module provides
- * a simple console-based logger with the same API.
+ * The legacy Electron logger is not used in this runtime. This module provides
+ * a lightweight console logger and forwards important logs through IPC.
  */
 
 import { ipcRenderer } from './tauri'
@@ -50,7 +49,7 @@ const log: Logger = {
 
   error: (...args: any[]): void => {
     console.error('[ERROR]', ...args)
-    // Send to main process for file logging
+    // Forward to backend logger bridge when available.
     try {
       ipcRenderer.send('mt::renderer-log', {
         level: 'error',

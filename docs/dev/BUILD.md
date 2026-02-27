@@ -60,8 +60,8 @@ $ npm run <script>
 | `format`       | Format code with Prettier                  |
 | `format:check` | Check code formatting without writing      |
 | `test`         | Run tests                                  |
+| `test:unit`    | Run Vitest unit tests                      |
 | `test:specs`   | Run CommonMark/GFM spec compliance tests   |
-| `build:muya`   | Build Muya editor library                  |
 
 ### Code quality
 

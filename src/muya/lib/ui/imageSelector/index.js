@@ -96,6 +96,10 @@ class ImageSelector extends BaseFloat {
                 }
               }
             })
+            .catch(error => {
+              this.loading = false
+              this.dispatchImageSelectorError(error)
+            })
         }
 
         this.imageInfo = imageInfo
@@ -136,6 +140,10 @@ class ImageSelector extends BaseFloat {
             this.render()
           }
         }
+      })
+      .catch(error => {
+        this.loading = false
+        this.dispatchImageSelectorError(error)
       })
 
     return this.render()
@@ -269,8 +277,17 @@ class ImageSelector extends BaseFloat {
             })
           }
         } catch (error) {
-          // TODO: Notify user about an error.
           console.error('Unexpected error on image action:', error)
+          this.dispatchImageSelectorError(error)
+          const imageWrapper = this.muya.container.querySelector(`span[data-id=${id}]`)
+          if (imageWrapper) {
+            const imageInfo = getImageInfo(imageWrapper)
+            this.muya.contentState.replaceImage(imageInfo, {
+              alt,
+              src,
+              title
+            })
+          }
         }
       } else {
         this.hide()
@@ -285,13 +302,35 @@ class ImageSelector extends BaseFloat {
       return
     }
 
-    const path = await this.muya.options.imagePathPicker()
+    let path = ''
+    try {
+      path = await this.muya.options.imagePathPicker()
+    } catch (error) {
+      this.dispatchImageSelectorError(error)
+      return
+    }
     const { alt, title } = this.state
     return this.replaceImageAsync({
       alt,
       title,
       src: path
     })
+  }
+
+  dispatchImageSelectorError = error => {
+    const errorMessage =
+      error && error.message ? error.message : String(error || 'Unknown image error')
+    this.muya.eventCenter.dispatch('muya-image-action-error', {
+      type: 'selector',
+      error: errorMessage
+    })
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(
+        new CustomEvent('mt-image-action-error', {
+          detail: { type: 'selector', error: errorMessage }
+        })
+      )
+    }
   }
 
   renderHeader() {
@@ -345,7 +384,7 @@ class ImageSelector extends BaseFloat {
           'button.muya-button.role-button.select',
           {
             on: {
-              click: event => {
+              click: () => {
                 this.handleSelectButtonClick()
               }
             }
@@ -418,7 +457,7 @@ class ImageSelector extends BaseFloat {
         'button.muya-button.role-button.link',
         {
           on: {
-            click: event => {
+            click: () => {
               this.handleLinkButtonClick()
             }
           }
@@ -431,7 +470,7 @@ class ImageSelector extends BaseFloat {
           'a',
           {
             on: {
-              click: event => {
+              click: () => {
                 this.toggleMode()
               }
             }

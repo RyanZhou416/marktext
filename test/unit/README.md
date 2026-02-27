@@ -1,10 +1,9 @@
-# Unit Tests (Deprecated)
+# Unit Tests
 
-The Karma + webpack unit tests in this directory are **deprecated** and no longer work after the migration to Tauri + Vite.
+The unit test suite runs on [Vitest](https://vitest.dev/) and is configured via `vitest.config.mjs`.
 
-- `karma.conf.js` depends on `.electron-vue/webpack.renderer.config.js` which has been removed
-- Tests were designed for Electron; the project now uses Tauri
+- Entry setup: `test/unit/index.js`
+- Test files: `test/unit/specs/**/*.spec.js`
+- Run command: `npm run test:unit`
 
-**Current testing**: Use `npm run e2e` (Playwright) for end-to-end tests.
-
-**Future**: Consider migrating to [Vitest](https://vitest.dev/) for unit tests compatible with Vite.
+Use `npm run e2e` for end-to-end smoke testing.

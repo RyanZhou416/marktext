@@ -12,7 +12,6 @@ export default [
       'node_modules/',
       'dist/',
       'src/muya/dist/**',
-      'src/muya/webpack.config.js',
       'tools/',
       'test/unit/coverage/**',
       'test/unit/*.js',

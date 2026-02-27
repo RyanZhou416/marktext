@@ -1,4 +1,5 @@
 import { getUniqueId, cloneObj } from '../util'
+import { buildInternalUntitledFilename, parseUntitledIndex } from '../util/displayName'
 
 /**
  * Default internel markdown document with editor options.
@@ -10,8 +11,16 @@ export const defaultFileState = {
   isSaved: true,
   // Full path to the file or empty. If the value is empty the file doesn't exist on disk.
   pathname: '',
-  filename: 'Untitled-1',
+  filename: buildInternalUntitledFilename(1),
   markdown: '',
+  // Last known on-disk content snapshot.
+  savedMarkdown: '',
+  // Last external (filesystem) content received by watcher sync.
+  externalMarkdown: '',
+  // Pending external update payload during settle window.
+  pendingExternal: null,
+  // Last external event timestamp (ms since epoch).
+  lastExternalAt: 0,
   encoding: {
     encoding: 'utf8',
     isBom: false
@@ -81,7 +90,7 @@ export const getBlankFileState = (
   let untitleId = Math.max(
     ...tabs.map(f => {
       if (f.pathname === '') {
-        return +f.filename.split('-')[1]
+        return parseUntitledIndex(f.filename) || 0
       } else {
         return 0
       }
@@ -101,7 +110,7 @@ export const getBlankFileState = (
     lineEnding,
     adjustLineEndingOnSave: lineEnding.toLowerCase() === 'crlf',
     id,
-    filename: `Untitled-${++untitleId}`,
+    filename: buildInternalUntitledFilename(++untitleId),
     markdown
   })
 }

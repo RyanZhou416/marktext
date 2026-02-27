@@ -25,7 +25,7 @@ export const usePreferencesStore = defineStore('preferences', {
     codeFontFamily: 'DejaVu Sans Mono',
     codeBlockLineNumbers: true,
     trimUnnecessaryCodeBlockEmptyLines: true,
-    editorLineWidth: '',
+    editorLineWidth: '900px',
 
     autoPairBracket: true,
     autoPairMarkdownSyntax: true,
@@ -39,7 +39,8 @@ export const usePreferencesStore = defineStore('preferences', {
     imageInsertAction: 'folder',
     imagePreferRelativeDirectory: false,
     imageRelativeDirectoryName: 'assets',
-    hideLinkPopup: false,
+    imageBorderRadius: 8,
+    localAssetDefaultFolder: 'images',
     autoCheck: false,
 
     preferLooseListItem: true,

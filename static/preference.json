@@ -20,7 +20,7 @@
   "codeFontFamily": "DejaVu Sans Mono",
   "codeBlockLineNumbers": true,
   "trimUnnecessaryCodeBlockEmptyLines": true,
-  "editorLineWidth": "",
+  "editorLineWidth": "900px",
 
   "autoPairBracket": true,
   "autoPairMarkdownSyntax": true,
@@ -34,7 +34,6 @@
   "imageInsertAction": "path",
   "imagePreferRelativeDirectory": false,
   "imageRelativeDirectoryName": "assets",
-  "hideLinkPopup": false,
   "autoCheck": false,
 
   "preferLooseListItem": true,

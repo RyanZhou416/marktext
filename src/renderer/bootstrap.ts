@@ -53,7 +53,7 @@ declare global {
 let exceptionLogger = (s: Error) => console.error(s)
 
 const configureLogger = (): void => {
-  // 使用自定义 logger - electron-log 不兼容 contextIsolation
+  // 使用自定义 logger - Tauri 渲染层通过 IPC 转发日志
   exceptionLogger = log.error
 }
 
@@ -71,7 +71,7 @@ const parseUrlArgs = (): ParsedUrlArgs => {
   const hasUrlParams = params.has('wid') && params.has('type')
 
   if (hasUrlParams) {
-    // Standard Electron path: parse from URL
+    // Legacy URL bootstrap path: parse startup args from URL params
     const codeFontFamily = params.get('cff')
     const codeFontSize = params.get('cfs')
     const debug = params.get('debug') === '1'

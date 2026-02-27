@@ -546,6 +546,16 @@ const commands = [
         id: 'window.change-theme-ulysses',
         description: 'Ulysses',
         value: 'ulysses'
+      },
+      {
+        id: 'window.change-theme-everforest-light',
+        description: 'Everforest Light',
+        value: 'everforest-light'
+      },
+      {
+        id: 'window.change-theme-everforest-dark',
+        description: 'Everforest Dark',
+        value: 'everforest-dark'
       }
     ],
     executeSubcommand: async (_, theme) => {

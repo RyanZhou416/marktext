@@ -17,6 +17,7 @@
     "core:window:allow-is-maximized",
     "core:window:allow-is-minimized",
     "core:window:allow-is-fullscreen",
+    "core:resources:default",
     "core:event:default",
     "core:event:allow-listen",
     "core:event:allow-emit",

@@ -1,6 +1,6 @@
-import { normal, gfm, pedantic } from './blockRules'
-import options from './options'
-import { splitCells, rtrim, getUniqueId } from './utils'
+import { normal, gfm, pedantic } from './blockRules.js'
+import options from './options.js'
+import { splitCells, rtrim, getUniqueId } from './utils.js'
 
 /**
  * Block Lexer
@@ -145,7 +145,7 @@ Lexer.prototype.token = function (src, top) {
         src = src.substring(cap[0].length)
         this.tokens.push({
           type: 'multiplemath',
-          text: cap[1],
+          text: cap[1] || cap[2] || '',
           mathStyle: ''
         })
         continue

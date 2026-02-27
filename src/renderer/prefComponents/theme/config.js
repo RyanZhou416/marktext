@@ -16,6 +16,12 @@ export const themes = [
   },
   {
     name: 'one-dark'
+  },
+  {
+    name: 'everforest-light'
+  },
+  {
+    name: 'everforest-dark'
   }
 ]
 

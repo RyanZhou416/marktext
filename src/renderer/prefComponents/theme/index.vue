@@ -145,6 +145,20 @@ export default {
         color: rgb(12, 139, 186);
       }
     }
+    &.everforest-light {
+      color: rgba(92, 106, 114, 0.86);
+      background: #fffbef;
+      & a {
+        color: #8da101;
+      }
+    }
+    &.everforest-dark {
+      color: rgba(211, 198, 170, 0.86);
+      background: #2e353a;
+      & a {
+        color: #a7c080;
+      }
+    }
   }
   & .theme.active {
     box-shadow: var(--floatShadow);

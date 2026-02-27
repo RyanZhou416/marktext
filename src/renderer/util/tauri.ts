@@ -1,12 +1,14 @@
 /**
  * Tauri API bridge for renderer process
  *
- * This module provides the same interface as electron.js but uses Tauri APIs.
- * It allows the renderer code to work with both Electron and Tauri backends.
+ * This module provides a compatibility bridge shaped like the legacy electron.js API
+ * while internally using Tauri APIs.
  */
 
 // Import pure JS path polyfill for synchronous path operations
 import pathPolyfill from './pathPolyfill'
+import i18n from '@/i18n'
+import { localizeUntitledFilename } from '@/util/displayName'
 
 // Augment Window interface for Tauri and custom globals
 declare global {
@@ -262,6 +264,15 @@ const loadTauriApis = async (): Promise<boolean> => {
       console.warn(`Failed to load Tauri plugin "${name}":`, e)
     }
   }
+  // Expose runtime file-src converter for places that must build local asset URLs
+  // outside this module (e.g. Muya internals).
+  if (
+    typeof window !== 'undefined' &&
+    tauriCore &&
+    typeof (tauriCore as any).convertFileSrc === 'function'
+  ) {
+    ;(window as any).__MT_CONVERT_FILE_SRC__ = (p: string) => (tauriCore as any).convertFileSrc(p)
+  }
   return true
 }
 
@@ -272,7 +283,7 @@ const tauriReady: Promise<boolean> = loadTauriApis()
 const eventListeners: Map<string, EventListener[]> = new Map()
 
 // ============================================================================
-// IPC Renderer emulation - maps Electron IPC channels to Tauri commands/events
+// IPC Renderer emulation - maps legacy IPC channels to Tauri commands/events
 // ============================================================================
 
 /**
@@ -287,6 +298,25 @@ function getEncodingString(encoding: any): string | null {
   return null
 }
 
+function normalizeLineEndingsForSave(content: string, lineEnding?: string): string {
+  if (typeof content !== 'string') return ''
+  // Normalize to LF first, then re-emit by target line ending.
+  const lf = content.replace(/\r\n/g, '\n').replace(/\r/g, '\n')
+  if (lineEnding === 'crlf') {
+    return lf.replace(/\n/g, '\r\n')
+  }
+  return lf
+}
+
+function t(key: string): string {
+  return i18n.global.t(key)
+}
+
+function getLocalizedDefaultFilename(filename?: string, pathname?: string): string {
+  const localized = localizeUntitledFilename(filename, pathname, t)
+  return localized || `${t('dialog.untitled')}.md`
+}
+
 // High-level IPC channel handlers that map to specific Tauri commands
 const ipcChannelHandlers: Record<string, IpcChannelHandler> = {
   // File operations
@@ -299,13 +329,13 @@ const ipcChannelHandlers: Record<string, IpcChannelHandler> = {
       // New file - show save dialog
       savePath = await tauriCore!.invoke('save_file_dialog', {
         defaultPath: defaultPath || null,
-        filename: filename || 'Untitled.md'
+        filename: getLocalizedDefaultFilename(filename, pathname)
       })
       if (!savePath) return // User cancelled
     }
     const result: SaveResult = await tauriCore!.invoke('save_markdown_file', {
       filePath: savePath,
-      content: markdown ?? '',
+      content: normalizeLineEndingsForSave(markdown ?? '', options?.lineEnding),
       encoding: getEncodingString(options?.encoding)
     })
     if (result.success && result.path) {
@@ -326,12 +356,12 @@ const ipcChannelHandlers: Record<string, IpcChannelHandler> = {
     const dir = pathname ? pathPolyfill.dirname(pathname) : null
     const savePath: string | null = await tauriCore!.invoke('save_file_dialog', {
       defaultPath: dir,
-      filename: filename || 'Untitled.md'
+      filename: getLocalizedDefaultFilename(filename, pathname)
     })
     if (!savePath) return null
     const result: SaveResult = await tauriCore!.invoke('save_markdown_file', {
       filePath: savePath,
-      content: markdown ?? '',
+      content: normalizeLineEndingsForSave(markdown ?? '', options?.lineEnding),
       encoding: getEncodingString(options?.encoding)
     })
     if (result.success && result.path) {
@@ -352,7 +382,7 @@ const ipcChannelHandlers: Record<string, IpcChannelHandler> = {
       if (file.pathname && typeof file.markdown === 'string') {
         await tauriCore!.invoke('save_markdown_file', {
           filePath: file.pathname,
-          content: file.markdown,
+          content: normalizeLineEndingsForSave(file.markdown, file.options?.lineEnding),
           encoding: getEncodingString(file.options?.encoding)
         })
       }
@@ -365,13 +395,13 @@ const ipcChannelHandlers: Record<string, IpcChannelHandler> = {
       if (file.pathname && typeof file.markdown === 'string') {
         await tauriCore!.invoke('save_markdown_file', {
           filePath: file.pathname,
-          content: file.markdown,
+          content: normalizeLineEndingsForSave(file.markdown, file.options?.lineEnding),
           encoding: getEncodingString(file.options?.encoding)
         })
       }
     }
   },
-  // File open operations (mirrors old Electron: open dialog → read files → mt::open-new-tab)
+  // File open operations (legacy flow: open dialog → read files → mt::open-new-tab)
   'mt::cmd-open-file': async (): Promise<void> => {
     const paths: string[] = await tauriCore!.invoke('open_file_dialog')
     if (!paths || !paths.length) return
@@ -389,7 +419,7 @@ const ipcChannelHandlers: Record<string, IpcChannelHandler> = {
     return folderPath
   },
   // Open a single file by path (used by sidebar file click, quick open, etc.)
-  // Mirrors old Electron: windowManager.js ipcMain.on('mt::open-file') → editor.openTab()
+  // Legacy flow: windowManager ipc channel `mt::open-file` → editor.openTab()
   'mt::open-file': async (args: any[]): Promise<void> => {
     const [filePath, options = {}] = args as [string, any]
     if (!filePath || !tauriCore) return
@@ -452,7 +482,9 @@ const ipcChannelHandlers: Record<string, IpcChannelHandler> = {
     if (!data) return
     const { type, content, pathname, title } = data
     const ext = type === 'pdf' ? '.pdf' : '.html'
-    const basename = pathname ? pathPolyfill.basename(pathname, '.md') : title || 'Untitled'
+    const basename = pathname
+      ? pathPolyfill.basename(pathname, '.md')
+      : localizeUntitledFilename(title, '', t) || t('dialog.untitled')
     const filePath: string | null = await tauriCore!.invoke('export_file_dialog', {
       exportType: type,
       defaultPath: pathname ? pathPolyfill.dirname(pathname) : null,
@@ -511,6 +543,22 @@ const ipcChannelHandlers: Record<string, IpcChannelHandler> = {
   'mt::copy-image-to-folder': async (args: any[]): Promise<any> => {
     const [source, destDir] = args as [string, string]
     return await tauriCore!.invoke('copy_image_to_folder', { source, destDir })
+  },
+  'mt::check-file-exists': async (args: any[]): Promise<any> => {
+    const [path] = args as [string]
+    return await tauriCore!.invoke('check_file_exists', { path })
+  },
+  'mt::check-images-exist': async (args: any[]): Promise<any> => {
+    const [paths] = args as [string[]]
+    return await tauriCore!.invoke('check_images_exist', { paths })
+  },
+  'mt::find-images-by-name': async (args: any[]): Promise<any> => {
+    const [baseDir, fileNames] = args as [string, string[]]
+    return await tauriCore!.invoke('find_images_by_name', { baseDir, fileNames })
+  },
+  'mt::migrate-asset-folder': async (args: any[]): Promise<any> => {
+    const [oldBaseDir, newBaseDir, refs] = args as [string, string, string[]]
+    return await tauriCore!.invoke('migrate_asset_folder', { oldBaseDir, newBaseDir, refs })
   },
   // File watcher
   'mt::watch-file': async (args: any[]): Promise<any> => {
@@ -580,7 +628,23 @@ const ipcChannelHandlers: Record<string, IpcChannelHandler> = {
     return await tauriCore!.invoke('minimize_window')
   },
   'mt::window-maximize': async (): Promise<any> => {
-    return await tauriCore!.invoke('maximize_window')
+    await tauriCore!.invoke('maximize_window')
+    const state: WindowState & { isMaximized?: boolean } =
+      await tauriCore!.invoke('get_window_state')
+    ipcRenderer.emit(state?.isMaximized ? 'mt::window-maximize' : 'mt::window-unmaximize', null)
+    return state
+  },
+  'mt::window-unmaximize': async (): Promise<any> => {
+    const state: WindowState & { isMaximized?: boolean } =
+      await tauriCore!.invoke('get_window_state')
+    if (state?.isMaximized) {
+      await tauriCore!.invoke('maximize_window')
+    }
+    ipcRenderer.emit('mt::window-unmaximize', null)
+    return await tauriCore!.invoke('get_window_state')
+  },
+  'mt::window-get-state': async (): Promise<any> => {
+    return await tauriCore!.invoke('get_window_state')
   },
   'mt::window-close': async (): Promise<any> => {
     return await tauriCore!.invoke('close_window')
@@ -620,13 +684,13 @@ const ipcChannelHandlers: Record<string, IpcChannelHandler> = {
       }
     }
   },
-  // Renderer log: in Electron this sent logs to the main process for file logging.
-  // In Tauri we just absorb it — the logger already writes to the browser console.
+  // Renderer log: legacy channel is preserved for compatibility.
+  // In Tauri this is a no-op because the logger already writes to console.
   'mt::renderer-log': async (): Promise<void> => {
     // No-op: log.error/warn/info already writes to console before calling this.
   },
   // Close window confirm: shows a 3-option dialog (Save / Don't Save / Cancel)
-  // Mirrors old Electron: ipcMain.on('mt::close-window-confirm') in file.js
+  // Preserves behavior of legacy close-confirm channel.
   'mt::close-window-confirm': async (args: any[]): Promise<void> => {
     const [unsavedFiles] = args as [any[]]
     if (!unsavedFiles || !unsavedFiles.length) {
@@ -694,7 +758,7 @@ const ipcChannelHandlers: Record<string, IpcChannelHandler> = {
   'mt::update-format-menu': async (): Promise<void> => {},
   'mt::view-layout-changed': async (): Promise<void> => {},
   'mt::window-tab-closed': async (): Promise<void> => {},
-  // Print: In Electron, main process called webContents.print(). In Tauri, use window.print().
+  // Print: use browser `window.print()` in Tauri.
   'mt::response-print': async (): Promise<void> => {
     try {
       window.print()
@@ -717,7 +781,7 @@ function channelToEvent(channel: string): string {
 
 // ---------------------------------------------------------------------------
 // Local event emitter for in-process events.
-// Electron's ipcRenderer extends Node.js EventEmitter, so code throughout
+// Legacy ipcRenderer extended Node.js EventEmitter, so code throughout
 // MarkText uses ipcRenderer.emit(channel, fakeEvent, ...data) to dispatch
 // events locally within the renderer process. The Tauri event system only
 // handles cross-process events (Rust ↔ JS). This local emitter bridges the
@@ -730,7 +794,7 @@ export const ipcRenderer = {
   /**
    * Emit an event locally (in-process). Mirrors Node.js EventEmitter.emit().
    * Dispatches to all listeners registered via on() and once().
-   * Signature: emit(channel, fakeEvent, ...data) — matches Electron convention.
+   * Signature: emit(channel, fakeEvent, ...data) — preserved from legacy convention.
    */
   emit: (channel: string, ...args: any[]): boolean => {
     let handled = false
@@ -1556,10 +1620,10 @@ export const isMas: boolean = platformInfo.isMas
 
 // ============================================================================
 // Drag-and-drop handler - listens for Tauri native drag-drop events
-// In Tauri, browser File API doesn't expose full paths (unlike Electron's file.path),
+// In Tauri, browser File API doesn't expose full paths (unlike legacy file.path behavior),
 // so we use Tauri's native tauri://drag-drop event which provides full OS paths.
 //
-// Mirrors old Electron flow: ipcMain.on('mt::window::drop') in main/menu/actions/file.js
+// Preserves legacy flow for drag-drop opened files.
 // → isMarkdownFile() check → openFileOrFolder() → loadMarkdownFile() → mt::open-new-tab
 // ============================================================================
 
@@ -1648,6 +1712,61 @@ export function initOpenFilesListener(): void {
           }
         }
       }
+    })
+  })
+}
+
+// ============================================================================
+// File-change sync handler - listens for Rust fs-change events and forwards
+// them to renderer store event mt::update-file.
+// ============================================================================
+
+let fsChangeSyncInitialized = false
+const fsChangeDebounceTimers = new Map<string, ReturnType<typeof setTimeout>>()
+
+export function initFsChangeSync(): void {
+  if (fsChangeSyncInitialized || !isTauri()) return
+  fsChangeSyncInitialized = true
+
+  tauriReady.then(async () => {
+    if (!tauriEvent || !tauriCore) return
+
+    await tauriEvent.listen('fs-change', (event: any) => {
+      const payload = event?.payload || {}
+      const eventType: string = payload.event_type
+      const filePath: string = payload.path
+      if (!filePath || !eventType) return
+
+      // Unlink events don't need file content and are forwarded immediately.
+      if (eventType === 'unlink') {
+        ipcRenderer.emit('mt::update-file', null, {
+          type: 'unlink',
+          change: { pathname: filePath }
+        })
+        return
+      }
+
+      // Collapse burst writes (common for AI/external tools) to one read.
+      if (fsChangeDebounceTimers.has(filePath)) {
+        clearTimeout(fsChangeDebounceTimers.get(filePath)!)
+        fsChangeDebounceTimers.delete(filePath)
+      }
+
+      const timer = setTimeout(async () => {
+        fsChangeDebounceTimers.delete(filePath)
+        try {
+          const change = await tauriCore!.invoke('read_markdown_file', { filePath })
+          ipcRenderer.emit('mt::update-file', null, {
+            type: eventType === 'add' ? 'add' : 'change',
+            change: Object.assign({}, change, { pathname: filePath })
+          })
+        } catch (e) {
+          // File may be temporarily locked/incomplete during write bursts.
+          // We silently ignore and wait for next fs-change.
+        }
+      }, 220)
+
+      fsChangeDebounceTimers.set(filePath, timer)
     })
   })
 }
@@ -1773,6 +1892,10 @@ export function handleMenuAction(menuId: string): void {
       ipcRenderer.send('mt::set-user-preference', { theme: 'material-dark' }),
     'theme.one-dark': () => ipcRenderer.send('mt::set-user-preference', { theme: 'one-dark' }),
     'theme.ulysses-light': () => ipcRenderer.send('mt::set-user-preference', { theme: 'ulysses' }),
+    'theme.everforest-light': () =>
+      ipcRenderer.send('mt::set-user-preference', { theme: 'everforest-light' }),
+    'theme.everforest-dark': () =>
+      ipcRenderer.send('mt::set-user-preference', { theme: 'everforest-dark' }),
     // Window
     'window.toggle-always-on-top': () => ipcRenderer.send('mt::window-toggle-always-on-top', true),
     // Help
@@ -1819,7 +1942,7 @@ export const getStaticPath = async (): Promise<string | null> => {
 export const isTauriAvailable: () => boolean = isTauri
 
 // ============================================================================
-// Tauri API object matching Electron's window.electronAPI interface
+// Tauri API object matching the legacy `window.electronAPI` shape
 // ============================================================================
 
 const tauriApiObject: TauriApiObject = {
@@ -1851,7 +1974,7 @@ export function initTauriApi(): boolean {
   if (typeof window !== 'undefined' && !window.electronAPI) {
     window.electronAPI = tauriApiObject
     window.__TAURI_API_INITIALIZED__ = true
-    console.log('[Tauri] API bridge initialized, window.electronAPI is now available')
+    console.log('[Tauri] API bridge initialized, legacy window.electronAPI shim is available')
   }
 
   return true
@@ -1887,5 +2010,6 @@ export default {
   getStaticPath,
   isTauriAvailable,
   initTauriApi,
-  initMenuEvents
+  initMenuEvents,
+  initFsChangeSync
 }

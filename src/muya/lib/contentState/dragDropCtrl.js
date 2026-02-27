@@ -12,6 +12,22 @@ const GHOST_ID = 'mu-dragover-ghost'
 const GHOST_HEIGHT = 3
 
 const dragDropCtrl = ContentState => {
+  ContentState.prototype.dispatchImageDropError = function (error) {
+    const errorMessage =
+      error && error.message ? error.message : String(error || 'Unknown image error')
+    this.muya.eventCenter.dispatch('muya-image-action-error', {
+      type: 'drop',
+      error: errorMessage
+    })
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(
+        new CustomEvent('mt-image-action-error', {
+          detail: { type: 'drop', error: errorMessage }
+        })
+      )
+    }
+  }
+
   ContentState.prototype.hideGhost = function () {
     this.dropAnchor = null
     const ghost = document.querySelector(`#${GHOST_ID}`)
@@ -95,7 +111,7 @@ const dragDropCtrl = ContentState => {
     }
   }
 
-  ContentState.prototype.dragleaveHandler = function (event) {
+  ContentState.prototype.dragleaveHandler = function () {
     return this.hideGhost()
   }
 
@@ -114,7 +130,12 @@ const dragDropCtrl = ContentState => {
                 isImage = true
               }
               if (!isImage) {
-                isImage = await checkImageContentType(str)
+                try {
+                  isImage = await checkImageContentType(str)
+                } catch (error) {
+                  this.dispatchImageDropError(error)
+                  return
+                }
               }
               if (!isImage) return
               const text = `![](${str})`
@@ -188,8 +209,16 @@ const dragDropCtrl = ContentState => {
             })
           }
         } catch (error) {
-          // TODO: Notify user about an error.
           console.error('Unexpected error on image action:', error)
+          this.dispatchImageDropError(error)
+          const imageWrapper = this.muya.container.querySelector(`span[data-id=${id}]`)
+          if (imageWrapper) {
+            const imageInfo = getImageInfo(imageWrapper)
+            this.replaceImage(imageInfo, {
+              alt: name,
+              src: path
+            })
+          }
         }
       }
       this.muya.eventCenter.dispatch('stateChange')

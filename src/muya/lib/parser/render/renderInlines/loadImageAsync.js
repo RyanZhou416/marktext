@@ -28,10 +28,12 @@ export default function loadImageAsync(imageInfo, attrs, className, imageClass) 
         const img = document.createElement('img')
         let dispMsec = Date.now()
         let touchMsec = dispMsec
+        // Add cache-busting only for local file/asset protocols.
+        // Do NOT append query for blob: URLs (would invalidate object URL).
         if (
-          /^file:\/\//.test(src) ||
-          /^https:\/\/asset\.localhost\//.test(src) ||
-          /^asset:\/\/localhost\//.test(src)
+          /^file:\/\//.test(url) ||
+          /^https?:\/\/asset\.localhost\//.test(url) ||
+          /^asset:\/\/localhost\//.test(url)
         ) {
           domsrc = url + (url.includes('?') ? '&' : '?') + 'msec=' + dispMsec
         } else {

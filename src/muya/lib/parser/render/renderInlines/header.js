@@ -3,13 +3,15 @@ import { CLASS_OR_ID } from '../../../config'
 export default function header(h, cursor, block, token, outerClass) {
   const { content } = token
   const { start, end } = token.range
+  // Show heading markers when cursor is inside the whole heading token,
+  // not only when it lands on the hidden `#` marker itself.
   const className = this.getClassName(
     outerClass,
     block,
     {
       range: {
-        start,
-        end: end - content.length
+        start: 0,
+        end: block.text.length
       }
     },
     cursor

@@ -12,22 +12,42 @@ const options = { ignoreSelfClosingSlash: true, ignoreAttributes: ['id', 'class'
 
 const htmlDiffer = new HtmlDiffer(options)
 
-const getSpecs = async () => {
-  const version = await fetch(
-    'https://raw.githubusercontent.com/commonmark/commonmark.js/master/package.json'
-  )
-    .then(res => res.json())
-    .then(pkg => pkg.version.replace(/^(\d+\.\d+).*$/, '$1'))
+const LOCAL_VERSION = '0.30'
 
-  return fetch(`https://spec.commonmark.org/${version}/spec.json`)
-    .then(res => res.json())
-    .then(specs => ({ specs, version }))
+const readLocalSpecs = () => {
+  const specsPath = path.join(__dirname, `./commonmark.${LOCAL_VERSION}.json`)
+  const specs = JSON.parse(fs.readFileSync(specsPath, 'utf8'))
+  return { specs, version: LOCAL_VERSION }
+}
+
+const getSpecs = async () => {
+  try {
+    const version = await fetch(
+      'https://raw.githubusercontent.com/commonmark/commonmark.js/master/package.json'
+    )
+      .then(res => res.json())
+      .then(pkg => pkg.version.replace(/^(\d+\.\d+).*$/, '$1'))
+
+    const specs = await fetch(`https://spec.commonmark.org/${version}/spec.json`).then(res =>
+      res.json()
+    )
+    return { specs, version }
+  } catch {
+    console.warn(
+      `[specs] commonmark upstream is unavailable, fallback to local fixture ${LOCAL_VERSION}.`
+    )
+    return readLocalSpecs()
+  }
 }
 
 const getMarkedSpecs = async version => {
-  return fetch(
-    `https://raw.githubusercontent.com/markedjs/marked/master/test/specs/commonmark/commonmark.${version}.json`
-  ).then(res => res.json())
+  try {
+    return await fetch(
+      `https://raw.githubusercontent.com/markedjs/marked/master/test/specs/commonmark/commonmark.${version}.json`
+    ).then(res => res.json())
+  } catch {
+    return readLocalSpecs().specs
+  }
 }
 
 const writeResult = (version, specs, markedSpecs, type = 'commonmark') => {

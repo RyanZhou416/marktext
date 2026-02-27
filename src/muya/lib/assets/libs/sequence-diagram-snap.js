@@ -3,9 +3,54 @@
  *  (c) 2012-2017 Andrew Brampton (bramp.net)
  *  @license Simplified BSD license.
  */
-import _ from 'underscore'
 import Snap from 'snapsvg'
 import WebFont from 'webfontloader'
+
+// Keep this vendor file self-contained and avoid a runtime underscore dependency.
+const _ = {
+  isArray: Array.isArray,
+  isFinite: Number.isFinite,
+  isString: value => typeof value === 'string',
+  extend(target, ...sources) {
+    return Object.assign(target, ...sources)
+  },
+  defaults(object, ...sources) {
+    const result = object || {}
+    for (const source of sources) {
+      if (!source) continue
+      for (const key of Object.keys(source)) {
+        if (typeof result[key] === 'undefined') {
+          result[key] = source[key]
+        }
+      }
+    }
+    return result
+  },
+  each(collection, iteratee, context) {
+    if (collection == null) return collection
+    if (Array.isArray(collection)) {
+      collection.forEach((value, index) => iteratee.call(context, value, index, collection))
+      return collection
+    }
+    for (const key of Object.keys(collection)) {
+      iteratee.call(context, collection[key], key, collection)
+    }
+    return collection
+  },
+  all(collection, predicate) {
+    if (!collection) return true
+    return Array.from(collection).every(value => predicate(value))
+  },
+  invoke(collection, methodName, ...args) {
+    if (!collection) return []
+    return collection.map(item => item[methodName](...args))
+  },
+  isEmpty(collection) {
+    if (collection == null) return true
+    if (Array.isArray(collection) || typeof collection === 'string') return collection.length === 0
+    return Object.keys(collection).length === 0
+  }
+}
 
 function Diagram() {
   this.title = undefined

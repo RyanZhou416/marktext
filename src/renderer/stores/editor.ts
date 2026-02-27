@@ -23,10 +23,13 @@ import { useLayoutStore } from './layout'
 import { useProjectStore } from './project'
 import { useAppStore } from './app'
 import i18n from '../i18n'
+import { mergeThreeWayText } from '@/services/merge/threeWayMerge'
 
 const t = (key: string, params?: Record<string, any>) => (i18n.global as any).t(key, params)
 
 const autoSaveTimers = new Map<string, ReturnType<typeof setTimeout>>()
+const externalMergeTimers = new Map<string, ReturnType<typeof setTimeout>>()
+const watchedPathRefs = new Map<string, number>()
 
 const getRootFolderFromState = (): string => {
   const project = useProjectStore()
@@ -143,7 +146,15 @@ export const useEditorStore = defineStore('editor', {
     currentFile: {} as any,
     tabs: [] as any[],
     listToc: [] as any[],
-    toc: [] as any[]
+    toc: [] as any[],
+    externalConflictDialog: {
+      open: false,
+      tabId: '',
+      pathname: '',
+      ours: '',
+      theirs: '',
+      merged: ''
+    } as any
   }),
 
   actions: {
@@ -174,17 +185,24 @@ export const useEditorStore = defineStore('editor', {
 
     ADD_FILE_TO_TABS(currentFile: any) {
       this.tabs.push(currentFile)
+      this.REGISTER_WATCH_FOR_TAB(currentFile)
     },
 
     REMOVE_FILE_WITHIN_TABS(file: any) {
       const { tabs, currentFile } = this
       const index = tabs.indexOf(file)
+      this.UNREGISTER_WATCH_FOR_TAB(file)
       tabs.splice(index, 1)
 
       if (file.id && autoSaveTimers.has(file.id)) {
         const timer = autoSaveTimers.get(file.id)!
         clearTimeout(timer)
         autoSaveTimers.delete(file.id)
+      }
+      if (file.id && externalMergeTimers.has(file.id)) {
+        const timer = externalMergeTimers.get(file.id)!
+        clearTimeout(timer)
+        externalMergeTimers.delete(file.id)
       }
 
       if (file.id === currentFile.id) {
@@ -287,6 +305,7 @@ export const useEditorStore = defineStore('editor', {
       Object.assign(tab, newFileState)
       tab.id = oldId
       tab.notifications = oldNotifications
+      this.SYNC_TAB_SNAPSHOT(tab, tab.markdown)
       if (oldHistory) {
         tab.history = oldHistory
       }
@@ -317,13 +336,26 @@ export const useEditorStore = defineStore('editor', {
     SET_PATHNAME({ tab, fileInfo }: { tab: any; fileInfo: any }) {
       const { currentFile } = this
       const { filename, pathname, id } = fileInfo
+      const oldPathname = tab ? tab.pathname : ''
 
       if (id === currentFile.id && pathname) {
         ;(window as any).DIRNAME = path.dirname(pathname)
       }
 
       if (tab) {
-        Object.assign(tab, { filename, pathname, isSaved: true })
+        Object.assign(tab, {
+          filename,
+          pathname,
+          isSaved: true,
+          savedMarkdown: typeof tab.markdown === 'string' ? tab.markdown : ''
+        })
+        tab.externalMarkdown = tab.savedMarkdown
+        tab.pendingExternal = null
+        tab.lastExternalAt = Date.now()
+        if (oldPathname && oldPathname !== pathname) {
+          this.UNWATCH_PATH(oldPathname)
+        }
+        this.WATCH_PATH(pathname)
       }
     },
 
@@ -403,6 +435,78 @@ export const useEditorStore = defineStore('editor', {
       }
     },
 
+    SET_EXTERNAL_CONFLICT_DIALOG(payload: any) {
+      this.externalConflictDialog = Object.assign(
+        {
+          open: false,
+          tabId: '',
+          pathname: '',
+          ours: '',
+          theirs: '',
+          merged: ''
+        },
+        payload || {}
+      )
+    },
+
+    WATCH_PATH(pathname: string) {
+      if (!pathname) return
+      const count = watchedPathRefs.get(pathname) || 0
+      watchedPathRefs.set(pathname, count + 1)
+      if (count === 0) {
+        ipcRenderer.send('mt::watch-file', pathname)
+      }
+    },
+
+    UNWATCH_PATH(pathname: string) {
+      if (!pathname) return
+      const count = watchedPathRefs.get(pathname) || 0
+      if (count <= 1) {
+        watchedPathRefs.delete(pathname)
+        ipcRenderer.send('mt::unwatch', pathname)
+      } else {
+        watchedPathRefs.set(pathname, count - 1)
+      }
+    },
+
+    REGISTER_WATCH_FOR_TAB(tab: any) {
+      if (tab && tab.pathname) {
+        this.WATCH_PATH(tab.pathname)
+      }
+    },
+
+    UNREGISTER_WATCH_FOR_TAB(tab: any) {
+      if (tab && tab.pathname) {
+        this.UNWATCH_PATH(tab.pathname)
+      }
+    },
+
+    SYNC_TAB_SNAPSHOT(tab: any, markdown?: string) {
+      if (!tab) return
+      const currentMarkdown = typeof markdown === 'string' ? markdown : tab.markdown || ''
+      tab.savedMarkdown = currentMarkdown
+      tab.externalMarkdown = currentMarkdown
+      tab.pendingExternal = null
+      tab.lastExternalAt = Date.now()
+    },
+
+    APPLY_EXTERNAL_MARKDOWN_TO_TAB({ tab, markdown, markAsSaved }: any) {
+      if (!tab || typeof markdown !== 'string') return
+      tab.markdown = markdown
+      tab.isSaved = !!markAsSaved
+      const { currentFile } = this
+      if (currentFile && currentFile.id === tab.id) {
+        const { id, cursor, history } = tab
+        bus.$emit('file-changed', {
+          id,
+          markdown,
+          cursor,
+          renderCursor: false,
+          history
+        })
+      }
+    },
+
     CLOSE_TABS(tabIdList: string[]) {
       if (!tabIdList || tabIdList.length === 0) return
 
@@ -411,6 +515,7 @@ export const useEditorStore = defineStore('editor', {
         const index = this.tabs.findIndex((f: any) => f.id === id)
         if (index === -1) return
         const { pathname } = this.tabs[index]
+        this.UNREGISTER_WATCH_FOR_TAB(this.tabs[index])
 
         if (pathname) {
           ipcRenderer.send('mt::window-tab-closed', pathname)
@@ -617,7 +722,13 @@ export const useEditorStore = defineStore('editor', {
         const { tabs } = this
         const tab = tabs.find((f: any) => f.id === tabId)
         if (tab) {
-          Object.assign(tab, { isSaved: true })
+          Object.assign(tab, {
+            isSaved: true,
+            savedMarkdown: typeof tab.markdown === 'string' ? tab.markdown : ''
+          })
+          tab.externalMarkdown = tab.savedMarkdown
+          tab.pendingExternal = null
+          tab.lastExternalAt = Date.now()
         }
       })
 
@@ -964,6 +1075,10 @@ export const useEditorStore = defineStore('editor', {
       const { defaultEncoding, endOfLine } = preferences
       const { tabs } = this
       const fileState = getBlankFileState(tabs, defaultEncoding, endOfLine, markdownString)
+      fileState.savedMarkdown = ''
+      fileState.externalMarkdown = ''
+      fileState.pendingExternal = null
+      fileState.lastExternalAt = Date.now()
 
       if (selected) {
         const { id, markdown } = fileState
@@ -1016,11 +1131,20 @@ export const useEditorStore = defineStore('editor', {
 
       const { markdown, isMixedLineEndings } = markdownDocument
       const docState = createDocumentState(Object.assign(markdownDocument, options))
+      const normalizedMarkdown = adjustTrailingNewlines(
+        typeof markdown === 'string' ? markdown : '',
+        docState.trimTrailingNewline
+      )
+      docState.markdown = normalizedMarkdown
+      docState.savedMarkdown = normalizedMarkdown
+      docState.externalMarkdown = docState.savedMarkdown
+      docState.pendingExternal = null
+      docState.lastExternalAt = Date.now()
       const { id, cursor } = docState
 
       if (selected) {
         this.UPDATE_CURRENT_FILE(docState)
-        bus.$emit('file-loaded', { id, markdown, cursor })
+        bus.$emit('file-loaded', { id, markdown: normalizedMarkdown, cursor })
       } else {
         this.ADD_FILE_TO_TABS(docState)
       }
@@ -1084,7 +1208,9 @@ export const useEditorStore = defineStore('editor', {
       if (toc && !equal(toc, listToc)) this.SET_TOC(toc)
 
       if (markdown !== oldMarkdown) {
-        this.SET_SAVE_STATUS(false)
+        const savedMarkdown =
+          typeof this.currentFile.savedMarkdown === 'string' ? this.currentFile.savedMarkdown : ''
+        this.SET_SAVE_STATUS(markdown === savedMarkdown)
 
         if (pathname && autoSave) {
           const options = getOptionsFromState(this.currentFile)
@@ -1245,6 +1371,101 @@ export const useEditorStore = defineStore('editor', {
       })
     },
 
+    APPLY_EXTERNAL_CONFLICT_DECISION({ tabId, strategy, text }: any) {
+      const tab = this.tabs.find((t: any) => t.id === tabId)
+      if (!tab) return
+      const theirs = typeof tab.externalMarkdown === 'string' ? tab.externalMarkdown : ''
+      if (strategy === 'theirs') {
+        this.APPLY_EXTERNAL_MARKDOWN_TO_TAB({ tab, markdown: theirs, markAsSaved: true })
+      } else if (strategy === 'manual' && typeof text === 'string') {
+        this.APPLY_EXTERNAL_MARKDOWN_TO_TAB({
+          tab,
+          markdown: text,
+          markAsSaved: text === theirs
+        })
+      } else {
+        // ours: keep current editor content, still align snapshot to disk.
+        tab.isSaved = tab.markdown === theirs
+      }
+      this.SET_EXTERNAL_CONFLICT_DIALOG({ open: false })
+    },
+
+    QUEUE_EXTERNAL_CHANGE(tab: any, change: any) {
+      if (!tab || !change) return
+      tab.pendingExternal = change
+      tab.lastExternalAt = Date.now()
+      if (externalMergeTimers.has(tab.id)) {
+        clearTimeout(externalMergeTimers.get(tab.id)!)
+        externalMergeTimers.delete(tab.id)
+      }
+      const timer = setTimeout(() => {
+        externalMergeTimers.delete(tab.id)
+        this.PROCESS_PENDING_EXTERNAL_CHANGE(tab.id)
+      }, 1500)
+      externalMergeTimers.set(tab.id, timer)
+    },
+
+    PROCESS_PENDING_EXTERNAL_CHANGE(tabId: string) {
+      const tab = this.tabs.find((t: any) => t.id === tabId)
+      if (!tab || !tab.pendingExternal) return
+
+      const pending = tab.pendingExternal
+      tab.pendingExternal = null
+
+      const theirs = typeof pending.markdown === 'string' ? pending.markdown : ''
+      const ours = typeof tab.markdown === 'string' ? tab.markdown : ''
+      const base = typeof tab.savedMarkdown === 'string' ? tab.savedMarkdown : ''
+      tab.externalMarkdown = theirs
+      tab.savedMarkdown = theirs
+      tab.lastExternalAt = Date.now()
+
+      const merged = mergeThreeWayText(base, ours, theirs)
+      if (!merged.hasConflict) {
+        const mergedMarkdown = merged.merged
+        this.APPLY_EXTERNAL_MARKDOWN_TO_TAB({
+          tab,
+          markdown: mergedMarkdown,
+          markAsSaved: mergedMarkdown === theirs
+        })
+        this.PUSH_TAB_NOTIFICATION({
+          tabId,
+          msg: t('notification.externalSynced'),
+          style: 'info',
+          showConfirm: false,
+          exclusiveType: 'external_sync'
+        })
+        return
+      }
+
+      this.SET_EXTERNAL_CONFLICT_DIALOG({
+        open: true,
+        tabId: tab.id,
+        pathname: tab.pathname,
+        ours,
+        theirs,
+        merged: merged.merged
+      })
+      this.PUSH_TAB_NOTIFICATION({
+        tabId: tab.id,
+        msg: t('notification.externalConflict'),
+        style: 'warn',
+        showConfirm: true,
+        exclusiveType: 'external_conflict',
+        action: (status: boolean) => {
+          if (status) {
+            this.SET_EXTERNAL_CONFLICT_DIALOG({
+              open: true,
+              tabId: tab.id,
+              pathname: tab.pathname,
+              ours,
+              theirs,
+              merged: merged.merged
+            })
+          }
+        }
+      })
+    },
+
     LISTEN_FOR_FILE_CHANGE() {
       const preferences = usePreferencesStore()
       ipcRenderer.on('mt::update-file', (e: any, { type, change }: any) => {
@@ -1267,6 +1488,29 @@ export const useEditorStore = defineStore('editor', {
             }
             case 'add':
             case 'change': {
+              const incomingRaw = typeof change.markdown === 'string' ? change.markdown : ''
+              const incoming = adjustTrailingNewlines(incomingRaw, tab.trimTrailingNewline)
+              const savedMarkdown =
+                typeof tab.savedMarkdown === 'string'
+                  ? adjustTrailingNewlines(tab.savedMarkdown, tab.trimTrailingNewline)
+                  : ''
+              const currentMarkdown =
+                typeof tab.markdown === 'string'
+                  ? adjustTrailingNewlines(tab.markdown, tab.trimTrailingNewline)
+                  : ''
+
+              tab.externalMarkdown = incoming
+              tab.lastExternalAt = Date.now()
+
+              // Ignore watcher noise (common right after watch registration/open):
+              // if disk content is identical to both saved snapshot and editor state,
+              // reloading would only cause flicker and potentially a false dirty state.
+              if (incoming === savedMarkdown && incoming === currentMarkdown) {
+                tab.pendingExternal = null
+                tab.isSaved = true
+                return
+              }
+
               const { autoSave } = preferences
               if (autoSave) {
                 if (autoSaveTimers.has(id)) {
@@ -1280,25 +1524,16 @@ export const useEditorStore = defineStore('editor', {
                 }
               }
 
-              this.SET_SAVE_STATUS_BY_TAB({ tab, status: false })
-              this.PUSH_TAB_NOTIFICATION({
-                tabId: id,
-                msg: `"${filename}" has been changed on disk. Do you want to reload it?`,
-                showConfirm: true,
-                exclusiveType: 'file_changed',
-                action: (status: boolean) => {
-                  if (status) {
-                    this.LOAD_CHANGE(change)
-                  }
-                }
-              })
+              if (isSaved) {
+                this.LOAD_CHANGE(change)
+                return
+              }
+              this.QUEUE_EXTERNAL_CHANGE(tab, change)
               break
             }
             default:
               console.error(`LISTEN_FOR_FILE_CHANGE: Invalid type "${type}"`)
           }
-        } else {
-          console.error(`LISTEN_FOR_FILE_CHANGE: Cannot find tab for path "${pathname}".`)
         }
       })
     },

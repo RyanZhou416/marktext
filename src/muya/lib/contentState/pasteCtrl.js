@@ -12,6 +12,31 @@ const LIST_REG = /ul|ol/
 const LINE_BREAKS_REG = /\n/
 
 const pasteCtrl = ContentState => {
+  ContentState.prototype.handleImageActionError = function ({ type, error, id, fallbackSrc = '' }) {
+    const errorMessage =
+      error && error.message ? error.message : String(error || 'Unknown image error')
+    this.muya.eventCenter.dispatch('muya-image-action-error', {
+      type,
+      error: errorMessage
+    })
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(
+        new CustomEvent('mt-image-action-error', {
+          detail: { type, error: errorMessage }
+        })
+      )
+    }
+
+    const imageWrapper = this.muya.container.querySelector(`span[data-id=${id}]`)
+    if (imageWrapper) {
+      const imageInfo = getImageInfo(imageWrapper)
+      this.replaceImage(imageInfo, {
+        alt: '',
+        src: fallbackSrc
+      })
+    }
+  }
+
   // check paste type: `MERGE` or `NEWLINE`
   ContentState.prototype.checkPasteType = function (start, fragment) {
     const fragmentType = fragment.type
@@ -150,8 +175,13 @@ const pasteCtrl = ContentState => {
       try {
         newSrc = await this.muya.options.imageAction(imagePath, id)
       } catch (error) {
-        // TODO: Notify user about an error.
         console.error('Unexpected error on image action:', error)
+        this.handleImageActionError({
+          type: 'paste',
+          error,
+          id,
+          fallbackSrc: imagePath
+        })
         return null
       }
 
@@ -213,14 +243,27 @@ const pasteCtrl = ContentState => {
           imageContainer.appendChild(image)
         }
       }
+      reader.onerror = () => {
+        this.handleImageActionError({
+          type: 'paste',
+          error: 'Failed to read image from clipboard.',
+          id,
+          fallbackSrc: ''
+        })
+      }
       reader.readAsDataURL(file)
 
       let newSrc = null
       try {
         newSrc = await this.muya.options.imageAction(file, id)
       } catch (error) {
-        // TODO: Notify user about an error.
         console.error('Unexpected error on image action:', error)
+        this.handleImageActionError({
+          type: 'paste',
+          error,
+          id,
+          fallbackSrc: ''
+        })
         return null
       }
 

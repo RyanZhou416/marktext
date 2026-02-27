@@ -20,14 +20,14 @@
             </svg>
           </span>
           <span class="filename" :class="{ isOsx: platform === 'darwin' }" @click="rename">
-            {{ filename }}
+            {{ localizedFilename }}
           </span>
-          <span class="save-dot" :class="{ show: !isSaved }"></span>
+          <span class="save-dot" :class="saveStateClass"></span>
         </span>
       </div>
       <div :class="showCustomTitleBar ? 'left-toolbar title-no-drag' : 'right-toolbar'">
         <AppMenu v-if="showCustomTitleBar" :checked-ids="menuCheckedIds" @action="onMenuAction">
-          <div class="frameless-titlebar-menu title-no-drag">
+          <div class="frameless-titlebar-menu title-no-drag toolbar-chip">
             <span class="text-center-vertical">&#9776;</span>
           </div>
         </AppMenu>
@@ -47,7 +47,7 @@
             </div>
           </template>
           <div
-            class="word-count"
+            class="word-count toolbar-chip"
             :class="[{ 'title-no-drag': platform !== 'darwin' }]"
             @click.stop="handleWordClick"
           >
@@ -106,9 +106,11 @@ import { minimizePath, restorePath, maximizePath, closePath } from '../../assets
 import { PATH_SEPARATOR } from '../../config'
 import { isOsx } from '@/util'
 import { useTitle } from '@vueuse/core'
-import { ref, computed } from 'vue'
+import { computed } from 'vue'
 import AppMenu from '../appMenu/index.vue'
 import AppTooltip from '@/components/common/AppTooltip.vue'
+import i18n from '@/i18n'
+import { localizeUntitledFilename } from '@/util/displayName'
 
 export default {
   components: {
@@ -125,16 +127,24 @@ export default {
     isSaved: Boolean
   },
   setup(props: any) {
+    const localizedFilename = computed(() => {
+      return localizeUntitledFilename(props.filename, props.pathname, (key: string) =>
+        i18n.global.t(key)
+      )
+    })
     const windowTitle = computed(() => {
       const hasOpenFolder = props.project && props.project.name
-      if (props.filename) {
+      if (localizedFilename.value) {
         return hasOpenFolder
-          ? `${props.filename} - ${props.project.name}`
-          : `${props.filename} - MarkText`
+          ? `${localizedFilename.value} - ${props.project.name}`
+          : `${localizedFilename.value} - MarkText`
       }
       return hasOpenFolder ? props.project.name : 'MarkText'
     })
     useTitle(windowTitle)
+    return {
+      localizedFilename
+    }
   },
   data() {
     this.isOsx = isOsx
@@ -163,14 +173,9 @@ export default {
     return {
       isFullScreen: false,
       isMaximized: false,
-      show: 'word'
+      show: 'word',
+      syncWindowStateTimer: null as ReturnType<typeof setTimeout> | null
     }
-  },
-  created() {
-    ipcRenderer.on('mt::window-maximize', this.onMaximize)
-    ipcRenderer.on('mt::window-unmaximize', this.onUnmaximize)
-    ipcRenderer.on('mt::window-enter-full-screen', this.onEnterFullScreen)
-    ipcRenderer.on('mt::window-leave-full-screen', this.onLeaveFullScreen)
   },
   computed: {
     ...mapState(usePreferencesStore, [
@@ -191,6 +196,23 @@ export default {
     showCustomTitleBar() {
       return this.titleBarStyle === 'custom' && !this.isOsx
     },
+    saveStateClass() {
+      // 三态规则：
+      // 1) 未保存(红): 新建未落盘文档（无 pathname）
+      // 2) 有修改(橙): 已落盘但当前有未保存改动
+      // 3) 已保存(绿): 已落盘且当前无未保存改动
+      if (!this.filename) return ''
+      if (!this.pathname) return 'unsaved'
+      const current = this.currentFile || {}
+      const hasSnapshot =
+        current.pathname === this.pathname &&
+        typeof current.markdown === 'string' &&
+        typeof current.savedMarkdown === 'string'
+      if (hasSnapshot) {
+        return current.markdown === current.savedMarkdown ? 'saved' : 'modified'
+      }
+      return this.isSaved ? 'saved' : 'modified'
+    },
     menuCheckedIds() {
       const ids = new Set<string>()
       // Check-type toggles
@@ -207,7 +229,9 @@ export default {
         graphite: 'theme.graphite-light',
         'material-dark': 'theme.material-dark',
         'one-dark': 'theme.one-dark',
-        ulysses: 'theme.ulysses-light'
+        ulysses: 'theme.ulysses-light',
+        'everforest-light': 'theme.everforest-light',
+        'everforest-dark': 'theme.everforest-dark'
       }
       if (this.theme && themeMap[this.theme]) {
         ids.add(themeMap[this.theme])
@@ -219,11 +243,28 @@ export default {
       return ids
     }
   },
+  created() {
+    ipcRenderer.on('mt::window-maximize', this.onMaximize)
+    ipcRenderer.on('mt::window-unmaximize', this.onUnmaximize)
+    ipcRenderer.on('mt::window-enter-full-screen', this.onEnterFullScreen)
+    ipcRenderer.on('mt::window-leave-full-screen', this.onLeaveFullScreen)
+    this.syncWindowState()
+  },
+  mounted() {
+    // Native maximize/restore (e.g. double-click on drag region) may not always
+    // emit a reliable app-level event in time, but it always resizes viewport.
+    window.addEventListener('resize', this.onWindowResize, { passive: true })
+  },
   beforeUnmount() {
-    ipcRenderer.off('window-maximize', this.onMaximize)
-    ipcRenderer.off('window-unmaximize', this.onUnmaximize)
-    ipcRenderer.off('window-enter-full-screen', this.onEnterFullScreen)
-    ipcRenderer.off('window-leave-full-screen', this.onLeaveFullScreen)
+    ipcRenderer.off('mt::window-maximize', this.onMaximize)
+    ipcRenderer.off('mt::window-unmaximize', this.onUnmaximize)
+    ipcRenderer.off('mt::window-enter-full-screen', this.onEnterFullScreen)
+    ipcRenderer.off('mt::window-leave-full-screen', this.onLeaveFullScreen)
+    window.removeEventListener('resize', this.onWindowResize)
+    if (this.syncWindowStateTimer) {
+      clearTimeout(this.syncWindowStateTimer)
+      this.syncWindowStateTimer = null
+    }
   },
 
   methods: {
@@ -248,11 +289,18 @@ export default {
       } else {
         ipcRenderer.send('mt::window-maximize')
       }
+      setTimeout(() => this.syncWindowState(), 60)
     },
 
     toggleMaxmizeOnMacOS() {
       if (this.isOsx) {
         this.handleMaximizeClick()
+      } else {
+        // On Windows/Linux double-click on drag region is handled by the OS.
+        // Sync icon state after the native toggle.
+        setTimeout(() => this.syncWindowState(), 80)
+        setTimeout(() => this.syncWindowState(), 180)
+        setTimeout(() => this.syncWindowState(), 320)
       }
     },
 
@@ -281,6 +329,23 @@ export default {
     },
     onLeaveFullScreen() {
       this.isFullScreen = false
+    },
+    onWindowResize() {
+      if (this.syncWindowStateTimer) {
+        clearTimeout(this.syncWindowStateTimer)
+      }
+      this.syncWindowStateTimer = setTimeout(() => {
+        this.syncWindowState()
+      }, 80)
+    },
+    async syncWindowState() {
+      try {
+        const state = await ipcRenderer.invoke('mt::window-get-state')
+        this.isMaximized = !!state?.isMaximized
+        this.isFullScreen = !!state?.isFullscreen
+      } catch {
+        // ignore sync errors to avoid breaking title bar interactions
+      }
     }
   }
 }
@@ -353,16 +418,29 @@ div.title > span {
 
 .active .save-dot {
   margin-left: 3px;
-  width: 7px;
-  height: 7px;
-  display: inline-block;
-  border-radius: 50%;
-  background: var(--highlightThemeColor);
-  opacity: 0.7;
-  visibility: hidden;
-}
-.active .save-dot.show {
+  width: 1em;
+  height: 1em;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  vertical-align: middle;
   visibility: visible;
+}
+.active .save-dot::before {
+  content: '';
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  opacity: 0.9;
+}
+.active .save-dot.saved::before {
+  background: #22c55e;
+}
+.active .save-dot.unsaved::before {
+  background: #ef4444;
+}
+.active .save-dot.modified::before {
+  background: #f59e0b;
 }
 .title:hover {
   color: var(sideBarTitleColor);
@@ -377,6 +455,8 @@ div.title > span {
   width: 118px; /* + 2*10px padding*/
   display: flex;
   flex-direction: row;
+  align-items: center;
+  gap: 6px;
 }
 .right-toolbar {
   height: 100%;
@@ -392,22 +472,31 @@ div.title > span {
   }
 }
 
+.toolbar-chip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 24px;
+  border-radius: 3px;
+  padding: 0 6px;
+  box-sizing: border-box;
+  color: var(--editorColor30);
+  transition: all 0.2s ease-in-out;
+}
+
+.toolbar-chip:hover {
+  background: var(--sideBarBgColor);
+  color: var(--sideBarTitleColor);
+}
+
 .word-count {
   cursor: pointer;
   font-size: 14px;
-  color: var(--editorColor30);
   text-align: center;
   line-height: 24px;
-  padding: 0 5px;
-  box-sizing: border-box;
-  transition: all 0.25s ease-in-out;
   & > .text-center-vertical {
-    padding: 2px 5px;
-    border-radius: 3px;
-  }
-  &:hover > span {
-    background: var(--sideBarBgColor);
-    color: var(--sideBarTitleColor);
+    padding: 0;
+    border-radius: 0;
   }
 }
 
@@ -429,7 +518,7 @@ div.title > span {
   transform: translateX(-50%) translateY(-50%);
 }
 .frameless-titlebar-menu {
-  color: var(--sideBarColor);
+  color: inherit;
 }
 .frameless-titlebar-close:hover {
   background-color: rgb(228, 79, 79);

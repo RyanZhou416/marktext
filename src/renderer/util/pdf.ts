@@ -1,5 +1,5 @@
 import { fs, path } from './tauri'
-import Slugger from 'muya/lib/parser/marked/slugger'
+import Slugger from 'common/markdown/slugger'
 import { isFile } from 'common/filesystem'
 import { escapeHTML, unescapeHTML } from 'common/markdown/utils'
 import academicTheme from '@/assets/themes/export/academic.theme.css?inline'
@@ -116,7 +116,7 @@ export const getCssForOptions = (options: ExportOptions): string => {
 
 const generateHtmlToc = (
   tocList: TocItem[],
-  slugger: any,
+  slugger: Slugger,
   currentLevel: number,
   options: TocOptions
 ): string => {

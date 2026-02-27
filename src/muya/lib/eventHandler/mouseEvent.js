@@ -1,4 +1,3 @@
-import { getLinkInfo } from '../utils/getLinkInfo'
 import { collectFootnotes } from '../utils'
 
 class MouseEvent {
@@ -14,27 +13,12 @@ class MouseEvent {
       const target = event.target
       const parent = target.parentNode
       const preSibling = target.previousElementSibling
-      const parentPreSibling = parent ? parent.previousElementSibling : null
-      const { hideLinkPopup, footnote } = this.muya.options
+      const { footnote } = this.muya.options
       const rect = parent.getBoundingClientRect()
       const reference = {
         getBoundingClientRect() {
           return rect
         }
-      }
-
-      if (
-        !hideLinkPopup &&
-        parent &&
-        parent.tagName === 'A' &&
-        parent.classList.contains('ag-inline-rule') &&
-        parentPreSibling &&
-        parentPreSibling.classList.contains('ag-hide')
-      ) {
-        eventCenter.dispatch('muya-link-tools', {
-          reference,
-          linkInfo: getLinkInfo(parent)
-        })
       }
 
       if (
@@ -58,12 +42,6 @@ class MouseEvent {
       const parent = target.parentNode
       const preSibling = target.previousElementSibling
       const { footnote } = this.muya.options
-      if (parent && parent.tagName === 'A' && parent.classList.contains('ag-inline-rule')) {
-        eventCenter.dispatch('muya-link-tools', {
-          reference: null
-        })
-      }
-
       if (
         footnote &&
         parent &&

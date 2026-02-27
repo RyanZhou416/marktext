@@ -3,6 +3,33 @@ import { isSamePathSync } from 'common/filesystem/paths'
 import bus from '../bus'
 import { useEditorStore } from '../stores/editor'
 
+type Position = [number, number]
+type SearchRange = [Position, Position]
+
+interface SearchMatch {
+  range: SearchRange
+}
+
+interface SearchResult {
+  filePath: string
+}
+
+interface FileCursor {
+  isCollapsed: boolean
+  anchor: { line: number; ch: number }
+  focus: { line: number; ch: number }
+}
+
+interface FileState {
+  id?: string
+  pathname: string
+  isMarkdown?: boolean
+  markdown?: string
+  cursor?: FileCursor
+  history?: any
+  [key: string]: any
+}
+
 /**
  * Composable for file operations
  * Replaces fileMixins
@@ -10,12 +37,14 @@ import { useEditorStore } from '../stores/editor'
 export function useFile() {
   const editorStore = useEditorStore()
 
-  function handleSearchResultClick(searchMatch, searchResult) {
+  function handleSearchResultClick(searchMatch: SearchMatch, searchResult: SearchResult): void {
     const { range } = searchMatch
     const { filePath } = searchResult
 
-    const openedTab = editorStore.tabs.find(file => isSamePathSync(file.pathname, filePath))
-    const cursor = {
+    const openedTab = editorStore.tabs.find((file: FileState) =>
+      isSamePathSync(file.pathname, filePath)
+    )
+    const cursor: FileCursor = {
       isCollapsed: range[0][0] !== range[1][0],
       anchor: {
         line: range[0][0],
@@ -48,10 +77,10 @@ export function useFile() {
     }
   }
 
-  function handleFileClick(file) {
+  function handleFileClick(file: FileState): void {
     const { isMarkdown, pathname } = file
     if (!isMarkdown) return
-    const openedTab = editorStore.tabs.find(f => isSamePathSync(f.pathname, pathname))
+    const openedTab = editorStore.tabs.find((f: FileState) => isSamePathSync(f.pathname, pathname))
     if (openedTab) {
       if (editorStore.currentFile === openedTab) {
         return

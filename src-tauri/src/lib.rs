@@ -394,6 +394,10 @@ pub fn run() {
             commands::image::pick_image_dialog,
             commands::image::get_image_completions,
             commands::image::copy_image_to_folder,
+            commands::image::check_file_exists,
+            commands::image::check_images_exist,
+            commands::image::find_images_by_name,
+            commands::image::migrate_asset_folder,
             // Spellcheck
             commands::spellcheck::get_custom_dictionary,
             commands::spellcheck::add_to_dictionary,

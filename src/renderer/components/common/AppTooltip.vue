@@ -40,7 +40,7 @@ withDefaults(
 )
 </script>
 
-<style scoped>
+<style>
 .app-tooltip-content {
   background: var(--floatBgColor);
   border: 1px solid var(--floatBorderColor);

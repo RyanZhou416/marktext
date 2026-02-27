@@ -127,8 +127,12 @@ class QuickInsert extends BaseScrollFloat {
     const { contentState } = this.muya
     const canInserFrontMatter = contentState.canInserFrontMatter(this.block)
     const obj = deepCopy(quickInsertObj)
+    const basicBlockKey =
+      this.muya && this.muya._t ? this.muya._t('editor.quickInsert.basicBlock') : 'basic block'
     if (!canInserFrontMatter) {
-      obj['basic block'].splice(2, 1)
+      if (obj[basicBlockKey]) {
+        obj[basicBlockKey].splice(2, 1)
+      }
     }
     let result = obj
     if (text !== '') {

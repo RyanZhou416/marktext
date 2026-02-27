@@ -10,14 +10,31 @@ const TIMEOUT = 1500
  * Falls back to `file://` for non-Tauri environments (Electron / browser).
  */
 export const toLocalFileUrl = filePath => {
+  const normalizedPath = typeof filePath === 'string' ? filePath.replace(/\\/g, '/') : filePath
   if (typeof window !== 'undefined' && window.__TAURI_INTERNALS__) {
-    // Tauri v2 asset protocol
-    const encoded = encodeURIComponent(filePath)
-    return navigator.userAgent.includes('Windows')
-      ? `https://asset.localhost/${encoded}`
-      : `asset://localhost/${encoded}`
+    const isTauriDevWithVite = /^https?:\/\/localhost:\d+$/i.test(window.location.origin)
+    if (isTauriDevWithVite) {
+      // In Tauri dev (external Vite dev server), browser can load local files via /@fs/.
+      // Examples:
+      // - Windows: /@fs/C:/path/to/file.png
+      // - Unix:    /@fs//Users/name/file.png
+      return `/@fs/${encodeURI(normalizedPath)}`
+    }
+
+    const convertFileSrc =
+      window.__MT_CONVERT_FILE_SRC__ || window.__TAURI_INTERNALS__?.convertFileSrc
+    if (typeof convertFileSrc === 'function') {
+      try {
+        return convertFileSrc(normalizedPath)
+      } catch {
+        // fallback to manual strategy below
+      }
+    }
+    // In packaged app, use Tauri asset protocol fallback.
+    const encoded = encodeURIComponent(normalizedPath)
+    return `http://asset.localhost/${encoded}`
   }
-  return 'file://' + filePath
+  return 'file://' + normalizedPath
 }
 
 const HTML_TAG_REPLACEMENTS = {
@@ -155,24 +172,119 @@ export const deepCopy = object => {
   return obj
 }
 
+const getImageMimeByPath = filePath => {
+  const lower = String(filePath || '').toLowerCase()
+  if (lower.endsWith('.png')) return 'image/png'
+  if (lower.endsWith('.jpg') || lower.endsWith('.jpeg')) return 'image/jpeg'
+  if (lower.endsWith('.gif')) return 'image/gif'
+  if (lower.endsWith('.svg')) return 'image/svg+xml'
+  if (lower.endsWith('.webp')) return 'image/webp'
+  return 'application/octet-stream'
+}
+
+const parseAssetHostToLocalPath = url => {
+  const match = /^https?:\/\/asset\.localhost\/(.+)$/i.exec(url || '')
+  if (!match || !match[1]) return ''
+  try {
+    const decoded = decodeURIComponent(match[1])
+    return /^[a-zA-Z]:\//.test(decoded) ? decoded.replace(/\//g, '\\') : decoded
+  } catch {
+    return match[1]
+  }
+}
+
+const getPathCandidates = rawPath => {
+  const p = String(rawPath || '')
+  const list = [
+    p,
+    p.replace(/\//g, '\\'),
+    p.replace(/\\/g, '/'),
+    p.replace(/^\/([a-zA-Z]:[\\/])/, '$1'),
+    p.replace(/^\\\\\?\\/, '')
+  ]
+  return Array.from(new Set(list.filter(Boolean)))
+}
+
+const loadAssetHostViaBinaryFallback = async originalUrl => {
+  if (typeof window === 'undefined' || !window.__TAURI_INTERNALS__) return ''
+  const localPath = parseAssetHostToLocalPath(originalUrl)
+  if (!localPath) return ''
+  const invoke = window.__TAURI_INTERNALS__?.invoke
+  if (typeof invoke !== 'function') return ''
+
+  for (const candidate of getPathCandidates(localPath)) {
+    try {
+      const exists = await invoke('exists', { path: candidate })
+      if (!exists) continue
+      const bytes = await invoke('read_file_binary', { path: candidate })
+      const typed = bytes instanceof Uint8Array ? bytes : new Uint8Array(bytes || [])
+      if (!typed.length) continue
+      const blob = new Blob([typed], { type: getImageMimeByPath(candidate) })
+      return URL.createObjectURL(blob)
+    } catch {
+      // try next candidate
+    }
+  }
+  return ''
+}
+
 export const loadImage = async (url, detectContentType = false) => {
+  const preferredUrl = url
+
   if (detectContentType) {
-    const isImage = await checkImageContentType(url)
+    const isImage = await checkImageContentType(preferredUrl)
     if (!isImage) throw new Error('not an image')
   }
   return new Promise((resolve, reject) => {
     const image = new Image()
+    const candidates = [preferredUrl]
+    if (/^https?:\/\/asset\.localhost\//.test(url) && preferredUrl === url) {
+      const prefix = url.startsWith('https://')
+        ? 'https://asset.localhost/'
+        : 'http://asset.localhost/'
+      const raw = url.slice(prefix.length)
+      let decoded = raw
+      try {
+        decoded = decodeURIComponent(raw)
+      } catch {
+        // Keep raw path when decode fails.
+      }
+      const normalizedDecoded = decoded.replace(/\\/g, '/')
+      candidates.push(`${prefix}${encodeURIComponent(decoded)}`)
+      candidates.push(`${prefix}${encodeURI(normalizedDecoded)}`)
+      candidates.push(
+        `${prefix}${raw.replace(/%2F/gi, '/').replace(/%5C/gi, '/').replace(/\\/g, '/')}`
+      )
+    }
+
+    const uniqueCandidates = Array.from(new Set(candidates.filter(Boolean)))
+    let index = 0
+    const tryNext = async () => {
+      if (index >= uniqueCandidates.length) {
+        if (/^https?:\/\/asset\.localhost\//i.test(url || '') && preferredUrl === url) {
+          const fallback = await loadAssetHostViaBinaryFallback(url)
+          if (fallback) {
+            image.src = fallback
+            return
+          }
+        }
+        reject(new Error('load image failed'))
+        return
+      }
+      image.src = uniqueCandidates[index++]
+    }
+
     image.onload = () => {
       resolve({
-        url,
+        url: image.src,
         width: image.width,
         height: image.height
       })
     }
-    image.onerror = err => {
-      reject(err)
+    image.onerror = () => {
+      void tryNext()
     }
-    image.src = url
+    void tryNext()
   })
 }
 
@@ -192,7 +304,7 @@ export const getPageTitle = url => {
 
   const req = new XMLHttpRequest()
   let settle
-  const promise = new Promise((resolve, reject) => {
+  const promise = new Promise((resolve, _reject) => {
     settle = resolve
   })
   const handler = () => {
@@ -213,7 +325,7 @@ export const getPageTitle = url => {
       }
     }
   }
-  const handleError = e => {
+  const handleError = _e => {
     settle('')
   }
   req.open('GET', url)
@@ -222,7 +334,7 @@ export const getPageTitle = url => {
   req.send()
 
   // Resolve empty string when `TIMEOUT` passed.
-  const timer = new Promise((resolve, reject) => {
+  const timer = new Promise((resolve, _reject) => {
     setTimeout(() => {
       resolve('')
     }, TIMEOUT)
@@ -234,7 +346,7 @@ export const getPageTitle = url => {
 export const checkImageContentType = url => {
   const req = new XMLHttpRequest()
   let settle
-  const promise = new Promise((resolve, reject) => {
+  const promise = new Promise((resolve, _reject) => {
     settle = resolve
   })
   const handler = () => {
@@ -272,6 +384,27 @@ export const checkImageContentType = url => {
  * @param {string} baseUrl Base path; used on desktop to fix the relative image path.
  */
 export const getImageInfo = (src, baseUrl = window.DIRNAME) => {
+  if (/^marktext-asset:\/\//.test(src)) {
+    const relativePart = src.replace(/^marktext-asset:\/\//, '')
+    const assetBaseDir =
+      (typeof window !== 'undefined' && window.__MT_ASSET_BASE_DIR) || baseUrl || ''
+    if (relativePart && assetBaseDir) {
+      const pathModule =
+        typeof window !== 'undefined' && window.electronAPI && window.electronAPI.path
+          ? window.electronAPI.path
+          : { resolve: (...args) => args.filter(Boolean).join('/') }
+      const resolvedPath = pathModule.resolve(assetBaseDir, relativePart).replace(/\\/g, '/')
+      return {
+        isUnknownType: false,
+        src: toLocalFileUrl(resolvedPath)
+      }
+    }
+    return {
+      isUnknownType: false,
+      src: ''
+    }
+  }
+
   const imageExtension = IMAGE_EXT_REG.test(src)
   const isAssetUrl = /^https:\/\/asset\.localhost\//.test(src) || /^asset:\/\/localhost\//.test(src)
   const isUrl = URL_REG.test(src) || (imageExtension && (/^file:\/\/.+/.test(src) || isAssetUrl))
@@ -297,7 +430,7 @@ export const getImageInfo = (src, baseUrl = window.DIRNAME) => {
         typeof window !== 'undefined' && window.electronAPI && window.electronAPI.path
           ? window.electronAPI.path
           : { resolve: (...args) => args.filter(Boolean).join('/') }
-      const resolvedPath = pathModule.resolve(baseUrl, src)
+      const resolvedPath = pathModule.resolve(baseUrl, src).replace(/\\/g, '/')
       return {
         isUnknownType: false,
         src: toLocalFileUrl(resolvedPath)

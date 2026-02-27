@@ -156,7 +156,7 @@
 - `selectionFormats` — 选区格式状态
 - `focus` / `blur` / `crashed`
 
-**配置选项（28 个）：**
+**配置选项（27 个）：**
 
 - 基础：`fontSize`, `lineHeight`, `focusMode`, `markdown`, `tabSize`
 - 列表：`preferLooseListItem`, `bulletListMarker`, `orderListDelimiter`, `listIndentation`
@@ -164,10 +164,10 @@
 - 代码块：`codeBlockLineNumbers`, `trimUnnecessaryCodeBlockEmptyLines`
 - 主题：`sequenceTheme`, `mermaidTheme`, `vegaTheme`
 - 特殊语法：`frontmatterType`, `superSubScript`, `footnote`, `disableHtml`, `isGitlabCompatibilityEnabled`
-- UI：`hideQuickInsertHint`, `hideLinkPopup`, `autoCheck`, `spellcheckEnabled`
+- UI：`hideQuickInsertHint`, `autoCheck`, `spellcheckEnabled`
 - 图片回调：`imageAction`, `imagePathPicker`, `clipboardFilePath`, `imagePathAutoComplete`
 
-**UI 插件（13 个）：**
+**UI 插件（12 个）：**
 
 1. TablePicker — 表格插入选择器
 2. QuickInsert — 快速插入菜单
@@ -179,9 +179,8 @@
 8. ImageToolbar — 图片编辑工具栏
 9. FormatPicker — 文本格式选择
 10. FrontMenu — Front Matter 菜单
-11. LinkTools — 链接编辑工具
-12. FootnoteTool — 脚注编辑工具
-13. TableBarTools — 表格编辑工具栏
+11. FootnoteTool — 脚注编辑工具
+12. TableBarTools — 表格编辑工具栏
 
 ---
 

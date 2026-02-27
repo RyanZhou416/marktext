@@ -10,6 +10,7 @@
         :key="index"
         :node="node"
         :depth="0"
+        :active-slug="activeSlug"
         @click="handleClick"
       />
     </div>
@@ -35,7 +36,9 @@ export default {
   },
   data() {
     this.EmptyIcon = EmptyIcon
-    return {}
+    return {
+      activeSlug: ''
+    }
   },
   computed: {
     ...mapState(useEditorStore, ['toc']),
@@ -44,6 +47,7 @@ export default {
   methods: {
     handleClick(node: { slug?: string | null }) {
       if (node?.slug) {
+        this.activeSlug = node.slug
         bus.$emit('scroll-to-header', node.slug)
       }
     }

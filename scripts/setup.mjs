@@ -300,6 +300,8 @@ async function main() {
   console.log('    npm run build:portable-release Portable release')
   console.log('    npm run build:installer-debug  Installer debug (with devtools)')
   console.log('    npm run build:installer-release Installer release')
+  console.log('    npm run e2e                    Tauri smoke e2e (build + run)')
+  console.log('    npm run test:specs             CommonMark/GFM spec tests')
   console.log()
 
   if (!accel.hasSccache || !accel.hasLld) {

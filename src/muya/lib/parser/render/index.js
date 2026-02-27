@@ -117,7 +117,7 @@ class StateRender {
           mermaid.parse(code)
           target.innerHTML = sanitize(code, PREVIEW_DOMPURIFY_CONFIG, true)
           mermaid.init(undefined, target)
-        } catch (err) {
+        } catch {
           target.innerHTML = '< Invalid Mermaid Codes >'
           target.classList.add(CLASS_OR_ID.AG_MATH_ERROR)
         }
@@ -167,7 +167,7 @@ class StateRender {
           } else if (functionType === 'vega-lite') {
             await render(key, JSON.parse(code), options)
           }
-        } catch (err) {
+        } catch {
           target.innerHTML = `< Invalid ${functionType === 'flowchart' ? 'Flow Chart' : 'Sequence'} Codes >`
           target.classList.add(CLASS_OR_ID.AG_MATH_ERROR)
         }
@@ -183,6 +183,7 @@ class StateRender {
     })
     const newVdom = h(selector, children)
     const rootDom = document.querySelector(selector) || this.container
+    if (!rootDom) return
     const oldVdom = toVNode(rootDom)
 
     patch(oldVdom, newVdom)
@@ -195,7 +196,9 @@ class StateRender {
   partialRender(blocks, activeBlocks, matches, startKey, endKey) {
     const cursorOutMostBlock = activeBlocks[activeBlocks.length - 1]
     // If cursor is not in render blocks, need to render cursor block independently
-    const needRenderCursorBlock = blocks.indexOf(cursorOutMostBlock) === -1
+    const needRenderCursorBlock = cursorOutMostBlock
+      ? blocks.indexOf(cursorOutMostBlock) === -1
+      : false
     const newVnode = h(
       'section',
       blocks.map(block => this.renderBlock(null, block, activeBlocks, matches))
@@ -203,9 +206,12 @@ class StateRender {
     const html = toHTML(newVnode).replace(/^<section>([\s\S]+?)<\/section>$/, '$1')
 
     const needToRemoved = []
+    const editorRoot = document.querySelector(`div#${CLASS_OR_ID.AG_EDITOR_ID}`)
     const firstOldDom = startKey
       ? document.querySelector(`#${startKey}`)
-      : document.querySelector(`div#${CLASS_OR_ID.AG_EDITOR_ID}`).firstElementChild
+      : editorRoot
+        ? editorRoot.firstElementChild
+        : null
     if (!firstOldDom) {
       // TODO@Jocs Just for fix #541, Because I'll rewrite block and render method, it will nolonger have this issue.
       return
@@ -223,7 +229,7 @@ class StateRender {
     Array.from(needToRemoved).forEach(dom => dom.remove())
 
     // Render cursor block independently
-    if (needRenderCursorBlock) {
+    if (needRenderCursorBlock && cursorOutMostBlock) {
       const { key } = cursorOutMostBlock
       const cursorDom = document.querySelector(`#${key}`)
       if (cursorDom) {

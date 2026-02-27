@@ -209,6 +209,10 @@ class ContentState {
     const { start, end } = this.cursor
     const startBlock = this.getBlock(start.key)
     const endBlock = this.getBlock(end.key)
+    if (!startBlock || !endBlock) {
+      this.renderRange = [null, null]
+      return
+    }
     const startOutMostBlock = this.findOutMostBlock(startBlock)
     const endOutMostBlock = this.findOutMostBlock(endBlock)
 
@@ -566,8 +570,10 @@ class ContentState {
       result.push(block)
     }
     while (block && block.parent) {
-      block = this.getBlock(block.parent)
-      result.push(block)
+      const parent = this.getBlock(block.parent)
+      if (!parent) break
+      result.push(parent)
+      block = parent
     }
     return result
   }
@@ -603,6 +609,7 @@ class ContentState {
   }
 
   findOutMostBlock(block) {
+    if (!block) return null
     const parent = this.getBlock(block.parent)
     return parent ? this.findOutMostBlock(parent) : block
   }

@@ -1,5 +1,11 @@
 import { useEditorStore } from '../stores/editor'
 
+interface TabFile {
+  id?: string
+  isSaved?: boolean
+  [key: string]: any
+}
+
 /**
  * Composable for tab operations
  * Replaces tabsMixins
@@ -7,13 +13,13 @@ import { useEditorStore } from '../stores/editor'
 export function useTabs() {
   const editorStore = useEditorStore()
 
-  function selectFile(file) {
+  function selectFile(file: TabFile): void {
     if (file.id !== editorStore.currentFile.id) {
       editorStore.UPDATE_CURRENT_FILE(file)
     }
   }
 
-  function removeFileInTab(file) {
+  function removeFileInTab(file: TabFile): void {
     const { isSaved } = file
     if (isSaved) {
       editorStore.FORCE_CLOSE_TAB(file)

@@ -2,6 +2,7 @@
   <div class="toc-node">
     <div
       class="toc-node-content"
+      :class="{ 'is-active': activeSlug === node.slug }"
       :style="{ paddingLeft: `${25 + depth * 10}px` }"
       @click="$emit('click', node)"
     >
@@ -13,6 +14,7 @@
         :key="index"
         :node="child"
         :depth="depth + 1"
+        :active-slug="activeSlug"
         @click="$emit('click', $event)"
       />
     </template>
@@ -30,6 +32,10 @@ export default {
     depth: {
       type: Number,
       default: 0
+    },
+    activeSlug: {
+      type: String,
+      default: ''
     }
   },
   emits: ['click']
@@ -48,6 +54,13 @@ export default {
 
 .toc-node-content:hover {
   background: var(--sideBarItemHoverBgColor);
+}
+
+.toc-node-content.is-active {
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  text-decoration-thickness: 1px;
+  color: var(--sideBarColor);
 }
 
 .toc-node-content:focus-visible {

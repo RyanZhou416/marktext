@@ -66,7 +66,7 @@ mark::after {
 div.ag-show-quick-insert-hint
   p.ag-paragraph.ag-active
   > span.ag-paragraph-content:first-of-type:empty::after {
-  content: 'Type @ to insert';
+  content: var(--ag-quick-insert-hint, 'Type @ to insert');
   color: var(--editorColor10);
 }
 
@@ -954,6 +954,10 @@ span.ag-warn.ag-emoji-marked-text {
 
 .ag-inline-image.ag-image-success {
   background: transparent;
+}
+
+.ag-inline-image.ag-image-success .ag-image-container img {
+  border-radius: var(--mt-image-border-radius, 8px);
 }
 
 .ag-inline-image a.ag-image-icon-success,

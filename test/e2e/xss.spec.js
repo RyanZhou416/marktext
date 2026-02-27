@@ -1,33 +1,32 @@
 const { expect, test } = require('@playwright/test')
-const { launchElectron } = require('./helpers')
+const path = require('path')
+const {
+  launchTauriApp,
+  waitForProcessHealthy,
+  waitForWindowTitle,
+  killProcessTree
+} = require('./helpers')
 
 test.describe('Test XSS Vulnerabilities', async () => {
   let app = null
-  let page = null
+  let title = ''
 
   test.beforeAll(async () => {
-    const { app: electronApp, page: firstPage } = await launchElectron(['test/e2e/data/xss.md'])
-    app = electronApp
-    page = firstPage
+    const xssPath = path.resolve('test/e2e/data/xss.md')
+    app = await launchTauriApp([xssPath])
+    await waitForProcessHealthy(app, 10000)
+    title = await waitForWindowTitle(app, /marktext/i)
 
     // Wait to parse and render the document.
     await new Promise(resolve => setTimeout(resolve, 3000))
   })
 
   test.afterAll(async () => {
-    await app.close()
+    await killProcessTree(app)
   })
 
   test('Load malicious document', async () => {
-    const { isVisible, isCrashed } = await app.evaluate(async process => {
-      const mainWindow = process.BrowserWindow.getAllWindows()[0]
-      return {
-        isVisible: mainWindow.isVisible(),
-        isCrashed: mainWindow.webContents.isCrashed()
-      }
-    })
-
-    expect(isVisible).toBeTruthy()
-    expect(isCrashed).toBeFalsy()
+    expect(app.exitCode).toBeNull()
+    expect(title).toMatch(/marktext/i)
   })
 })

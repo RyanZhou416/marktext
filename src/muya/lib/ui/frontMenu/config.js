@@ -3,12 +3,7 @@ import newIcon from '../../assets/pngicon/paragraph/2.png'
 import deleteIcon from '../../assets/pngicon/delete/2.png'
 import turnIcon from '../../assets/pngicon/turninto/2.png'
 import { isOsx } from '../../config'
-import { quickInsertObj } from '../quickInsert/config'
-
-const wholeSubMenu = Object.keys(quickInsertObj).reduce((acc, key) => {
-  const items = quickInsertObj[key]
-  return [...acc, ...items]
-}, [])
+import { getQuickInsertObj } from '../quickInsert/config'
 
 const COMMAND_KEY = isOsx ? '⌘' : '⌃'
 
@@ -44,8 +39,6 @@ export const getMenu = () => [
     shortCut: `⇧${COMMAND_KEY}D`
   }
 ]
-
-export const menu = getMenu()
 
 export const getLabel = block => {
   const { type, functionType, listType } = block
@@ -125,6 +118,12 @@ export const getLabel = block => {
 }
 
 export const getSubMenu = (block, startBlock, endBlock) => {
+  const quickInsertObj = getQuickInsertObj()
+  const wholeSubMenu = Object.keys(quickInsertObj).reduce((acc, key) => {
+    const items = quickInsertObj[key]
+    return [...acc, ...items]
+  }, [])
+
   const { type } = block
   switch (type) {
     case 'p': {

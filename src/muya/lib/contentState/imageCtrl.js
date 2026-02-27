@@ -16,6 +16,7 @@ const imageCtrl = ContentState => {
     const { key, offset: startOffset } = start
     const { offset: endOffset } = end
     const block = this.getBlock(key)
+    if (!block) return
     if (
       block.type === 'span' &&
       (block.functionType === 'codeContent' ||
@@ -100,6 +101,7 @@ const imageCtrl = ContentState => {
   ContentState.prototype.updateImage = function ({ imageId, key, token }, attrName, attrValue) {
     // inline/left/center/right
     const block = this.getBlock(key)
+    if (!block || !token || !token.range) return
     const { range } = token
     const { start, end } = range
     const oldText = block.text
@@ -131,8 +133,10 @@ const imageCtrl = ContentState => {
     { key, token },
     { alt = '', src = '', title = '' }
   ) {
+    if (!token || !token.range) return
     const { type } = token
     const block = this.getBlock(key)
+    if (!block) return
     const { start, end } = token.range
     const oldText = block.text
     let imageText = ''
@@ -172,6 +176,7 @@ const imageCtrl = ContentState => {
 
   ContentState.prototype.deleteImage = function ({ key, token }) {
     const block = this.getBlock(key)
+    if (!block || !token || !token.range) return
     const oldText = block.text
     const { start, end } = token.range
     const { eventCenter } = this.muya
@@ -189,19 +194,26 @@ const imageCtrl = ContentState => {
   }
 
   ContentState.prototype.selectImage = function (imageInfo) {
+    if (!imageInfo || !imageInfo.token || !imageInfo.token.range) return
     this.selectedImage = imageInfo
     const { key } = imageInfo
     const block = this.getBlock(key)
+    if (!block) return
     const outMostBlock = this.findOutMostBlock(block)
     this.cursor = {
       start: { key, offset: imageInfo.token.range.end },
       end: { key, offset: imageInfo.token.range.end }
     }
     // Fix #1568
-    const { start } = this.prevCursor
-    const oldBlock = this.findOutMostBlock(this.getBlock(start.key))
-    if (oldBlock.key !== outMostBlock.key) {
-      this.singleRender(oldBlock, false)
+    if (this.prevCursor && this.prevCursor.start) {
+      const { start } = this.prevCursor
+      const prevBlock = this.getBlock(start.key)
+      if (prevBlock) {
+        const oldBlock = this.findOutMostBlock(prevBlock)
+        if (oldBlock.key !== outMostBlock.key) {
+          this.singleRender(oldBlock, false)
+        }
+      }
     }
 
     return this.singleRender(outMostBlock, true)

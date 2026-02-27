@@ -257,7 +257,17 @@ const formatCtrl = ContentState => {
     }
 
     const startBlock = this.getBlock(start.key)
-    const endBlock = this.getBlock(end.key)
+    let endBlock = this.getBlock(end.key)
+    // If selection ends at the next line start (offset=0), treat it as ending
+    // at the previous line end to avoid inserting empty format markers.
+    if (start.key !== end.key && end.offset === 0) {
+      const preBlock = this.findPreBlockInLocation(endBlock)
+      if (preBlock) {
+        end.key = preBlock.key
+        end.offset = preBlock.text.length
+        endBlock = preBlock
+      }
+    }
     start.delata = end.delata = 0
     if (start.key === end.key) {
       const { formats, tokens, neighbors } = this.selectionFormats()

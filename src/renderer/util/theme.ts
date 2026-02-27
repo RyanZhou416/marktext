@@ -5,7 +5,15 @@ import {
   oneDarkThemes,
   railscastsThemes
 } from '../config'
-import { dark, graphite, materialDark, oneDark, ulysses } from './themeColor'
+import {
+  dark,
+  everforestDark,
+  everforestLight,
+  graphite,
+  materialDark,
+  oneDark,
+  ulysses
+} from './themeColor'
 import { isLinux } from './index'
 
 const patchTheme = (css: string): string => {
@@ -45,6 +53,12 @@ export const addThemeStyle = (theme: string): void => {
     case 'graphite':
       themeStyleEle.innerHTML = patchTheme(graphite())
       break
+    case 'everforest-light':
+      themeStyleEle.innerHTML = patchTheme(everforestLight())
+      break
+    case 'everforest-dark':
+      themeStyleEle.innerHTML = patchTheme(everforestDark())
+      break
     case 'one-dark':
       themeStyleEle.innerHTML = patchTheme(oneDark())
       break
@@ -79,8 +93,17 @@ export const setEditorWidth = (value: string): void => {
   const EDITOR_WIDTH_STYLE_ID = 'editor-width'
   let result = ''
   if (value && /^[0-9]+(?:ch|px|%)$/.test(value)) {
+    const editorAreaWidth = `calc(100px + ${value})`
     // Overwrite the theme value and add 100px for padding.
-    result = `:root { --editorAreaWidth: calc(100px + ${value}); }`
+    result = `
+:root { --editorAreaWidth: ${editorAreaWidth}; }
+#ag-editor-id,
+.source-code .CodeMirror {
+  width: min(100%, var(--editorAreaWidth));
+  margin-left: auto;
+  margin-right: auto;
+}
+`
   }
   let styleEle: HTMLStyleElement | null = document.querySelector(`#${EDITOR_WIDTH_STYLE_ID}`)
   if (!styleEle) {

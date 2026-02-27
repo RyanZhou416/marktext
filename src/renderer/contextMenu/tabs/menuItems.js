@@ -14,7 +14,7 @@ export const CLOSE_THIS = {
     return t('contextMenu.tabs.close')
   },
   id: 'closeThisTab',
-  click(menuItem, browserWindow) {
+  click(menuItem) {
     contextMenu.closeThis(menuItem._tabId)
   }
 }
@@ -24,7 +24,7 @@ export const CLOSE_OTHERS = {
     return t('contextMenu.tabs.closeOthers')
   },
   id: 'closeOtherTabs',
-  click(menuItem, browserWindow) {
+  click(menuItem) {
     contextMenu.closeOthers(menuItem._tabId)
   }
 }
@@ -34,7 +34,7 @@ export const CLOSE_SAVED = {
     return t('contextMenu.tabs.closeSaved')
   },
   id: 'closeSavedTabs',
-  click(menuItem, browserWindow) {
+  click() {
     contextMenu.closeSaved()
   }
 }
@@ -44,7 +44,7 @@ export const CLOSE_ALL = {
     return t('contextMenu.tabs.closeAll')
   },
   id: 'closeAllTabs',
-  click(menuItem, browserWindow) {
+  click() {
     contextMenu.closeAll()
   }
 }
@@ -54,7 +54,7 @@ export const RENAME = {
     return t('contextMenu.tabs.rename')
   },
   id: 'renameFile',
-  click(menuItem, browserWindow) {
+  click(menuItem) {
     contextMenu.rename(menuItem._tabId)
   }
 }
@@ -64,7 +64,7 @@ export const COPY_PATH = {
     return t('contextMenu.tabs.copyPath')
   },
   id: 'copyPath',
-  click(menuItem, browserWindow) {
+  click(menuItem) {
     contextMenu.copyPath(menuItem._tabId)
   }
 }
@@ -74,7 +74,7 @@ export const SHOW_IN_FOLDER = {
     return t('contextMenu.tabs.showInFolder')
   },
   id: 'showInFolder',
-  click(menuItem, browserWindow) {
+  click(menuItem) {
     contextMenu.showInFolder(menuItem._tabId)
   }
 }

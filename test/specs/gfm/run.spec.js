@@ -4,7 +4,6 @@ const { removeCustomClass } = require('../help')
 const { writeResult } = require('../commonMark/run.spec')
 const { MT_MARKED_OPTIONS } = require('../config')
 const fetch = require('node-fetch')
-const cheerio = require('cheerio')
 const marked = require('../../../src/muya/lib/parser/marked/index.js').default
 const HtmlDiffer = require('@markedjs/html-differ').HtmlDiffer
 const fs = require('fs')
@@ -14,7 +13,23 @@ const options = { ignoreSelfClosingSlash: true, ignoreAttributes: ['id', 'class'
 
 const htmlDiffer = new HtmlDiffer(options)
 
+const LOCAL_VERSION = '0.29'
+
+const readLocalSpecs = () => {
+  const specsPath = path.resolve(__dirname, `./gfm.${LOCAL_VERSION}.json`)
+  const specs = JSON.parse(fs.readFileSync(specsPath, 'utf8'))
+  return [LOCAL_VERSION, specs]
+}
+
 const getSpecs = () => {
+  let cheerio
+  try {
+    cheerio = require('cheerio')
+  } catch {
+    console.warn(`[specs] cheerio is unavailable, fallback to local fixture ${LOCAL_VERSION}.`)
+    return Promise.resolve(readLocalSpecs())
+  }
+
   return fetch('https://github.github.com/gfm/')
     .then(res => res.text())
     .then(html => cheerio.load(html))
@@ -46,12 +61,22 @@ const getSpecs = () => {
 
       return [version, specs]
     })
+    .catch(() => {
+      console.warn(
+        `[specs] gfm upstream is unavailable, fallback to local fixture ${LOCAL_VERSION}.`
+      )
+      return readLocalSpecs()
+    })
 }
 
 const getMarkedSpecs = async version => {
-  return fetch(
-    `https://raw.githubusercontent.com/markedjs/marked/master/test/specs/gfm/gfm.${version}.json`
-  ).then(res => res.json())
+  try {
+    return await fetch(
+      `https://raw.githubusercontent.com/markedjs/marked/master/test/specs/gfm/gfm.${version}.json`
+    ).then(res => res.json())
+  } catch {
+    return readLocalSpecs()[1]
+  }
 }
 
 const diffAndGenerateResult = async () => {

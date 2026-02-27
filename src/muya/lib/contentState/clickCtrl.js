@@ -5,6 +5,32 @@ import { getParentCheckBox } from '../utils/getParentCheckBox'
 import { cumputeCheckboxStatus } from '../utils/cumputeCheckBoxStatus'
 
 const clickCtrl = ContentState => {
+  const normalizeRangeToPreviousLineEnd = function (contentState, range) {
+    const { start, end } = range
+    if (!start || !end) return range
+    if (start.key === end.key || end.offset !== 0) return range
+    const startBlock = contentState.getBlock(start.key)
+    if (!startBlock || typeof startBlock.text !== 'string') return range
+    // Only normalize the edge case where browser treats one caret position
+    // as [prev line end -> next line start]. Do not rewrite real selections
+    // like triple-click line selection.
+    if (start.offset !== startBlock.text.length) return range
+
+    const endBlock = contentState.getBlock(end.key)
+    if (!endBlock) return range
+
+    const preBlock = contentState.findPreBlockInLocation(endBlock)
+    if (!preBlock || typeof preBlock.text !== 'string' || preBlock.key !== start.key) return range
+
+    return {
+      start,
+      end: {
+        key: preBlock.key,
+        offset: preBlock.text.length
+      }
+    }
+  }
+
   ContentState.prototype.clickHandler = function (event) {
     const { eventCenter } = this.muya
     const { target } = event
@@ -83,7 +109,8 @@ const clickCtrl = ContentState => {
         return this.partialRender()
       }
     }
-    const { start, end } = selection.getCursorRange()
+    const cursorRange = normalizeRangeToPreviousLineEnd(this, selection.getCursorRange())
+    const { start, end } = cursorRange
     // fix #625, the selection maybe not in edit area.
     if (!start || !end) {
       return
@@ -96,10 +123,14 @@ const clickCtrl = ContentState => {
     let parentNode = inlineNode
     while (parentNode !== null && parentNode.classList.contains(CLASS_OR_ID.AG_INLINE_RULE)) {
       if (parentNode.tagName === 'A') {
+        const href = parentNode.getAttribute('href') || ''
+        // Always handle link click in app logic to avoid browser default navigation.
+        event.preventDefault()
+        event.stopPropagation()
         const formatType = 'link' // auto link or []() link
         const data = {
           text: inlineNode.textContent,
-          href: parentNode.getAttribute('href') || ''
+          href
         }
         eventCenter.dispatch('format-click', {
           event,
@@ -192,7 +223,7 @@ const clickCtrl = ContentState => {
     } else if (needMarkedUpdate) {
       // Fix: whole select can not be canceled #613
       requestAnimationFrame(() => {
-        const cursor = selection.getCursorRange()
+        const cursor = normalizeRangeToPreviousLineEnd(this, selection.getCursorRange())
         if (!cursor.start || !cursor.end) {
           return
         }

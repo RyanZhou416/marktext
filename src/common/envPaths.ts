@@ -1,5 +1,5 @@
 // 根据运行环境选择 path 模块
-// 渲染进程使用 electronAPI 或 Tauri path polyfill，主进程直接使用 Node.js
+// 渲染进程通过 Tauri bridge 暴露的 path 或降级 polyfill，主进程直接使用 Node.js
 
 interface PathModule {
   join: (...args: string[]) => string
@@ -77,7 +77,6 @@ if (typeof window !== 'undefined' && (window as any).electronAPI) {
 }
 
 class EnvPaths {
-  private _electronUserDataPath: string
   private _userDataPath: string
   private _logPath: string
   private _preferencesPath: string
@@ -93,7 +92,6 @@ class EnvPaths {
       throw new Error('"userDataPath" is not set.')
     }
 
-    this._electronUserDataPath = userDataPath // path.join(userDataPath, 'electronUserData')
     this._userDataPath = userDataPath
     this._logPath = path.join(
       this._userDataPath,
@@ -112,9 +110,11 @@ class EnvPaths {
     // this._sessionsPath = path.join(this._userDataPath, 'sessions')
   }
 
+  /**
+   * @deprecated Use `userDataPath` instead.
+   */
   get electronUserDataPath(): string {
-    // This path is identical to app.getPath('userData') but userDataPath must not necessarily be the same path.
-    return this._electronUserDataPath
+    return this._userDataPath
   }
 
   get userDataPath(): string {

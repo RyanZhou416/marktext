@@ -1,21 +1,22 @@
 .ag-quick-insert {
   width: 360px;
-  max-height: 307px;
-  padding: 0 0 20px 0;
+  max-height: 320px;
+  padding: 0 0 8px 0;
   overflow-y: auto;
 }
 
 .ag-quick-insert .title {
   color: var(--editorColor);
-  line-height: 120%;
-  font-size: 14px;
-  padding: 10px 14px 10px 14px;
+  line-height: 1.2;
+  font-size: 12px;
+  padding: 8px 12px;
   display: flex;
   text-transform: uppercase;
-  letter-spacing: 1px;
+  letter-spacing: 0.6px;
   position: sticky;
   top: 0;
   background: var(--floatBgColor);
+  box-shadow: inset 0 -1px 0 var(--floatBorderColor);
   z-index: 1001;
 }
 
@@ -23,6 +24,8 @@
   display: flex;
   flex-direction: row;
   padding: 6px 0;
+  margin: 0 4px;
+  border-radius: 2px;
   cursor: pointer;
   user-select: none;
 }
@@ -50,8 +53,8 @@
   display: flex;
   justify-content: space-around;
   align-items: center;
-  border-radius: 6px;
-  margin-left: 14px;
+  border-radius: 4px;
+  margin-left: 10px;
 }
 
 .ag-quick-insert .icon-container > i.icon {
@@ -75,13 +78,13 @@
 }
 
 .ag-quick-insert .description {
-  margin-left: 8px;
+  margin-left: 10px;
   flex: 1;
 }
 
 .ag-quick-insert .short-cut {
   width: 70px;
-  margin-right: 20px;
+  margin-right: 12px;
   flex-shrink: 1;
   text-align: right;
   color: var(--editorColor50);

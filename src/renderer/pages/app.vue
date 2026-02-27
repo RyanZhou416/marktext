@@ -28,6 +28,7 @@
       <rename></rename>
       <tweet></tweet>
       <import-modal></import-modal>
+      <conflict-resolution-dialog></conflict-resolution-dialog>
     </div>
   </div>
   <Teleport to="body">
@@ -47,6 +48,7 @@ import ExportSettingDialog from '@/components/exportSettings'
 import Rename from '@/components/rename'
 import Tweet from '@/components/tweet'
 import ImportModal from '@/components/import'
+import ConflictResolutionDialog from '@/components/editorWithTabs/ConflictResolutionDialog.vue'
 import { useLoadingPage } from '@/composables/useLoadingPage'
 import { useEventListener } from '@vueuse/core'
 import { Toaster } from 'vue-sonner'
@@ -63,7 +65,13 @@ import { useAutoUpdatesStore } from '@/stores/autoUpdates'
 import { useNotificationStore } from '@/stores/notification'
 import bus from '@/bus'
 import { DEFAULT_STYLE } from '@/config'
-import { ipcRenderer, initMenuEvents, initDragDrop, initOpenFilesListener } from '../util/tauri'
+import {
+  ipcRenderer,
+  initMenuEvents,
+  initDragDrop,
+  initOpenFilesListener,
+  initFsChangeSync
+} from '../util/tauri'
 
 export default {
   name: 'Marktext',
@@ -77,6 +85,7 @@ export default {
     Rename,
     Tweet,
     ImportModal,
+    ConflictResolutionDialog,
     CommandPalette,
     Toaster
   },
@@ -187,6 +196,9 @@ export default {
 
     // Listen for open-files events from Rust (file association, command-line args)
     initOpenFilesListener()
+
+    // Listen for Rust fs-change events and sync external file updates.
+    initFsChangeSync()
 
     // Tauri auto-initialization: Electron sends mt::bootstrap-editor from main process,
     // but in Tauri we need to self-initialize since there's no Electron main process.

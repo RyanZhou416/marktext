@@ -1,5 +1,4 @@
 import { createPopper } from '@popperjs/core'
-import resizeDetector from 'element-resize-detector'
 import { noop } from '../../utils'
 import { EVENT_KEYS } from '../../config'
 import './index.css'
@@ -23,7 +22,7 @@ class BaseFloat {
     this.container = null
     this.popper = null
     this.lastScrollTop = null
-    this.resizeDetector = null
+    this.resizeObserver = null
     this.cb = noop
     this.init()
   }
@@ -46,25 +45,14 @@ class BaseFloat {
 
     floatBox.appendChild(container)
     document.body.appendChild(floatBox)
-    this.resizeDetector = resizeDetector({
-      strategy: 'scroll'
+    this.resizeObserver = new ResizeObserver(entries => {
+      for (const entry of entries) {
+        const { offsetWidth, offsetHeight } = entry.target
+        Object.assign(floatBox.style, { width: `${offsetWidth}px`, height: `${offsetHeight}px` })
+        this.popper && this.popper.update()
+      }
     })
-
-    // use polyfill
-    this.resizeDetector.listenTo(container, ele => {
-      const { offsetWidth, offsetHeight } = ele
-      Object.assign(floatBox.style, { width: `${offsetWidth}px`, height: `${offsetHeight}px` })
-      this.popper && this.popper.update()
-    })
-
-    // const ro = new ResizeObserver(entries => {
-    //   for (const entry of entries) {
-    //     const { offsetWidth, offsetHeight } = entry.target
-    //     Object.assign(floatBox.style, { width: `${offsetWidth + 2}px`, height: `${offsetHeight + 2}px` })
-    //     this.popper && this.popper.update()
-    //   }
-    // })
-    // ro.observe(container)
+    this.resizeObserver.observe(container)
     this.floatBox = floatBox
     this.container = container
   }
@@ -129,8 +117,8 @@ class BaseFloat {
     if (this.popper && this.popper.destroy) {
       this.popper.destroy()
     }
-    if (this.resizeDetector && this.container) {
-      this.resizeDetector.uninstall(this.container)
+    if (this.resizeObserver) {
+      this.resizeObserver.disconnect()
     }
     this.floatBox.remove()
   }

@@ -1,4 +1,4 @@
-import { edit, noop } from './utils'
+import { edit, noop } from './utils.js'
 
 /* eslint-disable no-useless-escape */
 
@@ -38,7 +38,7 @@ export const block = {
   // extra
   frontmatter:
     /^(?:(?:---\n([\s\S]+?)---)|(?:\+\+\+\n([\s\S]+?)\+\+\+)|(?:;;;\n([\s\S]+?);;;)|(?:\{\n([\s\S]+?)\}))(?:\n{2,}|\n{1,2}$)/,
-  multiplemath: /^\$\$\n([\s\S]+?)\n\$\$(?:\n+|$)/,
+  multiplemath: /^(?:\$\$([^\n]+?)\$\$|\$\$\n([\s\S]+?)\n\$\$)(?:\n+|$)/,
   multiplemathGitlab: /^ {0,3}(`{3,})math\n(?:(|[\s\S]*?)\n)(?: {0,3}\1`* *(?:\n+|$)|$)/, // Math inside a code block (GitLab display math)
   footnote: /^\[\^([^\^\[\]\s]+?)(?<!\\)\]:[\s\S]+?(?=\n *\n {0,3}[^ ]+|$)/
 }

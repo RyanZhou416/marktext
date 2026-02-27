@@ -1,22 +1,27 @@
 const { expect, test } = require('@playwright/test')
-const { launchElectron } = require('./helpers')
+const {
+  launchTauriApp,
+  waitForProcessHealthy,
+  waitForWindowTitle,
+  killProcessTree
+} = require('./helpers')
 
 test.describe('Check Launch MarkText', async () => {
   let app = null
-  let page = null
+  let title = ''
 
   test.beforeAll(async () => {
-    const { app: electronApp, page: firstPage } = await launchElectron()
-    app = electronApp
-    page = firstPage
+    app = await launchTauriApp()
+    await waitForProcessHealthy(app, 10000)
+    title = await waitForWindowTitle(app, /marktext/i)
   })
 
   test.afterAll(async () => {
-    await app.close()
+    await killProcessTree(app)
   })
 
   test('Empty MarkText', async () => {
-    const title = await page.title()
-    expect(/^MarkText|Untitled-1 - MarkText$/.test(title)).toBeTruthy()
+    expect(app.exitCode).toBeNull()
+    expect(title).toMatch(/marktext/i)
   })
 })

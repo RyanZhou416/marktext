@@ -14,7 +14,7 @@ export const NEW_FILE = {
     return t('contextMenu.sidebar.newFile')
   },
   id: 'newFileMenuItem',
-  click(menuItem, browserWindow) {
+  click() {
     contextMenu.newFile()
   }
 }
@@ -24,7 +24,7 @@ export const NEW_DIRECTORY = {
     return t('contextMenu.sidebar.newDirectory')
   },
   id: 'newDirectoryMenuItem',
-  click(menuItem, browserWindow) {
+  click() {
     contextMenu.newDirectory()
   }
 }
@@ -34,7 +34,7 @@ export const COPY = {
     return t('contextMenu.sidebar.copy')
   },
   id: 'copyMenuItem',
-  click(menuItem, browserWindow) {
+  click() {
     contextMenu.copy()
   }
 }
@@ -44,7 +44,7 @@ export const CUT = {
     return t('contextMenu.sidebar.cut')
   },
   id: 'cutMenuItem',
-  click(menuItem, browserWindow) {
+  click() {
     contextMenu.cut()
   }
 }
@@ -54,7 +54,7 @@ export const PASTE = {
     return t('contextMenu.sidebar.paste')
   },
   id: 'pasteMenuItem',
-  click(menuItem, browserWindow) {
+  click() {
     contextMenu.paste()
   }
 }
@@ -64,7 +64,7 @@ export const RENAME = {
     return t('contextMenu.sidebar.rename')
   },
   id: 'renameMenuItem',
-  click(menuItem, browserWindow) {
+  click() {
     contextMenu.rename()
   }
 }
@@ -74,7 +74,7 @@ export const DELETE = {
     return t('contextMenu.sidebar.moveToTrash')
   },
   id: 'deleteMenuItem',
-  click(menuItem, browserWindow) {
+  click() {
     contextMenu.remove()
   }
 }
@@ -84,7 +84,7 @@ export const SHOW_IN_FOLDER = {
     return t('contextMenu.sidebar.showInFolder')
   },
   id: 'showInFolderMenuItem',
-  click(menuItem, browserWindow) {
+  click() {
     contextMenu.showInFolder()
   }
 }
