@@ -89,15 +89,16 @@
         <section class="startup-action-ctrl">
           <div class="radio-group">
             <label class="radio-label">
-              <input v-model="startUpAction" type="radio" value="folder" />
-              {{ $t('settings.general.openDefaultDir') }}<span>: {{ defaultDirectoryToOpen }}</span>
-            </label>
-            <button class="btn-default pref-btn" @click="selectDefaultDirectoryToOpen">
-              {{ $t('settings.general.selectFolder') }}
-            </button>
-            <label class="radio-label">
               <input v-model="startUpAction" type="radio" value="blank" />
-              {{ $t('settings.general.openBlankPage') }}
+              {{ $t('settings.general.startupNone') }}
+            </label>
+            <label class="radio-label">
+              <input v-model="startUpAction" type="radio" value="newDocument" />
+              {{ $t('settings.general.startupNewDocument') }}
+            </label>
+            <label class="radio-label">
+              <input v-model="startUpAction" type="radio" value="lastClosedDocument" />
+              {{ $t('settings.general.startupLastDocument') }}
             </label>
           </div>
         </section>
@@ -160,7 +161,6 @@ export default {
       'autoSave',
       'autoSaveDelay',
       'titleBarStyle',
-      'defaultDirectoryToOpen',
       'openFilesInNewWindow',
       'openFolderInNewWindow',
       'zoom',
@@ -205,7 +205,6 @@ export default {
       const preferencesStore = usePreferencesStore()
       preferencesStore.SET_SINGLE_PREFERENCE({ type: 'language', value })
       await loadLocale(i18n, value)
-      // Rebuild native menu with new locale
       if (isTauriAvailable()) {
         import('@tauri-apps/api/core').then(({ invoke }) => {
           invoke('rebuild_menu', { locale: value }).catch(e => {
@@ -213,10 +212,6 @@ export default {
           })
         })
       }
-    },
-    selectDefaultDirectoryToOpen() {
-      const preferencesStore = usePreferencesStore()
-      preferencesStore.SELECT_DEFAULT_DIRECTORY_TO_OPEN()
     }
   }
 }

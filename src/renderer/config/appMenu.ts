@@ -16,6 +16,7 @@
 export interface MenuItem {
   id?: string
   label?: string // i18n key (or raw string for items like "CRLF (Windows)")
+  rawLabel?: string // Pre-formatted label (bypasses i18n t())
   accelerator?: string
   type?: 'separator'
   role?: 'check' | 'radio'
@@ -41,6 +42,11 @@ export const appMenuConfig: MenuGroup[] = [
       S,
       { id: 'file.open-file', label: 'menu.file.openFile', accelerator: 'Ctrl+O' },
       { id: 'file.open-folder', label: 'menu.file.openFolder', accelerator: 'Ctrl+Shift+O' },
+      {
+        id: 'file.open-recent',
+        label: 'menu.file.openRecent',
+        submenu: [{ id: 'file.clear-recent', label: 'menu.file.clearRecentlyUsed' }]
+      },
       S,
       { id: 'file.save', label: 'menu.file.save', accelerator: 'Ctrl+S' },
       { id: 'file.save-as', label: 'menu.file.saveAs', accelerator: 'Ctrl+Shift+S' },

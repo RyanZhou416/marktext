@@ -64,6 +64,7 @@
 <script lang="ts">
 import { shell, path, processInfo, fs as electronFs, ipcRenderer } from '../../util/tauri'
 import log from '../../util/logger'
+import { markRaw } from 'vue'
 import { mapState } from 'pinia'
 import { usePreferencesStore } from '@/stores/preferences'
 import { useEditorStore } from '@/stores/editor'
@@ -88,7 +89,6 @@ import { getCssForOptions, getHtmlToc } from '@/util/pdf'
 import { addCommonStyle, setEditorWidth } from '@/util/theme'
 
 import 'muya/themes/default.css'
-import '@/assets/themes/codemirror/one-dark.css'
 import CloseIcon from '@/assets/icons/close.svg'
 
 const STANDAR_Y = 320
@@ -118,6 +118,7 @@ export default {
     return {
       selectionChange: null,
       editor: null,
+      engineType: 'muya' as 'muya' | 'milkdown',
       suppressNextEditorChange: false,
       pathname: '',
       isShowClose: false,
@@ -235,6 +236,7 @@ export default {
         if (/dark/i.test(value)) {
           this.editor.setOptions(
             {
+              theme: value,
               mermaidTheme: 'dark',
               vegaTheme: 'dark'
             },
@@ -243,6 +245,7 @@ export default {
         } else {
           this.editor.setOptions(
             {
+              theme: value,
               mermaidTheme: 'default',
               vegaTheme: 'latimes'
             },
@@ -516,6 +519,7 @@ export default {
         hideQuickInsertHint,
         autoCheck,
         sequenceTheme,
+        theme,
         spellcheckEnabled: spellcheckerEnabled,
         imageAction: this.imageAction.bind(this),
         imagePathPicker: this.imagePathPicker.bind(this),
@@ -541,7 +545,9 @@ export default {
       const engineType =
         (window as { __TAURI_ENV__?: { editorEngine?: string } }).__TAURI_ENV__?.editorEngine ||
         'muya'
-      this.editor = createEditorEngine(engineType as 'muya' | 'milkdown')
+      this.engineType = engineType as 'muya' | 'milkdown'
+      // markRaw: prevent Vue reactivity from wrapping the editor (Milkdown's private ctx breaks via Proxy)
+      this.editor = markRaw(createEditorEngine(engineType as 'muya' | 'milkdown'))
       const mountResult = this.editor.mount(ele, options)
       if (mountResult && typeof mountResult.then === 'function') {
         await mountResult
@@ -550,10 +556,23 @@ export default {
       this.applyQuickInsertHintText()
 
       // Sync current file content (handles race when file-loaded fired before listener)
+      // Defer to nextTick + rAF so editor is fully ready (fixes cold-start RangeError)
       const currentFile = editorStore.currentFile
-      if (currentFile?.markdown != null) {
-        this.suppressNextEditorChange = true
-        this.editor.setMarkdown(currentFile.markdown, currentFile.cursor, true)
+      const mdToSync = currentFile?.markdown
+      if (mdToSync != null && mdToSync !== markdown) {
+        // Only sync when different from initial options.markdown (avoids redundant replace)
+        this.$nextTick(() => {
+          requestAnimationFrame(() => {
+            if (this.editor) {
+              this.suppressNextEditorChange = true
+              const plainCursor =
+                currentFile.cursor && typeof currentFile.cursor === 'object'
+                  ? JSON.parse(JSON.stringify(currentFile.cursor))
+                  : currentFile.cursor
+              this.editor.setMarkdown(mdToSync, plainCursor, true)
+            }
+          })
+        })
       }
       this.updateAssetBaseDir()
       this.applyImageBorderRadius()
@@ -1645,10 +1664,18 @@ export default {
       const { editor } = this
       if (editor) {
         this.suppressNextEditorChange = true
-        editor.clearHistory()
-        if (cursor) {
-          editor.setMarkdown(markdown, cursor, true)
-        } else {
+        editor.clearHistory?.()
+        try {
+          // Pass plain object to avoid Proxy/#file private field errors (e.g. from Pinia reactivity)
+          const plainCursor =
+            cursor && typeof cursor === 'object' ? JSON.parse(JSON.stringify(cursor)) : cursor
+          if (plainCursor) {
+            editor.setMarkdown(markdown, plainCursor, true)
+          } else {
+            editor.setMarkdown(markdown)
+          }
+        } catch (e) {
+          console.error('[setMarkdownToEditor]', e)
           editor.setMarkdown(markdown)
         }
       }
@@ -1660,13 +1687,23 @@ export default {
       this.$nextTick(() => {
         if (editor) {
           if (history) {
-            editor.setHistory(history)
+            editor.setHistory?.(history)
           }
-          if (typeof markdown === 'string') {
-            this.suppressNextEditorChange = true
-            editor.setMarkdown(markdown, cursor, renderCursor)
-          } else if (cursor) {
-            editor.setCursor(cursor)
+          try {
+            if (typeof markdown === 'string') {
+              this.suppressNextEditorChange = true
+              const plainCursor =
+                cursor && typeof cursor === 'object' ? JSON.parse(JSON.stringify(cursor)) : cursor
+              editor.setMarkdown(markdown, plainCursor, renderCursor)
+            } else if (cursor) {
+              editor.setCursor?.(cursor)
+            }
+          } catch (e) {
+            console.error('[handleFileChange]', e)
+            if (typeof markdown === 'string') {
+              this.suppressNextEditorChange = true
+              editor.setMarkdown(markdown)
+            }
           }
           if (renderCursor) {
             this.scrollToCursor(0)
@@ -1773,19 +1810,140 @@ export default {
   height: 100%;
 }
 
-/* Milkdown / ProseMirror: ensure editor is visible and editable */
+/* Milkdown / ProseMirror: ensure editor is visible and editable, font size matches Muya */
 .editor-component .milkdown {
-  height: 100%;
+  max-width: var(--editorAreaWidth, 1000px);
+  min-width: 400px;
   min-height: 100%;
+  margin: 0 auto;
+  padding: 20px 50px 100px 50px;
+  box-sizing: border-box;
 }
 .editor-component .ProseMirror {
   outline: none;
   min-height: 100%;
-  padding: 1em;
-  box-sizing: border-box;
+  font-size: inherit;
+  line-height: inherit;
 }
 .editor-component .ProseMirror:focus {
   outline: none;
+}
+/* Milkdown dark theme: when editor root has milkdown-dark, ProseMirror inherits theme colors */
+.editor-component.milkdown-dark .ProseMirror {
+  color: inherit;
+  caret-color: inherit;
+}
+
+/* Emoji: match surrounding text size, vertically centered with text.
+   vertical-align:middle aligns to baseline+x-height/2, which is too low for CJK.
+   Use relative positioning to nudge up for true visual centering. */
+.editor-component .ProseMirror span[data-type='emoji'] img {
+  height: 1em;
+  width: 1em;
+  vertical-align: middle;
+  position: relative;
+  top: -0.1em;
+}
+
+/* Typora-style syntax decorations: shown when cursor/selection touches the element */
+.mt-syntax-marker {
+  color: #aaa;
+  font-weight: normal;
+  font-style: normal;
+  pointer-events: none;
+  user-select: none;
+}
+.mt-syntax-heading {
+  font-size: 0.6em;
+  opacity: 0.75;
+  margin-right: 0.15em;
+  font-family: monospace;
+}
+.mt-syntax-blockquote {
+  font-family: monospace;
+  font-size: 0.9em;
+  margin-right: 0.1em;
+  opacity: 0.7;
+}
+.mt-syntax-codeblock-open,
+.mt-syntax-codeblock-close {
+  display: block;
+  font-family: monospace;
+  font-size: 0.85em;
+  opacity: 0.6;
+  line-height: 1.6;
+}
+.mt-hr-source-mode hr,
+.mt-hr-source-mode::before,
+.mt-hr-source-mode::after {
+  display: none !important;
+  border: none !important;
+  height: 0 !important;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+.mt-hr-source-mode {
+  border: none !important;
+  background: none !important;
+  height: auto !important;
+  min-height: 0 !important;
+  margin: 0.5em 0 !important;
+}
+.mt-syntax-hr {
+  display: block;
+  font-family: monospace;
+  font-size: 0.85em;
+  opacity: 0.6;
+  line-height: 1.6;
+}
+.mt-syntax-image {
+  font-family: monospace;
+  font-size: 0.85em;
+  opacity: 0.6;
+  word-break: break-all;
+}
+.mt-syntax-table {
+  display: block;
+  font-family: monospace;
+  font-size: 0.8em;
+  opacity: 0.5;
+  margin-bottom: 0.2em;
+}
+.mt-syntax-html {
+  display: block;
+  font-family: monospace;
+  font-size: 0.8em;
+  opacity: 0.5;
+}
+.mt-syntax-inline {
+  font-size: inherit;
+  font-family: monospace;
+  opacity: 0.5;
+  vertical-align: baseline;
+}
+.mt-syntax-strong {
+  font-weight: bold;
+}
+.mt-syntax-emphasis {
+  font-style: italic;
+}
+.mt-syntax-strike_through {
+  text-decoration: line-through;
+}
+.mt-syntax-inlineCode {
+  background: rgba(128, 128, 128, 0.12);
+  border-radius: 3px;
+  padding: 0 2px;
+}
+.mt-syntax-link {
+  color: #5599dd;
+  opacity: 0.7;
+}
+.editor-component.milkdown-dark .mt-syntax-marker {
+  color: #888;
+}
+.editor-component.milkdown-dark .mt-syntax-link {
+  color: #6ab0f3;
 }
 
 .typewriter .editor-component {

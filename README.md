@@ -243,8 +243,8 @@ MarkText is built with **Tauri 2.0** (Rust backend) and **Vue 3** (frontend).
 ### Prerequisites
 
 - [Rust](https://rustup.rs/) (stable toolchain)
-- [Node.js](https://nodejs.org/) (v18+)
-- [Yarn](https://yarnpkg.com/) (v1.x)
+- [Node.js](https://nodejs.org/) (v20+)
+- [npm](https://www.npmjs.com/) (v9+)
 - Platform-specific requirements: [Tauri prerequisites](https://v2.tauri.app/start/prerequisites/)
 
 ### Quick Start
@@ -254,10 +254,10 @@ MarkText is built with **Tauri 2.0** (Rust backend) and **Vue 3** (frontend).
 npm install
 
 # Run in development mode
-npm run tauri:dev
+npm run dev
 
 # Build for production
-npm run tauri:build
+npm run build
 ```
 
 ### Windows Setup

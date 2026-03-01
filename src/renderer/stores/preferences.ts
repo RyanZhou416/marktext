@@ -13,7 +13,8 @@ export const usePreferencesStore = defineStore('preferences', {
     hideScrollbar: false,
     wordWrapInToc: false,
     fileSortBy: 'created',
-    startUpAction: 'lastState',
+    startUpAction: 'blank',
+    recentFiles: [] as string[],
     defaultDirectoryToOpen: '',
     language: 'en',
     editorEngine: 'muya',
@@ -80,6 +81,9 @@ export const usePreferencesStore = defineStore('preferences', {
     focus: false,
     sourceCode: false,
 
+    /** Pending line to scroll to when switching to source code view (e.g. from heading click) */
+    scrollToLineOnSourceShow: null as number | null,
+
     // user configuration
     imageFolderPath: '',
     webImages: [] as any[],
@@ -126,6 +130,28 @@ export const usePreferencesStore = defineStore('preferences', {
         }
       }
       ;(this as any)[entryName] = !current
+    },
+
+    SET_SCROLL_TO_LINE_ON_SOURCE(line: number | null) {
+      ;(this as any).scrollToLineOnSourceShow = line
+    },
+
+    async LOAD_RECENT_FILES() {
+      try {
+        const files = await ipcRenderer.invoke('mt::get-recent-documents')
+        this.recentFiles = files || []
+      } catch {
+        // keep existing
+      }
+    },
+
+    async CLEAR_RECENT_FILES() {
+      try {
+        await ipcRenderer.invoke('mt::clear-recent-documents')
+      } catch {
+        /* ignore */
+      }
+      this.recentFiles = []
     },
 
     ASK_FOR_USER_PREFERENCE() {

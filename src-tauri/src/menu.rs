@@ -8,6 +8,7 @@ use tauri::menu::{
 };
 use tauri::{Emitter, Manager};
 use crate::i18n::I18n;
+use crate::commands::preferences::PreferencesState;
 
 /// Build and set the application menu (called at startup)
 pub fn setup_menu(app: &tauri::App) -> Result<(), Box<dyn std::error::Error>> {
@@ -84,6 +85,41 @@ fn build_and_set_menu(handle: &tauri::AppHandle, i18n: &I18n) -> Result<(), Box<
         .accelerator("CmdOrCtrl+O").build(handle)?;
     let file_open_folder = MenuItemBuilder::with_id("file.open-folder", &i18n.t("menu.file.openFolder"))
         .accelerator("CmdOrCtrl+Shift+O").build(handle)?;
+
+    // Open Recent submenu (populated from recent documents list)
+    let file_open_recent = {
+        let mut builder = SubmenuBuilder::new(handle, &i18n.t("menu.file.openRecent"));
+        let recent_docs = handle.try_state::<PreferencesState>()
+            .and_then(|state| {
+                let path = state.recent_documents_path.lock().ok()?;
+                let content = std::fs::read_to_string(&*path).ok()?;
+                let arr: Vec<String> = serde_json::from_str::<serde_json::Value>(&content).ok()?
+                    .as_array()?
+                    .iter()
+                    .filter_map(|v| v.as_str().map(|s| s.to_string()))
+                    .collect();
+                Some(arr)
+            })
+            .unwrap_or_default();
+        for (idx, doc_path) in recent_docs.iter().enumerate().take(12) {
+            let label = std::path::Path::new(doc_path)
+                .file_name()
+                .map(|n| n.to_string_lossy().to_string())
+                .unwrap_or_else(|| doc_path.clone());
+            let id = format!("file.recent-{}", idx);
+            builder = builder.item(
+                &MenuItemBuilder::with_id(id, &label).build(handle)?
+            );
+        }
+        if !recent_docs.is_empty() {
+            builder = builder.separator();
+        }
+        builder = builder.item(
+            &MenuItemBuilder::with_id("file.clear-recent", &i18n.t("menu.file.clearRecentlyUsed")).build(handle)?
+        );
+        builder.build()?
+    };
+
     let file_save = MenuItemBuilder::with_id("file.save", &i18n.t("menu.file.save"))
         .accelerator("CmdOrCtrl+S").build(handle)?;
     let file_save_as = MenuItemBuilder::with_id("file.save-as", &i18n.t("menu.file.saveAs"))
@@ -116,7 +152,7 @@ fn build_and_set_menu(handle: &tauri::AppHandle, i18n: &I18n) -> Result<(), Box<
         .items(&[
             &file_new_tab, &file_new_window,
             &sep1,
-            &file_open_file, &file_open_folder,
+            &file_open_file, &file_open_folder, &file_open_recent,
             &sep2,
             &file_save, &file_save_as, &file_auto_save,
             &sep3,

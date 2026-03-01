@@ -88,12 +88,19 @@ async function checkSystemTools() {
       if (!path) return { name: 'Cargo', ok: false, critical: true }
       return { name: 'Cargo', ok: true, version: getVersion('cargo') }
     }),
-    // Node.js (obviously present since we're running)
-    Promise.resolve().then(() => ({
-      name: 'Node.js',
-      ok: true,
-      version: `Node.js ${process.version}`,
-    })),
+    // Node.js (Vite 7 requires Node 20+)
+    Promise.resolve().then(() => {
+      const major = parseInt(process.version.slice(1).split('.')[0], 10)
+      if (major < 20) {
+        return {
+          name: 'Node.js',
+          ok: false,
+          critical: true,
+          version: `Node.js ${process.version} (20+ required for Vite 7)`,
+        }
+      }
+      return { name: 'Node.js', ok: true, version: `Node.js ${process.version}` }
+    }),
     // npm
     Promise.resolve().then(() => {
       const path = which('npm')
@@ -131,7 +138,7 @@ async function checkSystemTools() {
       ok(c.version || c.name)
       results[c.name] = c.version
     } else {
-      fail(c.name)
+      fail(c.version || c.name)
       if (c.critical) hasMissing = true
     }
   }
@@ -141,6 +148,10 @@ async function checkSystemTools() {
     if (!checks.find((c) => c.name === 'Rust')?.ok) {
       console.log('\n  [Rust] https://rustup.rs/')
       console.log('         Or: winget install Rustlang.Rustup')
+    }
+    if (!checks.find((c) => c.name === 'Node.js')?.ok) {
+      console.log('\n  [Node.js] https://nodejs.org/ (v20+ required)')
+      console.log('           Or: winget install OpenJS.NodeJS.LTS')
     }
     if (!checks.find((c) => c.name === 'WebView2')?.ok) {
       console.log(

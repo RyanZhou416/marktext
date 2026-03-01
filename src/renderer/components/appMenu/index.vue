@@ -1,5 +1,5 @@
 <template>
-  <DropdownMenuRoot>
+  <DropdownMenuRoot @update:open="onMenuOpen">
     <DropdownMenuTrigger as-child>
       <slot />
     </DropdownMenuTrigger>
@@ -92,7 +92,7 @@
                               </template>
                             </DropdownMenuRadioGroup>
                           </template>
-                          <!-- Nested normal items (e.g. Export > HTML / PDF) -->
+                          <!-- Nested normal items (e.g. Export > HTML / PDF, Recent files) -->
                           <template v-else>
                             <template v-for="(sub, si) in item.submenu" :key="si">
                               <DropdownMenuSeparator
@@ -102,10 +102,13 @@
                               <DropdownMenuItem
                                 v-else
                                 class="radix-menu-item"
+                                :disabled="sub.id === 'file.no-recent'"
                                 @select="() => onAction(sub.id!)"
                               >
                                 <span class="radix-menu-indicator-space"></span>
-                                <span class="radix-menu-label">{{ t(sub.label!) }}</span>
+                                <span class="radix-menu-label">{{
+                                  sub.rawLabel || t(sub.label!)
+                                }}</span>
                                 <span v-if="sub.accelerator" class="radix-menu-accel">{{
                                   sub.accelerator
                                 }}</span>
@@ -173,7 +176,9 @@ import {
   DropdownMenuSubTrigger,
   DropdownMenuSubContent
 } from 'radix-vue'
-import { appMenuConfig, type MenuItem } from '@/config/appMenu'
+import { appMenuConfig, type MenuItem, type MenuGroup } from '@/config/appMenu'
+import { usePreferencesStore } from '@/stores/preferences'
+import { computed } from 'vue'
 
 export default defineComponent({
   name: 'AppMenu',
@@ -201,7 +206,38 @@ export default defineComponent({
   emits: ['action'],
   setup(props, { emit }) {
     const { t } = useI18n()
-    const menuConfig = appMenuConfig
+    const preferencesStore = usePreferencesStore()
+
+    const menuConfig = computed<MenuGroup[]>(() => {
+      return appMenuConfig.map(group => {
+        if (group.id !== 'file') return group
+        return {
+          ...group,
+          submenu: group.submenu.map(item => {
+            if (item.id !== 'file.open-recent') return item
+            const recentItems: MenuItem[] = preferencesStore.recentFiles.map(
+              (filePath: string, idx: number) => ({
+                id: `file.recent-${idx}`,
+                rawLabel: filePath.replace(/\\/g, '/').split('/').pop() || filePath
+              })
+            )
+            const sep: MenuItem = { type: 'separator' }
+            const clearItem: MenuItem = {
+              id: 'file.clear-recent',
+              label: 'menu.file.clearRecentlyUsed'
+            }
+            const noRecent: MenuItem = {
+              id: 'file.no-recent',
+              label: 'settings.general.noRecentFiles'
+            }
+            return {
+              ...item,
+              submenu: recentItems.length > 0 ? [...recentItems, sep, clearItem] : [noRecent]
+            }
+          })
+        }
+      })
+    })
 
     /** Check if all non-separator items in a list have role:'radio' */
     function isRadioGroup(items: MenuItem[]): boolean {
@@ -218,7 +254,14 @@ export default defineComponent({
     }
 
     function onAction(id: string) {
+      if (id === 'file.no-recent') return
       emit('action', id)
+    }
+
+    function onMenuOpen(open: boolean) {
+      if (open) {
+        preferencesStore.LOAD_RECENT_FILES()
+      }
     }
 
     return {
@@ -226,7 +269,8 @@ export default defineComponent({
       menuConfig,
       isRadioGroup,
       getActiveRadio,
-      onAction
+      onAction,
+      onMenuOpen
     }
   }
 })

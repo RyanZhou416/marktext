@@ -184,7 +184,7 @@ blockquote::before {
 }
 
 :not(pre) > code[class*='language-'],
-pre:not(.CodeMirror-line),
+pre:not(.cm-line),
 pre[class*='language-'],
 pre.ag-paragraph {
   background: var(--codeBlockBgColor) !important;

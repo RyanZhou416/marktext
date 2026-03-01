@@ -112,6 +112,9 @@ export interface IEditorEngine {
   invalidateImageCache(): void
   hideAllFloatTools(): void
 
+  /** Optional: get 1-based line number from DOM node (e.g. heading). Used for "click heading to show source". */
+  getLineFromDOMNode?(node: Node): number | null
+
   // -------------------------------------------------------------------------
   // Spellcheck (optional, Muya-specific)
   // -------------------------------------------------------------------------

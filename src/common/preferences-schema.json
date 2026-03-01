@@ -48,8 +48,8 @@
     "default": "modified"
   },
   "startUpAction": {
-    "description": "General--The action after MarkText startup, open the last edited content, open the specified folder or blank page",
-    "enum": ["folder", "lastState", "blank"],
+    "description": "General--The action after MarkText startup: blank (nothing), newDocument (new markdown tab), lastClosedDocument (reopen last opened file)",
+    "enum": ["blank", "newDocument", "lastClosedDocument"],
     "default": "blank"
   },
   "defaultDirectoryToOpen": {

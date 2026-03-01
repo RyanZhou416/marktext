@@ -118,9 +118,22 @@ const killProcessTree = async child => {
       killer.on('exit', () => resolve())
       killer.on('error', () => resolve())
     })
+    // Wait for child to actually exit before returning. This prevents the next test
+    // from launching while single-instance lock is still held, which would cause
+    // the new process to exit immediately (code=0).
+    await new Promise(resolve => {
+      if (child.exitCode !== null) return resolve()
+      child.once('exit', () => resolve())
+      setTimeout(() => resolve(), 3000)
+    })
     return
   }
   child.kill('SIGTERM')
+  await new Promise(resolve => {
+    if (child.exitCode !== null) return resolve()
+    child.once('exit', () => resolve())
+    setTimeout(() => resolve(), 3000)
+  })
 }
 
 module.exports = {

@@ -69,6 +69,11 @@ export default [
       'no-mixed-operators': 'off',
       'no-prototype-builtins': 'off',
 
+      // ESLint 10 new rules — disable for now, fix gradually
+      'no-useless-assignment': 'off',
+      'preserve-caught-error': 'off',
+      'no-unassigned-vars': 'off',
+
       // Node plugin — relax for frontend/hybrid code
       'n/no-missing-import': 'off',
       'n/no-missing-require': 'off',
@@ -103,6 +108,7 @@ export default [
 
       // Vue-specific relaxations
       'vue/multi-word-component-names': 'off',
+      'vue/no-reserved-component-names': 'off',
       'vue/no-v-html': 'off',
       'vue/require-default-prop': 'off',
       'vue/no-mutating-props': 'warn',

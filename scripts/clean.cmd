@@ -12,7 +12,7 @@ echo.
 echo   Clears all caches, build artifacts, and dependencies.
 echo   After running this, you will need to re-run:
 echo     1. scripts\setup-tauri-env.cmd
-echo     2. scripts\dev-tauri.cmd  or  scripts\build-tauri-portable.cmd
+echo     2. scripts\dev.cmd  or  scripts\build-portable-release.cmd
 echo.
 
 cd /d "%~dp0.."

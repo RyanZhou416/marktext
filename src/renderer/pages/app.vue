@@ -204,17 +204,32 @@ export default {
     // but in Tauri we need to self-initialize since there's no Electron main process.
     if (typeof window !== 'undefined' && window.__TAURI_INTERNALS__) {
       this.$nextTick(async () => {
-        // Set initialized flag (renders editor area)
         appStore.SEND_INITIALIZED()
-        // Set default layout
         layoutStore.SET_LAYOUT({
           rightColumn: 'files',
           showSideBar: false,
           showTabBar: false
         })
-        // Create a blank editor tab
-        editorStore.NEW_UNTITLED_TAB({})
-        // Show the window now that UI is ready (avoids startup flash)
+
+        // Apply startup action based on user preference
+        const action = preferencesStore.startUpAction
+        if (action === 'newDocument') {
+          editorStore.NEW_UNTITLED_TAB({})
+        } else if (action === 'lastClosedDocument') {
+          try {
+            await preferencesStore.LOAD_RECENT_FILES()
+            const lastFile = preferencesStore.recentFiles[0]
+            if (lastFile) {
+              ipcRenderer.send('mt::open-file', lastFile)
+            } else {
+              editorStore.NEW_UNTITLED_TAB({})
+            }
+          } catch {
+            editorStore.NEW_UNTITLED_TAB({})
+          }
+        }
+        // 'blank': show landing page (no tab created)
+
         try {
           const { invoke } = await import('@tauri-apps/api/core')
           await invoke('show_main_window')

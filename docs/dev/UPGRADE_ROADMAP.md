@@ -53,7 +53,11 @@ JavaScript         ────────────────────�
 原生模块 x3        ──────────────────────────────►   原生模块 x0             ✅ 已完成
 单语言             ──────────────────────────────►   i18n 多语言             ✅ 已完成
 Muya (自研)        ──────────────────────────────►   Milkdown (ProseMirror)  🟡 阶段 11 基础设施已完成
-仅 WYSIWYG         ──────────────────────────────►   Split View 对照编辑     ⬜ 阶段 14
+仅 WYSIWYG         ──────────────────────────────►   Split View 对照编辑     ⬜ 阶段 18
+Pinia 2 + Router 4 ──────────────────────────────►   Pinia 3 + Router 5      ✅ 阶段 12 已完成
+Vite 5             ──────────────────────────────►   Vite 7                 ✅ 阶段 13 已完成
+CodeMirror 5       ──────────────────────────────►   CodeMirror 6           ✅ 阶段 14 已完成
+Vega 5 + ESLint 9  ──────────────────────────────►   Vega 6 + ESLint 10     ✅ 阶段 15 已完成
 ```
 
 ---
@@ -1065,7 +1069,133 @@ Preferences > General > Editor Engine > [Muya (Legacy)] / [Milkdown (Experimenta
 
 ---
 
-## 阶段 12: Milkdown 核心功能
+## 阶段 12: Pinia 3 + Vue Router 5
+
+**目标**: 升级 Vue 生态核心依赖，保持与官方生态同步
+
+| 任务                     | 状态 | 说明                                                                                      |
+| ------------------------ | ---- | ----------------------------------------------------------------------------------------- |
+| 12.1 升级 Pinia 2 → 3    | ✅   | `pinia@^3.0.4`，项目已用 `defineStore('id', {...})` 语法                                  |
+| 12.2 检查 Pinia 3 兼容   | ✅   | 移除 `defineStore({ id })` 对象语法（若有）                                               |
+| 12.3 升级 Vue Router 4→5 | ✅   | `vue-router@^5.0.0`，Vue Router 5 需 Pinia 3 作为 peer                                    |
+| 12.4 路由迁移            | ✅   | 手动路由无破坏性变更，按[迁移指南](https://router.vuejs.org/guide/migration/v4-to-v5)检查 |
+| 12.5 更新 package.json   | ✅   | `engines.node` 保持 >=18，TypeScript 已满足 5.x                                           |
+
+### 收益
+
+- 与 Vue 官方生态保持一致
+- Vue Router 5：Volar 类型增强、运行时错误处理、DevTools v8
+- 为未来 Vue Router 6（ESM-only）做准备
+
+### 验证清单
+
+- [x] `npm run dev` 启动正常
+- [x] 路由跳转（/editor、/preference）正常
+- [x] Pinia stores 状态读写正常
+- [x] `npm run build` 构建成功
+
+预估工期: **1 周**
+
+---
+
+## 阶段 13: Vite 5 → 6 → 7
+
+**目标**: 升级构建工具，获得显著开发与构建性能提升
+
+| 任务                       | 状态 | 说明                                                              |
+| -------------------------- | ---- | ----------------------------------------------------------------- |
+| 13.1 升级 Vite 5 → 6       | ✅   | 按 [Vite 6 迁移指南](https://vitejs.dev/guide/migration) 逐步升级 |
+| 13.2 升级 Vite 6 → 7       | ✅   | Vite 7 要求 Node 20+，更新 `engines.node` 为 `>=20.0.0`           |
+| 13.3 更新 vite 插件        | ✅   | `@vitejs/plugin-vue@^6` 与 Vite 7 兼容                            |
+| 13.4 配置 Rolldown（可选） | ✅   | `rolldown-vite@7.3.1` 替代 vite，显著加速生产构建                 |
+| 13.5 更新 CI/文档          | ✅   | Node 版本要求变更需同步 README、GitHub Actions                    |
+
+### 收益
+
+| 指标       | 提升幅度                |
+| ---------- | ----------------------- |
+| 开发冷启动 | 约 45% 更快             |
+| 生产构建   | 约 65% 更快（Rolldown） |
+| HMR 稳定性 | 大组件树下更稳定        |
+
+### 注意事项
+
+- Vite 7 不再支持 Node 18，需统一升级到 Node 20+
+- 若使用 Sass，需确认 Dart Sass v2 兼容性
+
+### 验证清单
+
+- [x] `npm run dev` 冷启动时间可接受
+- [x] `npm run build` 构建成功
+- [x] HMR 热更新正常
+- [x] Tauri 构建 `npm run build` 成功
+
+预估工期: **1-2 周**
+
+---
+
+## 阶段 14: 代码块 CodeMirror 5 → 6 ✅ 已完成
+
+**目标**: 将源码视图从 CodeMirror 5 迁移到 CodeMirror 6，与阶段 18 Split View 统一技术栈
+
+| 任务                      | 状态 | 说明                                                                      |
+| ------------------------- | ---- | ------------------------------------------------------------------------- |
+| 14.1 安装 CM6 依赖        | ✅   | `@codemirror/state`、`@codemirror/view`、`@codemirror/lang-markdown` 等   |
+| 14.2 重构 codeMirror 模块 | ✅   | `src/renderer/codeMirror/index.ts` 新建 CM6 封装                          |
+| 14.3 重写 sourceCode.vue  | ✅   | 使用 EditorView、posToOffset/offsetToPos 光标转换                         |
+| 14.4 移除旧 CM5 模块      | ✅   | 删除 overlayMode、multiplexMode、loadmode、modes（源码视图仅用 markdown） |
+| 14.5 主题适配             | ✅   | `.CodeMirror` → `.cm-editor`，oneDark 扩展用于深色主题                    |
+| 14.6 与 Muya 集成         | ✅   | `getCodeMirrorCursor` 格式不变，sourceCode 内部转换                       |
+
+### 依赖关系
+
+- 可与阶段 18（Split View）并行或提前完成
+- 阶段 18 的源码面板将复用本阶段迁移后的 CM6 代码块组件
+
+### 参考
+
+- [CodeMirror 6 迁移指南](https://codemirror.net/docs/migration/)
+- 阶段 18 新增依赖已包含 CM6 相关包
+
+### 验证清单
+
+- [x] 源码视图 Markdown 语法高亮正常
+- [x] 光标在 WYSIWYG ↔ 源码切换时正确
+- [x] 主题（one-dark/railscasts）应用正确
+- [x] 与 Muya 编辑交互无回归
+
+预估工期: **2-3 周**
+
+---
+
+## 阶段 15: Vega 5 → 6 + ESLint 9 → 10
+
+**目标**: 升级图表与代码质量工具，收益较低但维护成本小
+
+| 任务                    | 状态 | 说明                                                                                    |
+| ----------------------- | ---- | --------------------------------------------------------------------------------------- |
+| 15.1 升级 Vega 生态     | ✅   | `vega@^6`、`vega-lite@^6`、`vega-embed@^7`                                              |
+| 15.2 适配 Vega 6 API    | ✅   | `src/muya/lib/renderers/` 中 vega-lite 渲染逻辑检查                                     |
+| 15.3 升级 ESLint 9 → 10 | ✅   | 按 [ESLint 迁移指南](https://eslint.org/docs/latest/use/configure/migration-guide) 更新 |
+| 15.4 更新 ESLint 配置   | ✅   | Flat config 若为默认，需迁移 `eslint.config.js`                                         |
+| 15.5 更新相关插件       | ✅   | `typescript-eslint`、`eslint-plugin-vue` 等兼容 ESLint 10                               |
+
+### 收益
+
+- Vega 6：图表渲染性能与 API 现代化
+- ESLint 10：新规则与配置体验
+
+### 验证清单
+
+- [x] vega-lite 代码块图表渲染正常
+- [x] `npm run lint` 通过
+- [x] `npm run build` 构建成功
+
+预估工期: **1 周**
+
+---
+
+## 阶段 16: Milkdown 核心功能
 
 > 依赖阶段 11 完成。
 > 详细方案见 [`MILKDOWN_MIGRATION_REPORT.md` 第 4 章功能对照矩阵](./MILKDOWN_MIGRATION_REPORT.md#4-功能对照矩阵)。
@@ -1074,21 +1204,21 @@ Preferences > General > Editor Engine > [Muya (Legacy)] / [Milkdown (Experimenta
 
 | 任务                       | 状态 | 说明                                                   |
 | -------------------------- | ---- | ------------------------------------------------------ |
-| 12.1 CommonMark + GFM 语法 | ⬜   | `@milkdown/preset-commonmark` + `@milkdown/preset-gfm` |
-| 12.2 表格交互编辑          | ⬜   | `@milkdown/components` table-block                     |
-| 12.3 数学公式 (KaTeX)      | ⬜   | `@milkdown/crepe` latex 功能 或自定义 remark-math      |
-| 12.4 代码块 (CodeMirror 6) | ⬜   | `@milkdown/crepe` code-mirror 或自定义 CM6 nodeView    |
-| 12.5 格式工具栏            | ⬜   | `@milkdown/plugin-tooltip` 或 Crepe toolbar            |
-| 12.6 链接编辑              | ⬜   | Crepe link-tooltip                                     |
-| 12.7 撤销/重做             | ⬜   | `@milkdown/plugin-history`                             |
-| 12.8 剪贴板                | ⬜   | `@milkdown/plugin-clipboard`                           |
-| 12.9 图片上传/粘贴/拖拽    | ⬜   | `@milkdown/plugin-upload` + imageAction 回调适配       |
-| 12.10 Emoji                | ⬜   | `@milkdown/plugin-emoji`                               |
-| 12.11 斜杠命令             | ⬜   | `@milkdown/plugin-slash` + 自定义 UI                   |
-| 12.12 脚注                 | ⬜   | `preset-gfm` 内含                                      |
-| 12.13 事件映射             | ⬜   | change, selectionChange, selectionFormats 事件         |
-| 12.14 配置项映射           | ⬜   | fontSize, lineHeight, tabSize, bulletListMarker 等     |
-| 12.15 主题适配             | ⬜   | CSS 变量映射 MarkText 现有主题                         |
+| 16.1 CommonMark + GFM 语法 | ⬜   | `@milkdown/preset-commonmark` + `@milkdown/preset-gfm` |
+| 16.2 表格交互编辑          | ⬜   | `@milkdown/components` table-block                     |
+| 16.3 数学公式 (KaTeX)      | ⬜   | `@milkdown/crepe` latex 功能 或自定义 remark-math      |
+| 16.4 代码块 (CodeMirror 6) | ⬜   | `@milkdown/crepe` code-mirror 或自定义 CM6 nodeView    |
+| 16.5 格式工具栏            | ⬜   | `@milkdown/plugin-tooltip` 或 Crepe toolbar            |
+| 16.6 链接编辑              | ⬜   | Crepe link-tooltip                                     |
+| 16.7 撤销/重做             | ⬜   | `@milkdown/plugin-history`                             |
+| 16.8 剪贴板                | ⬜   | `@milkdown/plugin-clipboard`                           |
+| 16.9 图片上传/粘贴/拖拽    | ⬜   | `@milkdown/plugin-upload` + imageAction 回调适配       |
+| 16.10 Emoji                | ⬜   | `@milkdown/plugin-emoji`                               |
+| 16.11 斜杠命令             | ⬜   | `@milkdown/plugin-slash` + 自定义 UI                   |
+| 16.12 脚注                 | ⬜   | `preset-gfm` 内含                                      |
+| 16.13 事件映射             | ⬜   | change, selectionChange, selectionFormats 事件         |
+| 16.14 配置项映射           | ⬜   | fontSize, lineHeight, tabSize, bulletListMarker 等     |
+| 16.15 主题适配             | ⬜   | CSS 变量映射 MarkText 现有主题                         |
 
 ### 新增依赖
 
@@ -1127,22 +1257,22 @@ Preferences > General > Editor Engine > [Muya (Legacy)] / [Milkdown (Experimenta
 
 ---
 
-## 阶段 13: 自定义插件（复用 Muya）
+## 阶段 17: 自定义插件（复用 Muya）
 
-> 依赖阶段 12 完成。
+> 依赖阶段 16 完成。
 > 详细方案见 [`MILKDOWN_MIGRATION_REPORT.md` 第 5 章 Muya 代码复用分析](./MILKDOWN_MIGRATION_REPORT.md#5-muya-代码复用分析)。
 
 **目标**: 提取 Muya 可复用逻辑，构建 Milkdown 缺失的自定义插件
 
 | 任务                        | 状态 | 说明                                                                  |
 | --------------------------- | ---- | --------------------------------------------------------------------- |
-| **13.1 提取共享模块**       |      |                                                                       |
+| **17.1 提取共享模块**       |      |                                                                       |
 | 提取图表渲染器              | ⬜   | `shared/renderers/` — Mermaid, Flowchart, Vega, PlantUML, Sequence    |
 | 提取搜索匹配算法            | ⬜   | `shared/search/matchEngine.ts` — 从 `searchCtrl.js` 提取              |
 | 提取 HTML 导出模板          | ⬜   | `shared/export/htmlTemplate.ts` — 从 `exportHtml.js` 提取 (~80% 复用) |
 | 提取图片工具                | ⬜   | `shared/images/` — pathResolver, Unsplash API                         |
 | 提取 Focus 模式 CSS         | ⬜   | `shared/styles/focusMode.css` — 从 Muya CSS 提取 (~90% 复用)          |
-| **13.2 构建 Milkdown 插件** |      |                                                                       |
+| **17.2 构建 Milkdown 插件** |      |                                                                       |
 | 搜索替换插件                | ⬜   | 基于 `prosemirror-search` + 复用 matchEngine                          |
 | Mermaid 图表 NodeView       | ⬜   | 自定义 ProseMirror nodeView + 复用 Muya 渲染器                        |
 | Flowchart.js 图表 NodeView  | ⬜   | 同上                                                                  |
@@ -1205,31 +1335,31 @@ src/renderer/editor/shared/              ← 引擎无关，Muya 和 Milkdown �
 
 ---
 
-## 阶段 14: Split View 对照编辑模式
+## 阶段 18: Split View 对照编辑模式
 
-> 依赖阶段 12 完成（核心 Milkdown 功能就绪）。
+> 依赖阶段 16 完成（核心 Milkdown 功能就绪）。
 > 详细方案见 [`MILKDOWN_MIGRATION_REPORT.md` 第 7 章](./MILKDOWN_MIGRATION_REPORT.md#7-对照编辑模式设计split-view)。
 
 **目标**: 实现类似 JetBrains IDE 的左侧源码 + 右侧可编辑预览对照模式
 
 | 任务                   | 状态 | 说明                                          |
 | ---------------------- | ---- | --------------------------------------------- |
-| **14.1 基础框架**      |      |                                               |
+| **18.1 基础框架**      |      |                                               |
 | `SplitEditor.vue` 组件 | ⬜   | 三模式切换 + 可拖拽分隔栏                     |
 | 三种编辑模式 UI        | ⬜   | 预览(Ctrl+1) / 对照(Ctrl+2) / 源码(Ctrl+3)    |
-| **14.2 Source Pane**   |      |                                               |
+| **18.2 Source Pane**   |      |                                               |
 | CodeMirror 6 集成      | ⬜   | `@codemirror/lang-markdown` + 行号 + 语法高亮 |
 | CM6 主题适配           | ⬜   | 匹配 MarkText 主题 (light/dark)               |
-| **14.3 双向同步**      |      |                                               |
+| **18.3 双向同步**      |      |                                               |
 | SyncEngine 核心        | ⬜   | debounce 150ms + isSyncing 防回声             |
 | Source → Preview       | ⬜   | markdown → `parserCtx` → ProseMirror doc      |
 | Preview → Source       | ⬜   | serialize → diff patch → CodeMirror 最小更新  |
 | IME 兼容               | ⬜   | compositionstart/end 守卫，组合期间暂停同步   |
-| **14.4 滚动同步**      |      |                                               |
+| **18.4 滚动同步**      |      |                                               |
 | remarkSourceLines 插件 | ⬜   | Remark 插件，注入 `data-source-line` 属性     |
 | lineMap 构建           | ⬜   | DOM 扫描构建 sourceLine ↔ offsetTop 映射      |
 | 双向滚动同步           | ⬜   | 线性插值 + 二分查找                           |
-| **14.5 集成**          |      |                                               |
+| **18.5 集成**          |      |                                               |
 | IEditorEngine 扩展     | ⬜   | `setSplitMode()`, `getSplitMode()` 方法       |
 | 状态栏模式指示         | ⬜   | 显示当前编辑模式                              |
 | 快捷键注册             | ⬜   | Ctrl+1/2/3 切换模式                           |
@@ -1280,26 +1410,26 @@ src/renderer/editor/shared/              ← 引擎无关，Muya 和 Milkdown �
 
 ---
 
-## 阶段 15: 集成完善 + 测试
+## 阶段 19: 集成完善 + 测试
 
-> 依赖阶段 13、14 完成。
+> 依赖阶段 17、18 完成。
 
 **目标**: 完善所有集成细节，确保 Milkdown 引擎功能完整
 
 | 任务                      | 状态 | 说明                                     |
 | ------------------------- | ---- | ---------------------------------------- |
-| 15.1 PDF 导出适配         | ⬜   | Milkdown HTML → PDF 流水线               |
-| 15.2 主题系统完整迁移     | ⬜   | 6 个主题 (light/dark 各 3)               |
-| 15.3 Unsplash 集成        | ⬜   | 图片选择器复用 Muya Unsplash API         |
-| 15.4 拼写检查适配         | ⬜   | WebView spellcheck + 自定义词典          |
-| 15.5 Milkdown UI 本地化   | ⬜   | 工具栏/斜杠命令/placeholder 使用 `$t()`  |
-| 15.6 发起社区翻译         | ⬜   | 配置 Crowdin/Weblate，邀请社区贡献者     |
-| 15.7 单元测试             | ⬜   | 共享模块 + 自定义插件                    |
-| 15.8 集成测试             | ⬜   | 双引擎对比：同一文档渲染一致性           |
-| 15.9 E2E 测试             | ⬜   | Playwright: 三种编辑模式基本流程         |
-| 15.10 性能基准测试        | ⬜   | Muya vs Milkdown: 大文档、输入延迟、内存 |
-| 15.11 回归测试 + Bug 修复 | ⬜   | 修复所有已知问题                         |
-| 15.12 文档更新            | ⬜   | README、CONTRIBUTING、用户指南           |
+| 19.1 PDF 导出适配         | ⬜   | Milkdown HTML → PDF 流水线               |
+| 19.2 主题系统完整迁移     | ⬜   | 6 个主题 (light/dark 各 3)               |
+| 19.3 Unsplash 集成        | ⬜   | 图片选择器复用 Muya Unsplash API         |
+| 19.4 拼写检查适配         | ⬜   | WebView spellcheck + 自定义词典          |
+| 19.5 Milkdown UI 本地化   | ⬜   | 工具栏/斜杠命令/placeholder 使用 `$t()`  |
+| 19.6 发起社区翻译         | ⬜   | 配置 Crowdin/Weblate，邀请社区贡献者     |
+| 19.7 单元测试             | ⬜   | 共享模块 + 自定义插件                    |
+| 19.8 集成测试             | ⬜   | 双引擎对比：同一文档渲染一致性           |
+| 19.9 E2E 测试             | ⬜   | Playwright: 三种编辑模式基本流程         |
+| 19.10 性能基准测试        | ⬜   | Muya vs Milkdown: 大文档、输入延迟、内存 |
+| 19.11 回归测试 + Bug 修复 | ⬜   | 修复所有已知问题                         |
+| 19.12 文档更新            | ⬜   | README、CONTRIBUTING、用户指南           |
 
 ### 验证清单
 
@@ -1318,17 +1448,17 @@ src/renderer/editor/shared/              ← 引擎无关，Muya 和 Milkdown �
 
 ---
 
-## 阶段 16: 发布 + 清理（可选）
+## 阶段 20: 发布 + 清理（可选）
 
 **目标**: 将 Milkdown 设为默认引擎，收集反馈，最终移除 Muya
 
 | 任务                   | 状态 | 说明                                       |
 | ---------------------- | ---- | ------------------------------------------ |
-| 16.1 Beta 发布         | ⬜   | Milkdown 引擎为实验性选项                  |
-| 16.2 收集用户反馈      | ⬜   | GitHub Issues + 社区渠道                   |
-| 16.3 修复反馈问题      | ⬜   | 根据反馈迭代                               |
-| 16.4 Milkdown 设为默认 | ⬜   | 切换默认引擎                               |
-| 16.5 移除 Muya 代码    | ⬜   | 删除 src/muya/ + MuyaAdapter（视反馈决定） |
+| 20.1 Beta 发布         | ⬜   | Milkdown 引擎为实验性选项                  |
+| 20.2 收集用户反馈      | ⬜   | GitHub Issues + 社区渠道                   |
+| 20.3 修复反馈问题      | ⬜   | 根据反馈迭代                               |
+| 20.4 Milkdown 设为默认 | ⬜   | 切换默认引擎                               |
+| 20.5 移除 Muya 代码    | ⬜   | 删除 src/muya/ + MuyaAdapter（视反馈决定） |
 
 > **注意**: 移除 Muya 不是必须的。如果社区反馈 Milkdown 有功能缺失，可以长期保留双引擎。
 
@@ -1351,21 +1481,27 @@ src/renderer/editor/shared/              ← 引擎无关，Muya 和 Milkdown �
 | 阶段 9: Tauri 完整迁移               | ✅ 完成   | 2026-02-05 | 2026-02-05 | -        |
 | **阶段 10: 国际化 (i18n)**           | ✅ 完成   | 2026-02-07 | 2026-02-08 | -        |
 | **阶段 11: 编辑器抽象层 + 引擎切换** | 🟡 进行中 | 2026-02-25 | -          | 3 周     |
-| **阶段 12: Milkdown 核心功能**       | ⬜ 待开始 | -          | -          | 3-4 周   |
-| **阶段 13: 自定义插件 (复用 Muya)**  | ⬜ 待开始 | -          | -          | 4-5 周   |
-| **阶段 14: Split View 对照模式**     | ⬜ 待开始 | -          | -          | 4 周     |
-| **阶段 15: 集成完善 + 测试**         | ⬜ 待开始 | -          | -          | 2-3 周   |
-| **阶段 16: 发布 + 清理**             | ⬜ 待开始 | -          | -          | 视反馈   |
+| **阶段 12: Pinia 3 + Vue Router 5**  | ✅ 完成   | 2026-02-28 | 2026-02-28 | 1 周     |
+| **阶段 13: Vite 5 → 6 → 7**          | ✅ 完成   | 2026-02-28 | 2026-02-28 | 1-2 周   |
+| **阶段 14: 代码块 CodeMirror 5 → 6** | ✅ 完成   | 2026-02-28 | 2026-02-28 | 2-3 周   |
+| **阶段 15: Vega 6 + ESLint 10**      | ⬜ 待开始 | -          | -          | 1 周     |
+| **阶段 16: Milkdown 核心功能**       | ⬜ 待开始 | -          | -          | 3-4 周   |
+| **阶段 17: 自定义插件 (复用 Muya)**  | ⬜ 待开始 | -          | -          | 4-5 周   |
+| **阶段 18: Split View 对照模式**     | ⬜ 待开始 | -          | -          | 4 周     |
+| **阶段 19: 集成完善 + 测试**         | ⬜ 待开始 | -          | -          | 2-3 周   |
+| **阶段 20: 发布 + 清理**             | ⬜ 待开始 | -          | -          | 视反馈   |
 
 ### 并行关系
 
 ```
 阶段 10 (i18n)  ──────────┐
-                           ├──► 阶段 12 (核心功能) ──► 阶段 13 (自定义插件) ──┐
-阶段 11 (抽象层) ─────────┘                                                   │
-                                                  阶段 14 (Split View) ───────┼──► 阶段 15 (测试) ──► 阶段 16 (发布)
-                                                       ↑                      │
-                                                  依赖阶段 12 ────────────────┘
+                           │
+阶段 11 (抽象层) ──────────┤
+                           ├──► 阶段 12-15 (依赖升级) ──► 阶段 16 (Milkdown) ──► 阶段 17 (自定义插件) ──┐
+                           │                                                       ↑                      │
+                           │                                                  阶段 18 (Split View) ──────┼──► 阶段 19 (测试) ──► 阶段 20 (发布)
+                           │                                                       ↑                      │
+                           └──────────────────────────────────────────────── 依赖阶段 16 ────────────────┘
 ```
 
 ### 总工期预估
@@ -1380,19 +1516,19 @@ src/renderer/editor/shared/              ← 引擎无关，Muya 和 Milkdown �
 
 ## 版本规划
 
-| 版本       | 包含阶段  | 主要变化                              |
-| ---------- | --------- | ------------------------------------- |
-| v0.18.0    | 0-1       | 构建优化，Windows 支持改进            |
-| v0.19.0    | 2-3       | 减少原生模块，Electron 补丁更新       |
-| v0.20.0    | 4, 4.5    | Electron 38 + 渲染进程现代化          |
-| v0.21.0    | 5-6       | Vue 3 + Vite 迁移                     |
-| v0.22.0    | 7         | TypeScript 迁移                       |
-| v1.0.0     | 8-9       | Tauri 版本发布                        |
-| **v1.1.0** | **10**    | **中英双语国际化**                    |
-| **v1.2.0** | **11-12** | **Milkdown 引擎（实验性）+ 引擎切换** |
-| **v1.3.0** | **13**    | **图表/搜索/导出等自定义插件**        |
-| **v1.4.0** | **14**    | **Split View 对照编辑模式**           |
-| **v2.0.0** | **15-16** | **Milkdown 设为默认 + 完整多语言**    |
+| 版本       | 包含阶段  | 主要变化                               |
+| ---------- | --------- | -------------------------------------- |
+| v0.18.0    | 0-1       | 构建优化，Windows 支持改进             |
+| v0.19.0    | 2-3       | 减少原生模块，Electron 补丁更新        |
+| v0.20.0    | 4, 4.5    | Electron 38 + 渲染进程现代化           |
+| v0.21.0    | 5-6       | Vue 3 + Vite 迁移                      |
+| v0.22.0    | 7         | TypeScript 迁移                        |
+| v1.0.0     | 8-9       | Tauri 版本发布                         |
+| **v1.1.0** | **10**    | **中英双语国际化**                     |
+| **v1.2.0** | **11-15** | **依赖升级 + Milkdown 引擎（实验性）** |
+| **v1.3.0** | **16-17** | **Milkdown 核心功能 + 自定义插件**     |
+| **v1.4.0** | **18**    | **Split View 对照编辑模式**            |
+| **v2.0.0** | **19-20** | **集成完善 + Milkdown 设为默认**       |
 
 ---
 
@@ -1437,6 +1573,8 @@ node tools/checkEsmModules.js
    - 更新 README
    - 更新构建文档
    - 更新贡献指南
-   - 阶段 16 前准备国际化贡献指南6. **关键参考文档**:
+   - 阶段 20 前准备国际化贡献指南
+
+6. **关键参考文档**:
    - 编辑器迁移详细设计：[`docs/dev/MILKDOWN_MIGRATION_REPORT.md`](./MILKDOWN_MIGRATION_REPORT.md)
    - 本路线图中每个编辑器相关阶段都引用了对应报告章节

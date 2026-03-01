@@ -1,7 +1,6 @@
 name: Build Windows
 
 on:
-  # 手动触发
   workflow_dispatch:
     inputs:
       build_type:
@@ -10,9 +9,9 @@ on:
         default: "installer"
         type: choice
         options:
-          - installer # 完整安装包 (NSIS + ZIP)
-          - binary # 仅二进制文件
-          - portable # 便携版 (ZIP only)
+          - installer
+          - binary
+          - portable
       skip_tests:
         description: "跳过测试"
         required: false
@@ -24,7 +23,6 @@ on:
         default: false
         type: boolean
 
-  # 推送到特定分支时自动触发
   push:
     branches:
       - "build-windows"
@@ -45,130 +43,84 @@ jobs:
       GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
     steps:
-      - name: 📥 检出代码
+      - name: 检出代码
         uses: actions/checkout@v4
 
-      - name: 📦 安装 Node.js
+      - name: 安装 Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: 安装 Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 16
-          cache: yarn
-          cache-dependency-path: yarn.lock
+          node-version: 20
+          cache: npm
 
-      # 修复 node-gyp 编译问题
-      - name: 🔧 修复 node-gyp
-        run: |
-          npm install --global node-gyp@latest
-          npm prefix -g | % {npm config set node_gyp "$_\node_modules\node-gyp\bin\node-gyp.js"}
-          node-gyp install
-        shell: pwsh
-
-      - name: 💾 缓存 node_modules
+      - name: 缓存 node_modules
         uses: actions/cache@v4
         id: cacheNodeModules
         with:
           path: ${{ github.workspace }}\node_modules
-          key: ${{ runner.os }}-node_modules-v3-${{ hashFiles('yarn.lock') }}
+          key: ${{ runner.os }}-node_modules-v4-${{ hashFiles('package-lock.json') }}
           restore-keys: |
-            ${{ runner.os }}-node_modules-v3-
+            ${{ runner.os }}-node_modules-v4-
 
-      - name: 💾 缓存 Electron
-        uses: actions/cache@v4
+      - name: 缓存 Rust
+        uses: swatinem/rust-cache@v2
         with:
-          path: ${{ env.LOCALAPPDATA }}\electron\Cache
-          key: ${{ runner.os }}-electron-v3-${{ hashFiles('yarn.lock') }}
+          workspaces: './src-tauri -> target'
 
-      - name: 💾 缓存 Electron-Builder
-        uses: actions/cache@v4
-        with:
-          path: ${{ env.LOCALAPPDATA }}\electron-builder\cache
-          key: ${{ runner.os }}-electron-builder-v3-${{ hashFiles('yarn.lock') }}
+      - name: 安装依赖
+        if: steps.cacheNodeModules.outputs.cache-hit != 'true'
+        run: npm ci
 
-      - name: 📦 安装依赖
-        run: yarn install --check-files --frozen-lockfile
-
-      - name: 🔍 代码检查
+      - name: 代码检查
         run: |
-          yarn run lint
-          yarn run validate-licenses
+          npm run lint
+          npm run validate-licenses
 
-      - name: 🧪 运行测试
+      - name: 运行测试
         if: ${{ github.event.inputs.skip_tests != 'true' }}
-        run: yarn run test
+        run: npm run test
 
-      # 根据构建类型执行不同的构建命令
-      - name: 🔨 构建 - 仅二进制
+      - name: 构建 - 仅二进制
         if: ${{ github.event.inputs.build_type == 'binary' }}
-        run: yarn build:bin
+        run: npm run build:portable-release
 
-      - name: 🔨 构建 - 便携版 (ZIP)
+      - name: 构建 - 便携版
         if: ${{ github.event.inputs.build_type == 'portable' }}
-        run: |
-          node .electron-vue/build.js
-          npx electron-builder --win zip
+        run: npm run build:portable-release
 
-      - name: 🔨 构建 - 完整安装包
+      - name: 构建 - 完整安装包
         if: ${{ github.event.inputs.build_type == 'installer' || github.event.inputs.build_type == '' }}
-        run: yarn run release:win
+        run: npm run build:installer-release
 
-      # 上传构建产物
-      - name: 📤 上传 NSIS 安装包
-        if: ${{ github.event.inputs.build_type == 'installer' || github.event.inputs.build_type == '' }}
+      - name: 上传二进制文件
+        if: ${{ github.event.inputs.build_type == 'binary' || github.event.inputs.build_type == 'portable' }}
         uses: actions/upload-artifact@v4
         with:
-          name: marktext-setup-exe
-          path: build/marktext-setup.exe
+          name: marktext-win-exe
+          path: src-tauri/target/release/marktext.exe
           if-no-files-found: warn
           retention-days: 30
 
-      - name: 📤 上传 Windows x64 ZIP
-        if: ${{ github.event.inputs.build_type != 'binary' }}
-        uses: actions/upload-artifact@v4
-        with:
-          name: marktext-win-x64-zip
-          path: build/marktext-x64-win.zip
-          if-no-files-found: warn
-          retention-days: 30
-
-      - name: 📤 上传 Windows ia32 ZIP
+      - name: 上传安装包
         if: ${{ github.event.inputs.build_type == 'installer' || github.event.inputs.build_type == '' }}
         uses: actions/upload-artifact@v4
         with:
-          name: marktext-win-ia32-zip
-          path: build/marktext-ia32-win.zip
+          name: marktext-installer-bundle
+          path: src-tauri/target/release/bundle/
           if-no-files-found: warn
           retention-days: 30
 
-      - name: 📤 上传二进制目录
-        if: ${{ github.event.inputs.build_type == 'binary' }}
-        uses: actions/upload-artifact@v4
-        with:
-          name: marktext-win-unpacked
-          path: build/win-unpacked/
-          if-no-files-found: warn
-          retention-days: 14
-
-      # 计算并显示校验和
-      - name: 🔐 计算校验和
-        if: ${{ github.event.inputs.build_type != 'binary' }}
+      - name: 计算校验和
         run: |
           Write-Host "=== SHA256 Checksums ===" -ForegroundColor Green
-          Get-ChildItem -Path build -Filter "*.exe" | ForEach-Object {
+          if (Test-Path "src-tauri\target\release\marktext.exe") {
+            $hash = (Get-FileHash -Algorithm SHA256 "src-tauri\target\release\marktext.exe").Hash
+            Write-Host "$hash  marktext.exe"
+          }
+          Get-ChildItem -Path "src-tauri\target\release\bundle" -Recurse -Include "*.exe","*.msi" -ErrorAction SilentlyContinue | ForEach-Object {
             $hash = (Get-FileHash -Algorithm SHA256 $_.FullName).Hash
             Write-Host "$hash  $($_.Name)"
-          }
-          Get-ChildItem -Path build -Filter "*.zip" | ForEach-Object {
-            $hash = (Get-FileHash -Algorithm SHA256 $_.FullName).Hash
-            Write-Host "$hash  $($_.Name)"
-          }
-        shell: pwsh
-
-      # 显示构建产物信息
-      - name: 📊 构建产物信息
-        run: |
-          Write-Host "=== Build Artifacts ===" -ForegroundColor Green
-          Get-ChildItem -Path build -File | ForEach-Object {
-            $size = [math]::Round($_.Length / 1MB, 2)
-            Write-Host "$($_.Name) - $size MB"
           }
         shell: pwsh

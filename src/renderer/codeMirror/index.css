@@ -1,9 +1,9 @@
-.CodeMirror {
+/* CodeMirror 6 base styles - .cm-editor replaces .CodeMirror */
+.cm-editor {
   background: transparent;
   height: auto;
 }
-.CodeMirror-line::selection,
-.CodeMirror-line > span::selection,
-.CodeMirror-line > span > span::selection {
-  background: rgb(178, 215, 254);
+
+.cm-scroller {
+  font-family: inherit;
 }

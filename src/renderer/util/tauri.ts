@@ -409,6 +409,7 @@ const ipcChannelHandlers: Record<string, IpcChannelHandler> = {
       try {
         const doc = await tauriCore!.invoke('read_markdown_file', { filePath })
         ipcRenderer.emit('mt::open-new-tab', null, doc, {}, true)
+        tauriCore!.invoke('add_recent_document', { filePath }).catch(() => {})
       } catch (e) {
         console.error(`Failed to open file ${filePath}:`, e)
       }
@@ -426,6 +427,7 @@ const ipcChannelHandlers: Record<string, IpcChannelHandler> = {
     try {
       const doc = await tauriCore.invoke('read_markdown_file', { filePath })
       ipcRenderer.emit('mt::open-new-tab', null, doc, options, true)
+      tauriCore.invoke('add_recent_document', { filePath }).catch(() => {})
     } catch (e) {
       console.error(`Failed to open file ${filePath}:`, e)
     }
@@ -679,6 +681,7 @@ const ipcChannelHandlers: Record<string, IpcChannelHandler> = {
       try {
         const doc = await tauriCore.invoke('read_markdown_file', { filePath })
         ipcRenderer.emit('mt::open-new-tab', null, doc, {}, true)
+        tauriCore.invoke('add_recent_document', { filePath }).catch(() => {})
       } catch (e) {
         console.warn(`Failed to open dropped file ${filePath}:`, e)
       }
@@ -1671,10 +1674,10 @@ export function initDragDrop(bus: any): void {
       // Process each dropped file (same logic as old mt::window::drop handler)
       for (const filePath of paths) {
         if (hasMarkdownExtension(filePath)) {
-          // Open markdown file as a new tab
           try {
             const doc = await tauriCore!.invoke('read_markdown_file', { filePath })
             ipcRenderer.emit('mt::open-new-tab', null, doc, {}, true)
+            tauriCore!.invoke('add_recent_document', { filePath }).catch(() => {})
           } catch (e) {
             console.warn(`Failed to open dropped file ${filePath}:`, e)
           }
@@ -1707,6 +1710,7 @@ export function initOpenFilesListener(): void {
           try {
             const doc = await tauriCore!.invoke('read_markdown_file', { filePath })
             ipcRenderer.emit('mt::open-new-tab', null, doc, {}, true)
+            tauriCore!.invoke('add_recent_document', { filePath }).catch(() => {})
           } catch (e) {
             console.warn(`Failed to open file from open-files event: ${filePath}`, e)
           }
@@ -1914,12 +1918,25 @@ export function handleMenuAction(menuId: string): void {
     'help.license': () =>
       shell.openExternal('https://github.com/marktext/marktext/blob/develop/LICENSE'),
     'help.check-update': () => ipcRenderer.send('mt::check-for-update'),
-    'help.about': () => _bus && _bus.$emit('aboutDialog')
+    'help.about': () => _bus && _bus.$emit('aboutDialog'),
+    'file.clear-recent': async () => {
+      const { usePreferencesStore } = await import('@/stores/preferences')
+      usePreferencesStore().CLEAR_RECENT_FILES()
+    }
   }
 
   const action = menuActions[menuId]
   if (action) {
     action()
+  } else if (menuId.startsWith('file.recent-')) {
+    const idx = parseInt(menuId.replace('file.recent-', ''), 10)
+    import('@/stores/preferences').then(({ usePreferencesStore }) => {
+      const store = usePreferencesStore()
+      const filePath = store.recentFiles[idx]
+      if (filePath) {
+        ipcRenderer.send('mt::open-file', filePath)
+      }
+    })
   } else {
     console.warn('Unknown menu action:', menuId)
   }

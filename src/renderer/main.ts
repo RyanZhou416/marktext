@@ -35,7 +35,7 @@ app.use(i18n)
 const pinia = createPinia()
 app.use(pinia)
 
-// Configure Vue Router 4
+// Configure Vue Router 5
 const router = createRouter({
   history: createWebHashHistory(),
   routes: routes((window as any).marktext.env.type)

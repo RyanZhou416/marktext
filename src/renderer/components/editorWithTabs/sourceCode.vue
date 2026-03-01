@@ -3,7 +3,16 @@
 </template>
 
 <script lang="ts">
-import codeMirror, { setMode, setCursorAtLastLine, setTextDirection } from '../../codeMirror'
+import {
+  createEditor,
+  setCursorAtLastLine,
+  setTextDirection,
+  posToOffset,
+  offsetToPos,
+  selectAllContent,
+  scrollToLine
+} from '../../codeMirror'
+import type { EditorView } from '@codemirror/view'
 import { wordCount as getWordCount } from 'common/markdown/utils'
 import { mapState } from 'pinia'
 import { usePreferencesStore } from '@/stores/preferences'
@@ -11,6 +20,16 @@ import { useEditorStore } from '@/stores/editor'
 import { adjustCursor } from '../../util'
 import bus from '../../bus'
 import { oneDarkThemes, railscastsThemes } from '@/config'
+
+interface CursorPos {
+  line: number
+  ch: number
+}
+
+interface CursorShape {
+  anchor: CursorPos
+  focus: CursorPos
+}
 
 export default {
   props: {
@@ -32,59 +51,68 @@ export default {
   data() {
     return {
       contentState: null,
-      editor: null,
-      commitTimer: null,
+      editor: null as EditorView | null,
+      commitTimer: null as ReturnType<typeof setTimeout> | null,
       viewDestroyed: false,
-      tabId: null
+      tabId: null as string | null
     }
   },
 
   watch: {
-    textDirection: function (value, oldValue) {
+    textDirection(value: string, oldValue: string) {
       const { editor } = this
       if (value !== oldValue && editor) {
-        setTextDirection(editor, value)
+        setTextDirection(editor, value as 'ltr' | 'rtl')
       }
     }
   },
 
   created() {
     this.$nextTick(() => {
-      // TODO: Should we load markdown from the tab or mapped vue property?
       const { id } = this.currentTab
       const { markdown = '', theme, cursor, textDirection } = this
-      const container = this.$refs.sourceCode
-      const codeMirrorConfig = {
+      const container = this.$refs.sourceCode as HTMLElement
+
+      const themeName = railscastsThemes.includes(theme)
+        ? 'railscasts'
+        : oneDarkThemes.includes(theme)
+          ? 'one-dark'
+          : 'default'
+
+      const checkUpdate = () => {
+        const ed = this.editor
+        if (!ed) return
+        const { cursor, markdown } = this.getMarkdownAndCursor(ed)
+        const wordCount = getWordCount(markdown)
+        if (this.commitTimer) clearTimeout(this.commitTimer)
+        this.commitTimer = setTimeout(() => {
+          if (!this.viewDestroyed && this.tabId) {
+            useEditorStore().LISTEN_FOR_CONTENT_CHANGE({
+              id: this.tabId,
+              markdown,
+              wordCount,
+              cursor
+            })
+          } else if (!this.viewDestroyed && !this.tabId) {
+            console.warn(
+              'LISTEN_FOR_CONTENT_CHANGE: Cannot commit changes because no tab id was set!'
+            )
+          }
+        }, 1000)
+      }
+
+      const editor = (this.editor = createEditor(container, {
         value: markdown,
-        lineNumbers: true,
-        autofocus: true,
-        lineWrapping: true,
-        styleActiveLine: true,
-        direction: textDirection,
-        // The amount of updates needed when scrolling. Settings this to >Infinity< or use CSS
-        // >height: auto< result in bad performance because the whole document is always rendered.
-        // Since we are using >height: auto< setting this to >Infinity< to fix #171. The best
-        // solution would be to set a fixed height like in #791 but then the scrollbar is not on
-        // the right side. Please also see CodeMirror#1104.
-        viewportMargin: Infinity,
+        theme: themeName,
+        direction: (textDirection || 'ltr') as 'ltr' | 'rtl',
         lineNumberFormatter(line) {
           if (line % 10 === 0 || line === 1) {
-            return line
-          } else {
-            return ''
+            return String(line)
           }
-        }
-      }
-
-      // Set theme
-      if (railscastsThemes.includes(theme)) {
-        codeMirrorConfig.theme = 'railscasts'
-      } else if (oneDarkThemes.includes(theme)) {
-        codeMirrorConfig.theme = 'one-dark'
-      }
-
-      // Init CodeMirror
-      const editor = (this.editor = codeMirror(container, codeMirrorConfig))
+          return ''
+        },
+        onUpdate: checkUpdate
+      }))
 
       bus.$on('file-loaded', this.handleFileChange)
       bus.$on('invalidate-image-cache', this.handleInvalidateImageCache)
@@ -92,29 +120,28 @@ export default {
       bus.$on('selectAll', this.handleSelectAll)
       bus.$on('image-action', this.handleImageAction)
 
-      setMode(editor, 'markdown')
-      this.listenChange()
-
-      editor.on('contextmenu', (cm, event) => {
-        // Make sure no context menu is shown in source-code mode because we have to handle
-        // Muyas menu by Electron.
+      editor.dom.addEventListener('contextmenu', event => {
         event.preventDefault()
         event.stopPropagation()
       })
 
-      // NOTE: Cursor may be not null but the inner values are.
       if (cursor && cursor.anchor && cursor.focus) {
         const { anchor, focus } = cursor
-        editor.setSelection(anchor, focus, { scroll: true }) // Scroll the focus into view.
+        this.setSelection(editor, anchor, focus)
       } else {
         setCursorAtLastLine(editor)
       }
       this.tabId = id
+
+      const scrollToLineNum = usePreferencesStore().scrollToLineOnSourceShow
+      if (scrollToLineNum != null) {
+        scrollToLine(editor, scrollToLineNum)
+        usePreferencesStore().SET_SCROLL_TO_LINE_ON_SOURCE(null)
+      }
     })
   },
+
   beforeUnmount() {
-    // NOTE: Clear timer and manually commit changes. After mode switching and cleanup may follow
-    // further key inputs, so ignore all inputs.
     this.viewDestroyed = true
     if (this.commitTimer) clearTimeout(this.commitTimer)
 
@@ -125,15 +152,29 @@ export default {
     bus.$off('image-action', this.handleImageAction)
 
     const { editor } = this
-    const { cursor, markdown } = this.getMarkdownAndCursor(editor)
-    bus.$emit('file-changed', { id: this.tabId, markdown, cursor, renderCursor: true })
+    if (editor) {
+      const { cursor, markdown } = this.getMarkdownAndCursor(editor)
+      bus.$emit('file-changed', { id: this.tabId, markdown, cursor, renderCursor: true })
+    }
   },
+
   methods: {
-    handleImageAction({ id, result, alt }) {
+    setSelection(view: EditorView, anchor: CursorPos, focus: CursorPos) {
+      const doc = view.state.doc
+      const anchorOffset = posToOffset(doc, anchor)
+      const headOffset = posToOffset(doc, focus)
+      view.dispatch({
+        selection: { anchor: anchorOffset, head: headOffset }
+      })
+    },
+
+    handleImageAction({ id, result, alt }: { id: string; result: string; alt: string }) {
       const { editor } = this
-      const value = editor.getValue()
-      const focus = editor.getCursor('focus')
-      const anchor = editor.getCursor('anchor')
+      if (!editor) return
+
+      const value = editor.state.doc.toString()
+      const focus = offsetToPos(editor.state.doc, editor.state.selection.main.head)
+      const anchor = offsetToPos(editor.state.doc, editor.state.selection.main.anchor)
       const lines = value.split('\n')
       const index = lines.findIndex(line => line.indexOf(id) > 0)
 
@@ -141,28 +182,19 @@ export default {
         const oldLine = lines[index]
         lines[index] = oldLine.replace(new RegExp(`!\\[${id}\\]\\(.*\\)`), `![${alt}](${result})`)
         const newValue = lines.join('\n')
-        editor.setValue(newValue)
+        editor.dispatch({
+          changes: { from: 0, to: value.length, insert: newValue }
+        })
         const match = /(!\[.*\]\(.*\))/.exec(oldLine)
-        if (!match) {
-          // User maybe delete `![]()` structure, and the match is null.
-          return
-        }
-        const range = {
-          start: match.index,
-          end: match.index + match[1].length
-        }
+        if (!match) return
+
+        const range = { start: match.index, end: match.index + match[1].length }
         const delta = alt.length + result.length + 5 - match[1].length
 
-        const adjust = pointer => {
-          if (!pointer) {
-            return
-          }
-          if (pointer.line !== index) {
-            return
-          }
-          if (pointer.ch <= range.start) {
-            // do nothing.
-          } else if (pointer.ch > range.start && pointer.ch < range.end) {
+        const adjust = (pointer: CursorPos) => {
+          if (pointer.line !== index) return
+          if (pointer.ch <= range.start) return
+          if (pointer.ch > range.start && pointer.ch < range.end) {
             pointer.ch = range.start + alt.length + result.length + 5
           } else {
             pointer.ch += delta
@@ -171,113 +203,95 @@ export default {
 
         adjust(focus)
         adjust(anchor)
-        if (focus && anchor) {
-          editor.setSelection(anchor, focus, { scroll: true })
-        } else {
-          setCursorAtLastLine()
-        }
+        this.setSelection(editor, anchor, focus)
+      } else {
+        setCursorAtLastLine(editor)
       }
     },
-    listenChange() {
-      const { editor } = this
-      editor.on('cursorActivity', cm => {
-        const { cursor, markdown } = this.getMarkdownAndCursor(cm)
-        // Attention: the cursor may be `{focus: null, anchor: null}` when press `backspace`
-        const wordCount = getWordCount(markdown)
-        if (this.commitTimer) clearTimeout(this.commitTimer)
-        this.commitTimer = setTimeout(() => {
-          // See "beforeDestroy" note
-          if (!this.viewDestroyed) {
-            if (this.tabId) {
-              useEditorStore().LISTEN_FOR_CONTENT_CHANGE({
-                id: this.tabId,
-                markdown,
-                wordCount,
-                cursor
-              })
-            } else {
-              // This may occur during tab switching but should not occur otherwise.
-              console.warn(
-                'LISTEN_FOR_CONTENT_CHANGE: Cannot commit changes because not tab id was set!'
-              )
-            }
-          }
-        }, 1000)
-      })
-    },
-    // Another tab was selected - only listen to get changes but don't set history or other things.
-    handleFileChange({ id, markdown, cursor }) {
+
+    handleFileChange({
+      id,
+      markdown,
+      cursor
+    }: {
+      id: string
+      markdown?: string
+      cursor?: CursorShape
+    }) {
       this.prepareTabSwitch()
 
       const { editor } = this
+      if (!editor) return
+
       if (typeof markdown === 'string') {
-        editor.setValue(markdown)
+        const current = editor.state.doc.toString()
+        editor.dispatch({
+          changes: { from: 0, to: current.length, insert: markdown }
+        })
       }
-      // Cursor is null when loading a file or creating a new tab in source code mode.
       if (cursor) {
         const { anchor, focus } = cursor
-        editor.setSelection(anchor, focus, { scroll: true }) // Scroll the focus into view.
+        this.setSelection(editor, anchor, focus)
       } else {
         setCursorAtLastLine(editor)
       }
       this.tabId = id
     },
-    // Get markdown and cursor from CodeMirror.
-    getMarkdownAndCursor(cm) {
-      let focus = cm.getCursor('head')
-      let anchor = cm.getCursor('anchor')
-      const markdown = cm.getValue()
-      const convertToMuyaCursor = cursor => {
-        const line = cm.getLine(cursor.line)
-        const preLine = cm.getLine(cursor.line - 1)
-        const nextLine = cm.getLine(cursor.line + 1)
-        return adjustCursor(cursor, preLine, line, nextLine)
+
+    getMarkdownAndCursor(editor: EditorView): { cursor: CursorShape; markdown: string } {
+      const doc = editor.state.doc
+      const markdown = doc.toString()
+      const main = editor.state.selection.main
+      let focus = offsetToPos(doc, main.head)
+      let anchor = offsetToPos(doc, main.anchor)
+
+      const convertToMuyaCursor = (cursor: CursorPos): CursorPos => {
+        const lineNum = cursor.line + 1
+        const line = lineNum <= doc.lines ? doc.line(lineNum).text : ''
+        const preLine = cursor.line >= 1 ? doc.line(cursor.line).text : undefined
+        const nextLine = cursor.line + 2 <= doc.lines ? doc.line(cursor.line + 2).text : undefined
+        const adjusted = adjustCursor(cursor, preLine, line, nextLine)
+        return adjusted ?? cursor
       }
 
-      anchor = convertToMuyaCursor(anchor) // Selection start as Muya cursor
-      focus = convertToMuyaCursor(focus) // Selection end as Muya cursor
+      anchor = convertToMuyaCursor(anchor)
+      focus = convertToMuyaCursor(focus)
 
-      // Normalize cursor that `anchor` is always before `focus` because
-      // this is the expected behavior in Muya.
       if (anchor && focus && anchor.line > focus.line) {
-        const tmpCursor = focus
+        const tmp = focus
         focus = anchor
-        anchor = tmpCursor
+        anchor = tmp
       }
       return { cursor: { focus, anchor }, markdown }
     },
-    // Commit changes from old tab. Problem: tab was already switched, so commit changes with old tab id.
+
     prepareTabSwitch() {
       if (this.commitTimer) clearTimeout(this.commitTimer)
-      if (this.tabId) {
-        const { editor } = this
-        const { cursor, markdown } = this.getMarkdownAndCursor(editor)
+      if (this.tabId && this.editor) {
+        const { cursor, markdown } = this.getMarkdownAndCursor(this.editor)
         useEditorStore().LISTEN_FOR_CONTENT_CHANGE({ id: this.tabId, markdown, cursor })
-        this.tabId = null // invalidate tab id
+        this.tabId = null
       }
     },
 
     handleSelectAll() {
-      if (!this.sourceCode) {
-        return
-      }
+      if (!this.sourceCode) return
 
       const { editor } = this
-      if (editor && editor.hasFocus()) {
-        this.editor.execCommand('selectAll')
+      const hasFocus =
+        editor && document.activeElement && editor.dom.contains(document.activeElement)
+      if (hasFocus) {
+        selectAllContent(editor)
       } else {
-        const activeElement = document.activeElement
-        const nodeName = activeElement.nodeName
-        if (nodeName === 'INPUT' || nodeName === 'TEXTAREA') {
+        const activeElement = document.activeElement as HTMLElement
+        if (activeElement?.nodeName === 'INPUT' || activeElement?.nodeName === 'TEXTAREA') {
           activeElement.select()
         }
       }
     },
 
     handleInvalidateImageCache() {
-      if (this.editor) {
-        this.editor.invalidateImageCache()
-      }
+      // Source code view has no image cache - no-op
     }
   }
 }
@@ -289,18 +303,18 @@ export default {
   box-sizing: border-box;
   overflow: auto;
 }
-.source-code .CodeMirror {
+.source-code .cm-editor {
   height: auto;
   margin: 50px auto;
   max-width: var(--editorAreaWidth);
   background: transparent;
 }
-.source-code .CodeMirror-gutters {
+.source-code .cm-gutters {
   border-right: none;
   background-color: transparent;
 }
-.source-code .CodeMirror-activeline-background,
-.source-code .CodeMirror-activeline-gutter {
+.source-code .cm-activeLineGutter,
+.source-code .cm-activeLine {
   background: var(--floatHoverColor);
 }
 </style>

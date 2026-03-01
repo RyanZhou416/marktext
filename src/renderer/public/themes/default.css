@@ -125,7 +125,7 @@ td code,
 th code,
 code,
 code[class*='language-'],
-.CodeMirror,
+.cm-editor,
 pre.ag-paragraph {
   font-family: 'DejaVu Sans Mono', 'Source Code Pro', 'Droid Sans Mono', Consolas, monospace;
   font-size: 14px;
@@ -143,8 +143,9 @@ kbd {
 }
 
 @media not print {
+  /* Muya editor */
   #ag-editor-id {
-    max-width: var(--editorAreaWidth);
+    max-width: var(--editorAreaWidth, 1000px);
     min-width: 400px;
     min-height: 100%;
     margin: 0 auto;
@@ -153,7 +154,18 @@ kbd {
     cursor: text;
   }
 
+  /* Milkdown editor - same layout as Muya */
+  .editor-component .milkdown {
+    max-width: var(--editorAreaWidth, 1000px);
+    min-width: 400px;
+    min-height: 100%;
+    margin: 0 auto;
+    padding: 20px 50px 100px 50px;
+    box-sizing: border-box;
+  }
+
   #ag-editor-id,
+  .editor-component .milkdown,
   [contenteditable] {
     outline: none;
   }
@@ -579,7 +591,7 @@ kbd {
   }
 
   :not(pre) > code[class*='language-'],
-  pre:not(.CodeMirror-line),
+  pre:not(.cm-line),
   pre[class*='language-'],
   pre.ag-paragraph {
     overflow: visible;

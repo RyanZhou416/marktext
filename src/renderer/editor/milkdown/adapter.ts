@@ -14,9 +14,15 @@ import {
   commandsCtx
 } from '@milkdown/core'
 import { commonmark, toggleStrongCommand, toggleEmphasisCommand } from '@milkdown/preset-commonmark'
+import { gfm, toggleStrikethroughCommand, insertTableCommand } from '@milkdown/preset-gfm'
 import { history, undoCommand, redoCommand } from '@milkdown/plugin-history'
 import { listener, listenerCtx } from '@milkdown/plugin-listener'
-import { TextSelection } from '@milkdown/prose/state'
+import { clipboard } from '@milkdown/plugin-clipboard'
+import { upload } from '@milkdown/plugin-upload'
+import { emoji } from '@milkdown/plugin-emoji'
+import { TextSelection, EditorState } from '@milkdown/prose/state'
+import type { MarkType } from '@milkdown/prose/model'
+import { syntaxDecoration } from './syntaxDecoPlugin'
 
 import type { IEditorEngine } from '../interface'
 import type {
@@ -44,7 +50,9 @@ const NOT_IMPLEMENTED = (method: string) => () => {
 export class MilkdownAdapter implements IEditorEngine {
   private editor: MilkdownEditor | null = null
   private _container: HTMLElement | null = null
+  private _rootElement: HTMLElement | null = null
   private _eventHandlers: Map<string, Set<(...args: unknown[]) => void>> = new Map()
+  private _options: EditorOptions = {}
 
   get container(): HTMLElement {
     if (!this._container) throw new Error('MilkdownAdapter: not mounted')
@@ -52,6 +60,7 @@ export class MilkdownAdapter implements IEditorEngine {
   }
 
   mount(element: HTMLElement, options: EditorOptions): Promise<void> {
+    this._options = { ...options }
     const markdown = (options.markdown as string) ?? ''
     const editor = Editor.make()
       .config(ctx => {
@@ -68,15 +77,26 @@ export class MilkdownAdapter implements IEditorEngine {
         })
         ctx.get(listenerCtx).focus(() => this._emit('focus'))
         ctx.get(listenerCtx).blur(() => this._emit('blur'))
+        ctx.get(listenerCtx).selectionUpdated((ctx, selection) => {
+          this._emitSelectionChange(ctx, selection)
+          this._emitSelectionFormats(ctx, selection)
+        })
       })
       .use(commonmark)
+      .use(gfm)
       .use(history)
       .use(listener)
+      .use(clipboard)
+      .use(upload)
+      .use(emoji)
+      .use(syntaxDecoration)
 
     return editor.create().then(() => {
       this.editor = editor
       const view = editor.ctx?.get(editorViewCtx)
+      this._rootElement = element
       this._container = view?.dom ?? element
+      this._applyOptions()
     })
   }
 
@@ -85,6 +105,7 @@ export class MilkdownAdapter implements IEditorEngine {
       this.editor.destroy()
       this.editor = null
       this._container = null
+      this._rootElement = null
     }
     this._eventHandlers.clear()
   }
@@ -101,6 +122,50 @@ export class MilkdownAdapter implements IEditorEngine {
       .trim()
       .split(/\s+/)
       .filter(w => w.length > 0).length
+  }
+
+  private _emitSelectionChange(
+    ctx: import('@milkdown/ctx').Ctx,
+    selection: import('@milkdown/prose/state').Selection
+  ): void {
+    const view = ctx.get(editorViewCtx)
+    const state = ctx.get(editorStateCtx)
+    const { from, to } = selection
+    const coords = view.coordsAtPos(from)
+    const container = this._container ?? this._rootElement
+    const y = container
+      ? coords.top - (container as HTMLElement).getBoundingClientRect().top
+      : coords.top
+    const selectedText = state.doc.textBetween(from, to, '\n')
+    const block = { text: selectedText }
+    this._emit('selectionChange', {
+      cursorCoords: { y },
+      start: { key: 'milkdown', offset: 0, block, type: 'p' },
+      end: { key: 'milkdown', offset: selectedText.length, block, type: 'p' },
+      affiliation: []
+    })
+  }
+
+  private _emitSelectionFormats(
+    ctx: import('@milkdown/ctx').Ctx,
+    selection: import('@milkdown/prose/state').Selection
+  ): void {
+    const state = ctx.get(editorStateCtx)
+    const { from, to } = selection
+    const schema = state.schema
+    const formats: { type: string }[] = []
+    const markMap: Record<string, string> = {
+      strong: 'strong',
+      emphasis: 'em',
+      strike_through: 'del'
+    }
+    for (const [name, formatType] of Object.entries(markMap)) {
+      const markType = schema.marks[name] as MarkType | undefined
+      if (markType && state.doc.rangeHasMark(from, to, markType)) {
+        formats.push({ type: formatType })
+      }
+    }
+    this._emit('selectionFormats', formats)
   }
 
   private _ensureMounted(): void {
@@ -129,9 +194,18 @@ export class MilkdownAdapter implements IEditorEngine {
       console.error('[MilkdownAdapter] setMarkdown parse error:', e)
       return
     }
-    if (!newDoc?.content) return
-    const tr = state.tr.replaceWith(1, state.doc.nodeSize - 1, newDoc.content)
-    view.dispatch(tr)
+    if (!newDoc) return
+    try {
+      // Use updateState instead of replaceWith to avoid "position X out of range"
+      const newState = EditorState.create({
+        doc: newDoc,
+        schema: state.schema,
+        plugins: state.plugins
+      })
+      view.updateState(newState)
+    } catch (e) {
+      console.error('[MilkdownAdapter] setMarkdown updateState error:', e)
+    }
   }
 
   getCursor(): CursorState {
@@ -165,6 +239,24 @@ export class MilkdownAdapter implements IEditorEngine {
     return this._wordCount(markdown ?? this.getMarkdown())
   }
 
+  getLineFromDOMNode(node: Node): number | null {
+    this._ensureMounted()
+    const el = node instanceof Element ? node : (node as ChildNode).parentElement
+    if (!el) return null
+    const ctx = this.editor!.ctx!
+    const view = ctx.get(editorViewCtx)
+    const state = ctx.get(editorStateCtx)
+    const rect = el.getBoundingClientRect()
+    const result = view.posAtCoords({
+      left: rect.left + rect.width / 2,
+      top: rect.top + rect.height / 2
+    })
+    if (!result) return null
+    const textBefore = state.doc.textBetween(0, result.pos, '\n')
+    const line = textBefore.split('\n').length
+    return line >= 1 ? line : null
+  }
+
   getTOC(): TOCEntry[] {
     return []
   }
@@ -177,6 +269,8 @@ export class MilkdownAdapter implements IEditorEngine {
       commands.call(toggleStrongCommand.key)
     } else if (type === 'em') {
       commands.call(toggleEmphasisCommand.key)
+    } else if (type === 'del') {
+      commands.call(toggleStrikethroughCommand.key)
     } else {
       NOT_IMPLEMENTED(`format(${type})`)()
     }
@@ -186,8 +280,13 @@ export class MilkdownAdapter implements IEditorEngine {
     NOT_IMPLEMENTED('updateParagraph')()
   }
 
-  createTable(_spec: TableSpec): void {
-    NOT_IMPLEMENTED('createTable')()
+  createTable(spec: TableSpec): void {
+    this._ensureMounted()
+    const ctx = this.editor!.ctx!
+    const commands = ctx.get(commandsCtx)
+    const rows = spec.rows ?? 3
+    const columns = spec.columns ?? 3
+    commands.call(insertTableCommand.key, { row: rows, col: columns })
   }
 
   insertImage(_info: ImageInfo): void {
@@ -242,7 +341,6 @@ export class MilkdownAdapter implements IEditorEngine {
   }
 
   getSelection(): SelectionPayload {
-    const cursor = this.getCursor()
     return {
       cursorCoords: { y: 0 },
       start: { key: '', offset: 0 },
@@ -283,20 +381,49 @@ export class MilkdownAdapter implements IEditorEngine {
     // no-op for MVP
   }
 
-  setFont(_options: { fontSize?: number; lineHeight?: number | string }): void {
-    // no-op for MVP
+  setFont(options: { fontSize?: number; lineHeight?: number | string }): void {
+    if (options.fontSize != null) this._options.fontSize = options.fontSize
+    if (options.lineHeight != null) this._options.lineHeight = options.lineHeight
+    this._applyOptions()
   }
 
-  setTabSize(_tabSize: number): void {
-    // no-op for MVP
+  setTabSize(tabSize: number): void {
+    this._options.tabSize = tabSize
+    this._applyOptions()
   }
 
   setListIndentation(_value: number | string): void {
-    // no-op for MVP
+    // no-op for Milkdown (list indentation handled by preset)
   }
 
-  setOptions(_options: Partial<EditorOptions>, _needRender?: boolean): void {
-    // no-op for MVP
+  setOptions(options: Partial<EditorOptions>, _needRender?: boolean): void {
+    Object.assign(this._options, options)
+    this._applyOptions()
+  }
+
+  private _applyOptions(): void {
+    const root = this._rootElement ?? this._container
+    if (!root) return
+    const el = root as HTMLElement
+    if (this._options.fontSize != null) {
+      el.style.setProperty('--mk-font-size', `${this._options.fontSize}px`)
+    }
+    if (this._options.lineHeight != null) {
+      el.style.setProperty('--mk-line-height', String(this._options.lineHeight))
+    }
+    if (this._container && this._options.spellcheckEnabled != null) {
+      ;(this._container as HTMLElement).setAttribute(
+        'spellcheck',
+        this._options.spellcheckEnabled ? 'true' : 'false'
+      )
+    }
+    const theme = this._options.theme as string | undefined
+    if (theme) {
+      el.classList.toggle(
+        'milkdown-dark',
+        /dark|one-dark|railscasts|material-dark|everforest-dark/i.test(theme)
+      )
+    }
   }
 
   invalidateImageCache(): void {

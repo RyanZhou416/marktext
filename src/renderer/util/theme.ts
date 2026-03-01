@@ -73,20 +73,8 @@ export const addThemeStyle = (theme: string): void => {
     document.body.classList.add('dark')
   }
 
-  // change CodeMirror theme
-  const cm: Element | null = document.querySelector('.CodeMirror')
-  if (cm) {
-    cm.classList.remove('cm-s-default')
-    cm.classList.remove('cm-s-one-dark')
-    cm.classList.remove('cm-s-railscasts')
-    if (isCmOneDark) {
-      cm.classList.add('cm-s-one-dark')
-    } else if (isCmRailscasts) {
-      cm.classList.add('cm-s-railscasts')
-    } else {
-      cm.classList.add('cm-s-default')
-    }
-  }
+  // CodeMirror 6 theme: applied at creation in sourceCode.vue.
+  // Theme switching while in source code view requires tab switch to take effect.
 }
 
 export const setEditorWidth = (value: string): void => {
@@ -95,10 +83,12 @@ export const setEditorWidth = (value: string): void => {
   if (value && /^[0-9]+(?:ch|px|%)$/.test(value)) {
     const editorAreaWidth = `calc(100px + ${value})`
     // Overwrite the theme value and add 100px for padding.
+    // #ag-editor-id: Muya; .editor-component .milkdown: Milkdown; .source-code .cm-editor: Source code view
     result = `
 :root { --editorAreaWidth: ${editorAreaWidth}; }
 #ag-editor-id,
-.source-code .CodeMirror {
+.editor-component .milkdown,
+.source-code .cm-editor {
   width: min(100%, var(--editorAreaWidth));
   margin-left: auto;
   margin-right: auto;
@@ -141,7 +131,7 @@ td code,
 th code,
 code,
 code[class*="language-"],
-.CodeMirror,
+.cm-editor,
 pre.ag-paragraph {
 font-family: ${codeFontFamily}, ${DEFAULT_CODE_FONT_FAMILY};
 font-size: ${codeFontSize}px;

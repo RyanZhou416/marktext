@@ -11,7 +11,7 @@ git clone https://github.com/marktext/marktext.git
 Before you can get started developing, you need set up your build environment:
 
 - [Rust](https://rustup.rs/) (stable toolchain)
-- [Node.js](https://nodejs.org/) v18+ (recommended to use [nvm](https://github.com/nvm-sh/nvm) or [nvm-windows](https://github.com/coreybutler/nvm-windows))
+- [Node.js](https://nodejs.org/) v20+ (recommended to use [nvm](https://github.com/nvm-sh/nvm) or [nvm-windows](https://github.com/coreybutler/nvm-windows))
 - [npm](https://www.npmjs.com/) v9+ (bundled with Node.js)
 - Platform-specific [Tauri prerequisites](https://v2.tauri.app/start/prerequisites/)
 - Build is supported on Linux, macOS and Windows
@@ -38,8 +38,8 @@ On Red Hat-based Linux: `sudo dnf install libX11-devel libxkbfile-devel libsecre
 
 1. Go to `marktext` folder
 2. Install dependencies: `npm install`
-3. Development mode: `npm run tauri:dev`
-4. Production build: `npm run tauri:build`
+3. Development mode: `npm run dev`
+4. Production build: `npm run build`
 
 Build output is located in `src-tauri/target/release/bundle/`.
 
@@ -51,10 +51,10 @@ $ npm run <script>
 
 | Script         | Description                                |
 | -------------- | ------------------------------------------ |
-| `tauri:dev`    | Build and run MarkText in development mode |
-| `tauri:build`  | Build MarkText for production              |
-| `dev`          | Start Vite dev server (frontend only)      |
-| `build`        | Build frontend for production              |
+| `dev`          | Build and run MarkText in development mode |
+| `build`        | Build MarkText for production              |
+| `vite:dev`     | Start Vite dev server (frontend only)      |
+| `vite:build`   | Build frontend for production              |
 | `lint`         | Lint code style (JS, TS, Vue)              |
 | `lint:fix`     | Auto-fix lint errors                       |
 | `format`       | Format code with Prettier                  |

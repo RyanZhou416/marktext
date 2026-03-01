@@ -125,7 +125,7 @@ td code,
 th code,
 code,
 code[class*='language-'],
-.CodeMirror,
+.cm-editor,
 pre.ag-paragraph {
   font-family: 'DejaVu Sans Mono', 'Source Code Pro', 'Droid Sans Mono', Consolas, monospace;
   font-size: 14px;
@@ -579,7 +579,7 @@ kbd {
   }
 
   :not(pre) > code[class*='language-'],
-  pre:not(.CodeMirror-line),
+  pre:not(.cm-line),
   pre[class*='language-'],
   pre.ag-paragraph {
     overflow: visible;
